@@ -6,14 +6,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 
-from bandupy import __version__ as version
+from banduppy import __version__ as version
 
 setuptools.setup(
-     name='bandupy',  
+     name='banduppy',  
      version=version,
      author="Stepan S. Tsirkin",
      author_email="stepan.tsirkin@uzh.ch",
-     description="Python interfaceof the BandUP code",
+     description="BandUPpy: Python interfaceof the BandUP code",
      long_description=long_description,
      long_description_content_type="text/markdown",
      install_requires=['numpy', 'scipy >= 1.0', 'matplotlib' ,'irrep>=1.5.1'],
