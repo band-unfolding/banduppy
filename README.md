@@ -11,7 +11,13 @@ please let me know.
 
 Author of BandUPpy : Stepan S. Tsirkin, University of Zurich, stepan.tsirkin@uzh.ch
 
-Author of BandUP : Paulo V. C. Medeiros, Linköping University, (at present: SMHI, the Swedish Meteorological and Hydrological Institute)
+Authors of original BandUP : 
+
+  *  Paulo V. C. Medeiros, Linköping University, (at present: SMHI, the Swedish Meteorological and Hydrological Institute)
+
+  *  Jonas Björk, Linköping University
+  
+  *  Stepan S. Tsirkin, (in 2015: Donostia International Physics Center)
 
 ### please refer to 
 ##### <http://www.ifm.liu.se/theomod/compphys/band-unfolding>
