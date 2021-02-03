@@ -40,6 +40,9 @@ except Exception as err:
             ####   This line reads the bandstructure written by QE into an pobject bandStructure of the irrep code.
             bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si")
             ####  this is a shortcut to   bands=irrep.bandstructure.BandStructure(...)
+            ####  For spin-polarised calculations you need to select spin channel 'up' or 'dw' 
+            ####   (works only with QE, and you need irrep>=1.5.3 installed. Example:
+            ####     bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si",spin_channel='up')   # or 'dw'
             ####   examples for other codes are:
             ####  VASP:
             ####      bands=banduppy.BandStructure(fWAV='WAVECAR',fPOS='POSCAR',spinor=False,code='vasp')
