@@ -61,7 +61,7 @@ except Exception as err:
             bands_run=run(PWSCF,stdin=open(pw_file+"-bands.in"),stdout=open(pw_file+"-bands.out","w"))
             for f in glob.glob("*.wfc*"):
                 os.remove(f)
-        bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si")
+            bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si")
         pickle.dump(bands,open("bandstructure.pickle","wb"))
 
     unfold.unfold(bands,break_thresh=0.1)
