@@ -11,7 +11,7 @@ class UnfoldingPath():
         if isinstance(nk, Iterable):
             nkgen=(x for x in nk)
         else:
-            nkgen=(nk for x in pathBZ)
+            nkgen=(nk for x in pathPBZ)
         supercell_int=np.round(supercell)
         assert supercell_int.shape==(3,3), "supercell should be 3x3, founf {}".format(supercell_int.shape)
         assert np.linalg.norm(np.array(supercell)-supercell_int)<1e-14 , "supercell should consist of integers, found {}".format(supercell)
