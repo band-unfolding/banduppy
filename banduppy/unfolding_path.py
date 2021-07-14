@@ -5,7 +5,7 @@ from  irrep.bandstructure import BandStructure
 assert irrep.__version__ >="1.5"
 from collections import Iterable
 
-class UnfoldingSet():
+class Unfolding():
 
     def __init__(self,supercell=np.eye(3,dtype=int),kpointsPBZ=[]):
         supercell_int=np.round(supercell)
@@ -42,8 +42,10 @@ class UnfoldingSet():
            j= self.kpointsPBZ_unique_index_SBZ[self.kpointsPBZ_index_in_unique[i]]
            print (i,kp,j,self.kpointsSBZ[j])
 
-    def unfold(self,bandstructure,write_to_file=True):
+    def unfold(self,bandstructure,suffix="",write_to_file=True):
      #  first evaluate the path as line ad store it
+        if len(suffix)>0 :
+            suffix = "-"+suffix
         self.efermi=bandstructure.efermi
         kpSBZcalc={}
         for ik,kpSBZ in enumerate(self.kpointsSBZ):
@@ -68,27 +70,29 @@ class UnfoldingSet():
                 print ("WARNING: no SBZ point found to unfold on the PBZ k point {}. Skipping... ".format(kpt) )
         self.indices_found=list(unfolded_found.keys())
 
-        self.kpointsPBZfound = self.kpointsPBZ[self.indices_found]
+        kpointsPBZfound = self.kpointsPBZ[self.indices_found]
         if write_to_file:
-            with open("kpoints_unfolded.txt","w") as fpath:
+            with open(f"kpoints_unfolded{suffix}.txt","w") as fpath:
                 fpath.write("# ik and reduced coordinates k1,k2,k3 \n")
-                for ik,kp in enumerate(self.kpointsPBZfound):
+                for ik,kp in enumerate(kpointsPBZfound):
                     fpath.write(f"{ik:5d}  " +"".join(f"{k:16.8f}" for k in kp)+"\n")
 
         result=[]
-        for kpl in self.kpline:
-            if ik in unfolded_found:
-                for band in unfolded_found[ik] :
-                    result.append([ik,]+list(band))
+#        print ("unfolded_found = ",unfolded_found)
+#        for kpl in self.kpline:
+        for ik,unf in unfolded_found.items():
+            for band in unf :
+                result.append([ik,]+list(band))
+        print ("result = ",result)
         self.result=np.array(result)
 
         if write_to_file:
-            np.savetxt("bandstructure_unfolded.txt", result ,header="# reduced_coordinates ,energy, weight "+("Sx,Sy,Sz" if bandstructure.spinor else "")  +"\n")
+            np.savetxt(f"bandstructure_unfolded{suffix}.txt", result ,header="# reduced_coordinates ,energy, weight "+("Sx,Sy,Sz" if bandstructure.spinor else "")  +"\n")
         return self.result
 
 
 
-class UnfoldingPath(UnfoldingSet):
+class UnfoldingPath(Unfolding):
 
     def __init__(self,supercell=np.eye(3,dtype=int),pathPBZ=[],nk=11,labels=None):
         if isinstance(nk, Iterable):
@@ -123,9 +127,11 @@ class UnfoldingPath(UnfoldingSet):
             result.append("{:10.6f} {:8s} {:12.8f} {:12.8f} {:12.8f}".format(kl[0],kl[1],n[0],n[1],n[2]))
         return "".join("# "+l+"\n" for l in result)
 
-    def unfold(self,bandstructure,break_thresh=0.1):
+    def unfold(self,bandstructure,break_thresh=0.1,suffix=""):
      #  first evaluate the path as line ad store it
         super(UnfoldingPath,self).unfold(bandstructure,write_to_file=False)
+        if len(suffix)>0 :
+            suffix = "-"+suffix
         self.kpline=bandstructure.KPOINTSline(kpred=self.kpointsPBZ,breakTHRESH=break_thresh)
         k_labels=[(self.kpline[ik],lab) for ik,lab in self.i_labels.items()]
         ll=np.array([k[1] for k in k_labels])
@@ -134,15 +140,14 @@ class UnfoldingPath(UnfoldingSet):
 #        print ("kl=",kl,"\nborders=",borders)
         self.k_labels=[(kl[b1:b2].mean(),"/".join(set(ll[b1:b2]))) for b1,b2 in zip(borders,borders[1:])]
 
-        with open("kpath_unfolded.txt","w") as fpath:
+        with open(f"kpath_unfolded{suffix}.txt","w") as fpath:
             fpath.write(self.path_str)
             np.savetxt(fpath, np.hstack( (self.kpline[:,None],self.kpointsPBZ))[self.indices_found],header="# k on path (A^-1) and reduced coordinates k1,k2,k3")
 
-        kpline_found=self.kpline[indices_found]
         for ir,r in enumerate(self.result):
-            self.result[ir,0]=kpline_found(int(r[0]))
+            self.result[ir,0]=self.kpline[int(r[0])]
 
-        np.savetxt("bandstructure_unfolded.txt", self.result ,header="# k on path (A^-1) ,energy, weight "+("Sx,Sy,Sz" if bandstructure.spinor else "")  +"\n")
+        np.savetxt(f"bandstructure_unfolded{suffix}.txt", self.result ,header="# k on path (A^-1) ,energy, weight "+("Sx,Sy,Sz" if bandstructure.spinor else "")  +"\n")
         return self.result
 
 

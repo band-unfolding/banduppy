@@ -15,7 +15,7 @@ nproc=16
 PWSCF="mpirun -np {np}  {QEpath}/pw.x -nk {npk} -nb {npb}".format(np=nproc,QEpath=QEpath,npk=nproc/4,npb=4).split()
 
 
-unfold=banduppy.UnfoldingPath(
+unfold_path=banduppy.UnfoldingPath(
             supercell= [[-1 ,  1 , 1],
                         [1  , -1 , 1],
                         [1  ,  1 ,-1]] ,   # How the SC latticevectors are expressed in the PC basis (should be a 3x3 array of integers)
@@ -23,10 +23,20 @@ unfold=banduppy.UnfoldingPath(
             nk=(23,27,9,29),  #  number of k-points in each non-skipped segment. Or just give one number, if they are equal
              labels="LGXUKG" )   # or ['L','G','X','U','K','G']
 
-kpointsPBZ=unfold.kpoints_SBZ_str()   # as tring  containing the k-points to beentered into the PWSCF input file  after 'K_POINTS crystal ' line. maybe transformed to formats of other codes  if needed
+
+
+unfold=banduppy.Unfolding(
+            supercell= [[-1 ,  1 , 1],
+                        [1  , -1 , 1],
+                        [1  ,  1 ,-1]] , # How the SC latticevectors are expressed in the PC basis (should be a 3x3 array of integers)
+            kpointsPBZ =  np.array([np.linspace(0.0,0.5,12)]*3).T # just a list of k-points (G-L line in this example)
+                              )
+
+kpointsPBZ=unfold_path.kpoints_SBZ_str()   # as tring  containing the k-points to beentered into the PWSCF input file  after 'K_POINTS crystal ' line. maybe transformed to formats of other codes  if needed
 
 try:
     print ("unpickling unfold")
+    unfold_path=pickle.load(open("unfold-path.pickle","rb"))
     unfold=pickle.load(open("unfold.pickle","rb"))
 except Exception as err:
     print("error while unpickling unfold '{}',  unfolding it".format(err))
@@ -64,16 +74,18 @@ except Exception as err:
             bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si")
         pickle.dump(bands,open("bandstructure.pickle","wb"))
 
-    unfold.unfold(bands,break_thresh=0.1)
+    unfold_path.unfold(bands,break_thresh=0.1,suffix="path")
+    unfold.unfold(bands,suffix="GL")
+    pickle.dump(unfold_path,open("unfold-path.pickle","wb"))
     pickle.dump(unfold,open("unfold.pickle","wb"))
 
 #now plot the result as fat band
-unfold.plot(save_file="unfold_fatband.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',fatfactor=50,mode='fatband') 
+unfold_path.plot(save_file="unfold_fatband.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',fatfactor=50,mode='fatband') 
 #or as a colormap
-unfold.plot(save_file="unfold_density.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',mode='density',smear=0.2,nE=200) 
+unfold_path.plot(save_file="unfold_density.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',mode='density',smear=0.2,nE=200) 
 
 #or use the data to plot in any other format
-data=np.loadtxt("bandstructure_unfolded.txt")
+data=np.loadtxt("bandstructure_unfolded-path.txt")
 
 
 
