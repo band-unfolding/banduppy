@@ -1,2 +1,2 @@
-from .unfolding_path import UnfoldingPath, BandStructure
-__version__="0.1.3"
+from .unfolding_path import UnfoldingPath,Unfolding, BandStructure
+__version__="0.1.4"
