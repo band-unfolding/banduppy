@@ -1,6 +1,10 @@
 import numpy as np
 import irrep
-from irrep.__aux import is_round
+try:
+    from irrep.__aux import is_round
+except ImportError:
+    from irrep.utility import is_round
+    
 from  irrep.bandstructure import BandStructure
 assert irrep.__version__ >="1.5"
 from collections import Iterable
