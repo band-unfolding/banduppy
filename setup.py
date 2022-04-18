@@ -16,7 +16,7 @@ setuptools.setup(
      description="BandUPpy: Python interfaceof the BandUP code",
      long_description=long_description,
      long_description_content_type="text/markdown",
-     install_requires=['numpy', 'scipy >= 1.0', 'matplotlib' ,'irrep>=1.5.1'],
+     install_requires=['numpy', 'scipy >= 1.0', 'matplotlib' ,'irrep>=1.6.2'],
      url="https://www.ifm.liu.se/theomod/compphys/band-unfolding/",
      packages=setuptools.find_packages(),
      classifiers=[

@@ -1,12 +1,15 @@
 import numpy as np
 import irrep
+
 try:
     from irrep.__aux import is_round
 except ImportError:
     from irrep.utility import is_round
     
 from  irrep.bandstructure import BandStructure
-assert irrep.__version__ >="1.5"
+if  irrep.__version__ <"1.6.2" :
+    raise ImportError("A critical bug was found in irrep-1.6.1, which caused incorrect results for unfolding with spin-orbit. Please ipdate irrep to 1.6.2 or newer (when available)")
+
 from collections import Iterable
 
 class Unfolding():
@@ -87,7 +90,7 @@ class Unfolding():
         for ik,unf in unfolded_found.items():
             for band in unf :
                 result.append([ik,]+list(band))
-        print ("result = ",result)
+#                print ("result = ",result[-1])
         self.result=np.array(result)
 
         if write_to_file:
