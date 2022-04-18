@@ -7,10 +7,13 @@ spinorbit = False
 
 
 #disable some of the options to avoid repeating
+# but keep in mind, if some step is re-done, further steps need to be re-done too, to make sense 
 do_self_consistent = True
 do_non_self_consistent = True
+read_bandstructure = True
 do_unfold = True
-do_plot = True<
+do_plot = True
+
 
 import banduppy
 
@@ -44,69 +47,58 @@ unfold=banduppy.Unfolding(
 
 kpointsPBZ=unfold_path.kpoints_SBZ_str()   # as tring  containing the k-points to beentered into the PWSCF input file  after 'K_POINTS crystal ' line. maybe transformed to formats of other codes  if needed
 
-try:
-    print ("unpickling unfold")
-    unfold_path=pickle.load(open("unfold-path.pickle","rb"))
-    unfold=pickle.load(open("unfold.pickle","rb"))
-except Exception as err:
-    print("error while unpickling unfold '{}',  unfolding it".format(err))
-    try:
-        print ("unpickling bandstructure")
-        bands=pickle.load(open("bandstructure.pickle","rb"))  
-        print ("unpickling - success")
-    except Exception as err:
-        print("Unable to unpickle  bandstructure '{}' \n  Reading bandstructurefrom .save folder ".format(err)) 
-        try: 
-            ####   This line reads the bandstructure written by QE into an pobject bandStructure of the irrep code.
-            bands=banduppy.BandStructure(code="vasp", spinor="True",fPOS = "POSCAR",fWAV = "WAVECAR")
-            ####  this is a shortcut to   bands=irrep.bandstructure.BandStructure(...)
-            ####  For spin-polarised calculations you need to select spin channel 'up' or 'dw' 
-            ####   (works only with QE, and you need irrep>=1.5.3 installed. Example:
-            ####     bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si",spin_channel='up')   # or 'dw'
-            ####   examples for other codes are:
-            ####  VASP:
-            ####      bands=banduppy.BandStructure(fWAV='WAVECAR',fPOS='POSCAR',spinor=False,code='vasp')
-            ####  Abinit:
-            ####      bands=banduppy.BandStructure(fWFK='mysystem_WFK',code='abinit')
-            ####  Files preparedfor Wannier90 (.eig, .win, UNK* ):
-            ####      bands=banduppy.BandStructure(prefix='nbcosb',code='wannier90')
-            #####   Other parameters may be used (..,Ecut=.,IBstart=..,IBend=..,kplist=..,EF=..)
+if do_self_consistent:
+    print ("self-consistent VASP run...")
+    shutil.copy("input/POSCAR_Si_SC","./POSCAR")
+    shutil.copy("input/POTCAR","./POTCAR")
+    shutil.copy("input/KPOINTS_scf","./KPOINTS")
+    with open("INCAR","w") as f:
+        f.write(open("input/INCAR_scf","r").read().format(LSORBIT = "T" if spinorbit else "F"))
+    scf_run=run(vasp,stdout=open("out-scf.txt","w"))
+    shutil.copy("OUTCAR","./OUTCAR_scf")
+    print ("self-consistent VASP run - done")
 
-        except Exception as err:
-            raise err
-            print("error reading  bandstructure '{}' \n calculating it".format(err))
-            pw_file="bulk_Si"
-            shutil.copy("input/POSCAR_Si_SC","./POSCAR")
-            shutil.copy("input/POTCAR","./POTCAR")
-            shutil.copy("input/KPOINTS_scf","./KPOINTS")
-            with open("INCAR","w") as f:
-                f.write(open("input/INCAR_scf","r").read().format(LSORBIT = "T" if spinorbit else "F"))
-            scf_run=run(vasp,stdout=open("out-scf.txt","w"))
-            shutil.copy("OUTCAR","./OUTCAR_scf")
-            with open("INCAR","w") as f:
-                f.write(open("input/INCAR_nscf","r").read().format(LSORBIT = "T" if spinorbit else "F", NBANDS = 96 if spinorbit else 48))
-            f = open("KPOINTS","w")
-            f.write("Kpoints needed for unfolding on the path \n")
-            kpointsPBZ = kpointsPBZ.split("\n")
-            f.write(kpointsPBZ[0]+"\nrec \n"+"\n".join(kpointsPBZ[1:])+"\n")
-            f.close()
-            bands_run=run(vasp,stdout=open("out-bands.txt","w"))
-            shutil.copy("OUTCAR","./OUTCAR_nscf")
-            bands=banduppy.BandStructure(code="vasp", spinor="True",fPOS = "POSCAR",fWAV = "WAVECAR")
-        pickle.dump(bands,open("bandstructure.pickle","wb"))
+if do_non_self_consistent:
+    print ("non-self-consistent VASP run...")
+    with open("INCAR","w") as f:
+        f.write(open("input/INCAR_nscf","r").read().format(LSORBIT = "T" if spinorbit else "F", NBANDS = 96 if spinorbit else 48))
+    f = open("KPOINTS","w")
+    f.write("Kpoints needed for unfolding on the path \n")
+    kpointsPBZ = kpointsPBZ.split("\n")
+    f.write(kpointsPBZ[0]+"\nrec \n"+"\n".join(kpointsPBZ[1:])+"\n")
+    f.close()
+    bands_run=run(vasp,stdout=open("out-bands.txt","w"))
+    shutil.copy("OUTCAR","./OUTCAR_nscf")
+    print ("non-self-consistent VASP run - done")
 
+if read_bandstructure:
+    print ("reading bandstructure")
+    bands=banduppy.BandStructure(code="vasp", spinor=spin_orbit, fPOS = "POSCAR",fWAV = "WAVECAR")
+    pickle.dump(bands,open("bandstructure.pickle","wb"))
+    print ("reading bandstructure - done")
+else:
+    print ("unpickling bandstructure")
+    bands=pickle.load(open("bandstructure.pickle","rb"))  
+    print ("unpickling - done")
+
+if do_unfold:
+    print ("unfolding")
     unfold_path.unfold(bands,break_thresh=0.1,suffix="path")
     unfold.unfold(bands,suffix="GL")
     pickle.dump(unfold_path,open("unfold-path.pickle","wb"))
     pickle.dump(unfold,open("unfold.pickle","wb"))
-
-#now plot the result as fat band
-unfold_path.plot(save_file="unfold_fatband.png",plotSC=True,Emin=-20,Emax=20,Ef='auto',fatfactor=50,mode='fatband') 
-#or as a colormap
-unfold_path.plot(save_file="unfold_density.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',mode='density',smear=0.2,nE=200) 
-
-#or use the data to plot in any other format
-data=np.loadtxt("bandstructure_unfolded-path.txt")
+    print ("unfolding - done")
+else:
+    print ("unpickling bandstructure")
+    unfold_path=pickle.load(open("unfold-path.pickle","rb"))
+    unfold=pickle.load(open("unfold.pickle","rb"))
+    print ("unpickling - done")
 
 
+
+if do_plot:
+    #now plot the result as fat band
+    unfold_path.plot(save_file="unfold_fatband.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',fatfactor=50,mode='fatband') 
+    #or as a colormap
+    unfold_path.plot(save_file="unfold_density.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',mode='density',smear=0.2,nE=200) 
 
