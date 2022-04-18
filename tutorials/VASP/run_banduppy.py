@@ -73,7 +73,7 @@ if do_non_self_consistent:
 
 if read_bandstructure:
     print ("reading bandstructure")
-    bands=banduppy.BandStructure(code="vasp", spinor=spin_orbit, fPOS = "POSCAR",fWAV = "WAVECAR")
+    bands=banduppy.BandStructure(code="vasp", spinor=spinorbit, fPOS = "POSCAR",fWAV = "WAVECAR")
     pickle.dump(bands,open("bandstructure.pickle","wb"))
     print ("reading bandstructure - done")
 else:
@@ -97,8 +97,9 @@ else:
 
 
 if do_plot:
+    Efermi = 5.885
     #now plot the result as fat band
-    unfold_path.plot(save_file="unfold_fatband.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',fatfactor=50,mode='fatband') 
+    unfold_path.plot(save_file="unfold_fatband.png",plotSC=True,Emin=-5,Emax=5,Ef=Efermi,fatfactor=50,mode='fatband') 
     #or as a colormap
-    unfold_path.plot(save_file="unfold_density.png",plotSC=True,Emin=-5,Emax=5,Ef='auto',mode='density',smear=0.2,nE=200) 
+    unfold_path.plot(save_file="unfold_density.png",plotSC=True,Emin=-5,Emax=5,Ef=Efermi,mode='density',smear=0.2,nE=200) 
 
