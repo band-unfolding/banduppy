@@ -74,8 +74,8 @@ except Exception as err:
             bands=banduppy.BandStructure(code="espresso", prefix="bulk_Si")
         pickle.dump(bands,open("bandstructure.pickle","wb"))
 
-    unfold_path.unfold(bands,break_thresh=0.1,suffix="path")
-    unfold.unfold(bands,suffix="GL")
+    unfold_path.unfold(bands,break_thresh=0.1,suffix="path",saveWF=True)
+    unfold.unfold(bands,suffix="GL",saveWF=True)
     pickle.dump(unfold_path,open("unfold-path.pickle","wb"))
     pickle.dump(unfold,open("unfold.pickle","wb"))
 

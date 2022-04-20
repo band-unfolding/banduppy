@@ -9,6 +9,8 @@ except ImportError:
 from  irrep.bandstructure import BandStructure
 if  irrep.__version__ <"1.6.2" :
     raise ImportError("A critical bug was found in irrep-1.6.1, which caused incorrect results for unfolding with spin-orbit. Please ipdate irrep to 1.6.2 or newer (when available)")
+if  irrep.__version__ <"1.7" :
+    raise ImportError("this version of banduppy is compatible only with irrep>=1.7")
 
 from collections import Iterable
 
@@ -49,7 +51,7 @@ class Unfolding():
            j= self.kpointsPBZ_unique_index_SBZ[self.kpointsPBZ_index_in_unique[i]]
            print (i,kp,j,self.kpointsSBZ[j])
 
-    def unfold(self,bandstructure,suffix="",write_to_file=True):
+    def unfold(self,bandstructure,suffix="",write_to_file=True,saveWF=False):
      #  first evaluate the path as line ad store it
         if len(suffix)>0 :
             suffix = "-"+suffix
@@ -67,7 +69,7 @@ class Unfolding():
         for ik,kpPBZu in enumerate(self.kpointsPBZ_unique):
             jk=self.kpointsPBZ_unique_index_SBZ[ik]
             if jk in kpSBZcalc:
-                unfolded_unique[ik]=kpSBZcalc[jk].unfold(supercell=self.supercell,kptPBZ=kpPBZu)
+                unfolded_unique[ik]=kpSBZcalc[jk].unfold(supercell=self.supercell,kptPBZ=kpPBZu,saveWF=saveWF)
         unfolded_found={}
         for ik,kpt in enumerate(self.kpointsPBZ):
             jk=self.kpointsPBZ_index_in_unique[ik]
@@ -123,7 +125,7 @@ class UnfoldingPath(Unfolding):
                 assert start.shape==end.shape==(3,)
                 kpointsPBZ=np.vstack( (kpointsPBZ,start[None,:]+np.linspace(0,1.,next(nkgen))[:,None]*(end-start)[None,:] ) )
                 self.i_labels[kpointsPBZ.shape[0]-1]=l2
-        super(UnfoldingPath,self).__init__(supercell,kpointsPBZ)
+        super().__init__(supercell,kpointsPBZ)
 
            
     @property
@@ -134,9 +136,9 @@ class UnfoldingPath(Unfolding):
             result.append("{:10.6f} {:8s} {:12.8f} {:12.8f} {:12.8f}".format(kl[0],kl[1],n[0],n[1],n[2]))
         return "".join("# "+l+"\n" for l in result)
 
-    def unfold(self,bandstructure,break_thresh=0.1,suffix=""):
+    def unfold(self,bandstructure,break_thresh=0.1,suffix="",saveWF=False):
      #  first evaluate the path as line ad store it
-        super(UnfoldingPath,self).unfold(bandstructure,write_to_file=False)
+        super().unfold(bandstructure,write_to_file=False,saveWF=saveWF)
         if len(suffix)>0 :
             suffix = "-"+suffix
         self.kpline=bandstructure.KPOINTSline(kpred=self.kpointsPBZ,breakTHRESH=break_thresh)
