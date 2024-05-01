@@ -24,10 +24,10 @@ class Unfolding():
         self.supercell=np.array(supercell_int,dtype=int)
         assert np.linalg.det(self.supercell)!=0, "the supercell vectors should be linear independent"
         self.kpointsPBZ=np.copy(kpointsPBZ)
-        self.kpointsPBZ_unique=np.unique(self.kpointsPBZ%1,axis=0)
-        self.kpointsPBZ_index_in_unique=np.array([np.where( (self.kpointsPBZ_unique==kp%1).prod(axis=1)   )[0][0] for kp in self.kpointsPBZ])
-        kpointsSBZ=self.kpointsPBZ_unique.dot(self.supercell.T)%1
-        kpointsSBZ_unique=np.unique(kpointsSBZ%1,axis=0)
+        self.kpointsPBZ_unique=np.unique(np.round(self.kpointsPBZ%1, decimals=12),axis=0)
+        self.kpointsPBZ_index_in_unique=np.array([np.where( (self.kpointsPBZ_unique==np.round(kp, decimals=12)%1).prod(axis=1)   )[0][0] for kp in self.kpointsPBZ])
+        kpointsSBZ=np.round(self.kpointsPBZ_unique.dot(self.supercell.T)%1, decimals=12)
+        kpointsSBZ_unique=np.unique(np.round(kpointsSBZ%1, decimals=12),axis=0)
         self.kpointsPBZ_unique_index_SBZ=np.array([np.where( (kpointsSBZ_unique==kp).prod(axis=1)   )[0][0] for kp in kpointsSBZ])
         self.kpointsSBZ=kpointsSBZ_unique
 
@@ -50,7 +50,8 @@ class Unfolding():
         print ("contains {} points in PC ({} unique),corresponding to {} unique SC points".format(self.nkptPBZ, self.kpointsPBZ_unique.shape[0], self.nkptSBZ) )
         for i,kp in enumerate(self.kpointsPBZ):
            j= self.kpointsPBZ_unique_index_SBZ[self.kpointsPBZ_index_in_unique[i]]
-           print (i,kp,j,self.kpointsSBZ[j])
+           print(f"{i:>5}:" + "  ".join(f"{x:12.8f}" for x in kp)+ f"{j:>5}:"+ "  ".join(f"{x:12.8f}" for x in self.kpointsSBZ[j]))
+           #print (i,kp,j,self.kpointsSBZ[j])
 
     def unfold(self,bandstructure,suffix="",write_to_file=True):
      #  first evaluate the path as line ad store it
@@ -219,5 +220,5 @@ class UnfoldingPath(Unfolding):
            plt.show()
         else:
            plt.savefig(save_file)
-        plt.close()
+           plt.close()
 
