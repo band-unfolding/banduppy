@@ -10,16 +10,7 @@ except ImportError:
 class BandUnfolding:
     """
     Band unfolding from supercell to primitive cell band structure (effective band structure).
-    # Improvements compare to previous implementation of this package:
-    # 1. Improved documentations
-    # 2. Decoupling SC-kpts generation and band unfolding is usefull because VASP
-    # will be running in-between, which may need to re-run for large calculations
-    # and so on. 
-    # SC-kpts generation: pre-processing routine
-    # Get band structure: ab-initio sorftware run
-    # Unfold band structure: post processing
-    # 3. Bug fix: wrong folding due to wrong floating point precision in % operation.
-    # 4. Added new functionality
+
     """
     
     def __init__(self, supercell, PBZ_kpts_list_full,  
