@@ -30,6 +30,8 @@ class FindProperties:
     def _print_info(self, level='low'):
         """
         Printing information about the band folding.
+        
+        Percentage folding = ((#of PC kpoints - #of folded SC Kpoints)/(#of PC kpoints))*100
 
         Parameters
         ----------

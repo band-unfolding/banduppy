@@ -1,9 +1,9 @@
 import numpy as np
 from .src import BandFolding, BandUnfolding
-from .Utilities import EBSplot 
+from .Utilities import EBSplot, FoldingDegreePlot
 
 ### ===========================================================================    
-class Unfolding(BandFolding, BandUnfolding, EBSplot):
+class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
     """
     Band folding from primitive to supercell.
 
@@ -21,7 +21,74 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot):
             The default is 'low'. If None, nothing is printed.
 
         """       
-        super().__init__(supercell=supercell, print_info=print_log)
+        if print_log is not None: print_log = print_log.lower()
+        BandFolding.__init__(self, supercell=supercell, print_info=print_log)
+        
+    def propose_maximum_minimum_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
+                                        serach_mode:str='brute_force', draw_plots:bool=True, 
+                                        save_plot:bool=False, save_dir='.', save_file_name=None,  
+                                        CountFig=None, yaxis_label:str='Folding degree (%)',
+                                        xaxis_label:str='number of kpoints', line_color='k'):
+        """
+        Calculates SC Kpoints from PC kpoints and returns percent of folding.
+        Maximum and Minimum degree of folding are reported.
+        
+        Folding percent = ((#of PC kpoints - #of folded SC Kpoints)/(#of PC kpoints))*100
+
+        Parameters
+        ----------
+        pathPBZ : ndarray/list
+            PC kpoint path nodes in reduced coordinates.
+        min_num_pts : int, optional
+            Minimum number of kpoints division in the k-path. The default is 5.
+        max_num_pts : int, optional
+            Maximum number of kpoints division in the k-path. The default is 20.
+        serach_mode : ['brute_force'], optional
+            Method to calculate SC Kpoints. The default is 'brute_force'.
+        draw_plots : bool, optional
+            Plot folding vs number of k-points. The default is True.
+            If True, also returns fig, ax, and CountFig.
+        save_plot : bool, optional
+            Save plots or not. The default is False.
+        save_dir : str/path, optional
+            Directory where to save the plots. The default is '.'.
+        save_file_name : str, optional
+            Name of the file to ba saved. The default is None. If None, figure
+            is not saved.
+        CountFig : int, optional
+            Figure count. The default is None. If None, nothing is is done. Else,
+            returns CountFig increased by 1.
+        yaxis_label : str, optional
+            yaxis label. The default is 'Folding degree (%)'.
+        xaxis_label : str, optional
+            xaxis label. The default is 'number of kpoints'.
+        line_color : matplotlib color, optional
+            Line color. The default is 'k'.
+
+        Returns
+        -------
+        proposed_folding_results : dictionary
+            {index: ((start node, end node), folding data)}
+            index : Index of path segment searched from the pathPBZ list supplied.
+            folding data : 2d array with each row containing number of division in the 1st
+            column and percent of folding in the 2nd column.
+            
+            If draw_plots=True, also returns fig, ax, and CountFig.
+        """
+        proposed_folding_results = \
+             self.propose_best_least_folding(pathPBZ, min_num_pts=min_num_pts, 
+                                             max_num_pts=max_num_pts,
+                                             serach_mode=serach_mode)
+        if draw_plots:
+            FoldingDegreePlot.__init__(self, fold_results_dictionary=proposed_folding_results, 
+                                       save_figure_dir=save_dir)
+            fig, ax, CountFig = self.plot_folding(save_file_name=save_file_name, 
+                                                  CountFig=CountFig, 
+                                                  yaxis_label=yaxis_label,
+                                                  xaxis_label=xaxis_label, 
+                                                  line_color=line_color)
+            return proposed_folding_results, fig, ax, CountFig
+        return proposed_folding_results
         
     def generate_SC_Kpts_from_pc_k_path(self, pathPBZ=None, nk=11, labels=None, kpts_weights=None, 
                                         save_all_kpts:bool=False, save_sc_kpts:bool=False, 
@@ -229,16 +296,21 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot):
                            save_unfolded_kpts = save_unfolded_kpts,
                            save_unfolded_bandstr = save_unfolded_bandstr)
     
-    def plot_ebs(self, kpath_in_angs=None, unfolded_bandstructure=None, save_figure_dir='.',
-                 save_file_name=None, CountFig=None, Ef=None, Emin=None, Emax=None, 
-                 pad_energy_scale:float=0.5, mode:str="fatband", yaxis_label:str='E (eV)', 
-                 special_kpoints:dict=None, plotSC:bool=True, fatfactor=20, nE:int=100, 
-                 smear:float=0.05, scatter_color='gray', color_map='viridis'):
+    def plot_ebs(self, ax=None, kpath_in_angs=None, unfolded_bandstructure=None, 
+                 save_figure_dir='.', save_file_name=None, CountFig=None, 
+                 Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
+                 threshold_weight:float=None, mode:str="fatband", 
+                 yaxis_label:str='E (eV)', special_kpoints:dict=None, plotSC:bool=True,  
+                 marker='o', fatfactor=20, nE:int=100, smear:float=0.05, 
+                 scatter_color='gray', color_map='viridis', show_legend:bool=True):
         """
         Scatter/density plot of the band structure.
 
         Parameters
         ----------
+        ax : matplotlib.pyplot axis, optional
+            Figure axis to plot on. If None, new figure will be created.
+            The default is None.
         kpath_in_angs : array, optional
             k on path (in A^-1) coordinate. The default is None.
         unfolded_bandstructure : ndarray, optional
@@ -261,6 +333,9 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot):
         pad_energy_scale: float, optional
             Add padding of pad_energy_scale to minimum and maximum energy if Emin
             and Emax are None. The default is 0.5.
+        threshold_weight : float, optional
+            The band centers with band weights lower than the threshhold weights 
+            are discarded. The default is None. If None, this is ignored.
         mode : ['fatband','density'], optional
             Mode of plot. The default is "fatband".
         yaxis_label : str, optional
@@ -270,6 +345,10 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot):
             special kpoints. The default is None.
         plotSC : bool, optional
             Plot supercell bandstructure. The default is True.
+        marker : matplotlib.pyplot markerMarkerStyle, optional
+            The marker style. Marker can be either an instance of the class or 
+            the text shorthand for a particular marker. 
+            The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
         nE : int, optional
@@ -282,11 +361,14 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot):
             band structures is gray. The default is 'gray'.
         color_map: str/ matplotlib colormap
             Colormap for density plot. The default is viridis.
+        show_legend : bool
+            If show legend or not. The default is True.
 
         Returns
         -------
         fig : matplotlib.pyplot.figure
-            Figure instance.
+            Figure instance. If ax is not None previously generated fig instance
+            will be used.
         ax : Axis instance
             Figure axis instance.
         CountFig: int or None
@@ -299,11 +381,12 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot):
                          save_figure_dir=save_figure_dir)
         
         fig, ax, CountFig = \
-        self.plot(save_file_name=save_file_name, CountFig=CountFig, Ef=Ef, 
-                  Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, mode=mode,
+        self.plot(ax=ax, save_file_name=save_file_name, CountFig=CountFig, Ef=Ef, 
+                  Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
+                  threshold_weight=threshold_weight, mode=mode,
                   yaxis_label=yaxis_label, special_kpoints=special_kpoints, 
-                  plotSC=plotSC, fatfactor=fatfactor, nE=nE, smear=smear, 
-                  scatter_color=scatter_color, 
-                  color_map=color_map)
+                  plotSC=plotSC, marker=marker, fatfactor=fatfactor, nE=nE, 
+                  smear=smear, scatter_color=scatter_color, color_map=color_map,
+                  show_legend=show_legend)
         return fig, ax, CountFig
 

@@ -1,5 +1,5 @@
 import numpy as np
-from ..BasicFunctions.general_functions import SaveData2File, _BasicFunctionsModule
+from ..BasicFunctions.general_functions import SaveData2File, _BasicFunctionsModule, _draw_line_length
 from .folding_properties import FindProperties
 from .._version import _pkg_version
     
@@ -70,6 +70,146 @@ class _KpointsModule:
             return unique_kpts, kpts_ids
         else:
             return unique_kpts
+    
+    @classmethod
+    def _search_folding_percent_brute_force(cls, transformation_matrix, start, end, 
+                                            min_div_points, max_div_points):  
+        """
+        Calculates SC Kpoints from PC kpoints and returns percent of folding.
+        This method uses brute force to calculate folding degree i.e. complete
+        list of SC Kpoints are generated in the process. 
+        (Loop over nkpoints in the path segment starting with min_div_points until
+        max_div_points with increment of 1.)
+        
+        Folding percent = ((#of PC kpoints - #of folded SC Kpoints)/(#of PC kpoints))*100
+
+        Parameters
+        ----------
+        transformation_matrix : ndarray
+            PC to SC transformation matrix.
+        start : 1d array
+            Starting coordinate of kpoints path.
+        end : 1d array
+            End coordinate of kpoints path.
+        min_div_points : int
+            Minimum number of kpoints division in the k-path.
+        max_div_points : int
+            Maximum number of kpoints division in the k-path.
+
+        Returns
+        -------
+        numpy ndarray
+            2d array with each row containing number of division in the 1st
+            column and percent of folding in the 2nd column.
+
+        """
+        folding_info_list = []
+        # Loop over nkpoints in the path segment starting with min_div_points until
+        # max_div_points with increment of 1.
+        for div_points in range(min_div_points, max_div_points): 
+            len_unique_Kpts = \
+            len(cls._remove_duplicate_kpoints(
+                _KpointsModule._find_K_from_k(np.linspace(start, end, div_points), 
+                                                            transformation_matrix),
+                sort_kpts=False, return_id_mapping=False))
+            
+            folding_info_list.append([div_points, 
+                                      (div_points-len_unique_Kpts)/div_points*100]) 
+        return np.array(folding_info_list)
+
+    @classmethod           
+    def _serach_max_min_folding(cls, transformation_matrix, start, end, 
+                                min_num_pts:int=5, max_num_pts:int=20,
+                                serach_mode:str='brute_force'):
+        """
+        Calculates SC Kpoints from PC kpoints and returns percent of folding.
+        Maximum and Minimum degree of folding are reported.
+        
+        Folding percent = ((#of PC kpoints - #of folded SC Kpoints)/(#of PC kpoints))*100
+
+        Parameters
+        ----------
+        transformation_matrix : ndarray
+            PC to SC transformation matrix.
+        start : 1d array
+            Starting coordinate of kpoints path.
+        end : 1d array
+            End coordinate of kpoints path.
+        min_num_pts : int, optional
+            Minimum number of kpoints division in the k-path. The default is 5.
+        max_num_pts : int, optional
+            Maximum number of kpoints division in the k-path. The default is 20.
+        serach_mode : ['brute_force'], optional
+            Method to calculate SC Kpoints. The default is 'brute_force'.
+
+        Returns
+        -------
+        folding_data_ : numpy ndarray
+            2d array with each row containing number of division in the 1st
+            column and percent of folding in the 2nd column.
+
+        """
+        assert max_num_pts >= min_num_pts, f'max_num_pts should be >= min_num_pts {min_num_pts}.'
+        if serach_mode == 'brute_force':
+            folding_data_ = cls._search_folding_percent_brute_force(transformation_matrix, 
+                                                                    start, end, 
+                                                                    min_num_pts, max_num_pts)
+            max_folding = folding_data_[np.argmax(folding_data_[:,1])]
+            min_folding = folding_data_[np.argmin(folding_data_[:,1])]
+            print(f'--- Maximum folding (nkpts, folding percent): {int(max_folding[0]):>3d}, {max_folding[1]:.3f}%')
+            print(f'--- Minimum folding (nkpts, folding percent): {int(min_folding[0]):>3d}, {min_folding[1]:.3f}%')
+            return folding_data_ 
+        
+    @classmethod           
+    def _propose_max_min_folding(cls, transformation_matrix, pathPBZ, 
+                                 min_num_pts:int=5, max_num_pts:int=20,
+                                 serach_mode:str='brute_force'):
+        """
+        Calculates SC Kpoints from PC kpoints and returns percent of folding.
+        Maximum and Minimum degree of folding are reported.
+        
+        Folding percent = ((#of PC kpoints - #of folded SC Kpoints)/(#of PC kpoints))*100
+
+        Parameters
+        ----------
+        transformation_matrix : ndarray
+            PC to SC transformation matrix.
+        pathPBZ : ndarray/list
+            PC kpoint path nodes in reduced coordinates.
+        min_num_pts : int, optional
+            Minimum number of kpoints division in the k-path. The default is 5.
+        max_num_pts : int, optional
+            Maximum number of kpoints division in the k-path. The default is 20.
+        serach_mode : ['brute_force'], optional
+            Method to calculate SC Kpoints. The default is 'brute_force'.
+
+        Returns
+        -------
+        propose_folding_data_ : dictionary
+            {index: ((start node, end node), folding data)}
+            index : Index of path segment searched from the pathPBZ list supplied.
+            folding data : 2d array with each row containing number of division in the 1st
+            column and percent of folding in the 2nd column.
+
+        """
+        propose_folding_data_ = {}
+        print(f"{'='*_draw_line_length}\n- Proposing maximum and minimum band folding...")
+        # Iterate over the list, skipping the last element
+        for i in range(len(pathPBZ) - 1):
+            # Check if both current and next elements are not None
+            if pathPBZ[i] is not None and pathPBZ[i + 1] is not None:
+                # Get start and end of k-path segment
+                start, end = np.array(pathPBZ[i]), np.array(pathPBZ[i + 1])
+                assert start.shape == end.shape == (3,)
+                print(f'-- k-path: {start} --> {end}')
+                # Search for max-min folding
+                propose_folding_data_[i] = ((start, end),
+                    cls._serach_max_min_folding(transformation_matrix, start, end, 
+                                                                       min_num_pts=min_num_pts, 
+                                                                       max_num_pts=max_num_pts,
+                                                                       serach_mode=serach_mode))
+        return propose_folding_data_
+
         
     @staticmethod   
     def _generate_kpts_from_kpath(pathPBZ, nk, labels):
@@ -128,13 +268,12 @@ class _KpointsModule:
                 start, end = np.array(pathPBZ[i]), np.array(pathPBZ[i + 1])
                 assert start.shape == end.shape == (3,)
                 # Get nk in k-path segment
-                num_points = next(nkgen)
-                # try:
-                #     num_points = next(nkgen)
-                # except StopIteration as ee_:
-                #     print(f'StopIteration: Number of nk is less than the supplied k-path segments. {ee_}')
+                try:
+                    num_points = next(nkgen)
+                except: 
+                    raise StopIteration('Number of nk is less than the supplied k-path segments.')
                 # Generate k-points using linspace
-                interpolated_points = start[None, :] + np.linspace(0, 1., num_points)[:, None] * (end - start)[None, :]
+                interpolated_points = np.linspace(start, end, num_points)
                 kpointsPBZ = np.vstack((kpointsPBZ, interpolated_points))
                 # Get position of special k-point for plotting later
                 special_kpoints_pos_labels[kpointsPBZ.shape[0] - 1] = labels[i+1] 
@@ -379,6 +518,39 @@ class BandFolding(_KpointsModule, FindProperties):
         if supercell is None: supercell = np.eye(3,dtype=int)
         self.transformation_matrix = _BasicFunctionsModule._check_transformation_matrix(np.array(supercell)) 
         self.print_information = print_info
+                   
+    def propose_best_least_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
+                                   serach_mode:str='brute_force'):
+        """
+        Calculates SC Kpoints from PC kpoints and returns percent of folding.
+        Maximum and Minimum degree of folding are reported.
+        
+        Folding percent = (#of PC kpoints - #of folded SC Kpoints)/(#of PC kpoints))*100
+
+        Parameters
+        ----------
+        pathPBZ : ndarray/list
+            PC kpoint path nodes in reduced coordinates.
+        min_num_pts : int, optional
+            Minimum number of kpoints division in the k-path. The default is 5.
+        max_num_pts : int, optional
+            Maximum number of kpoints division in the k-path. The default is 20.
+        serach_mode : ['brute_force'], optional
+            Method to calculate SC Kpoints. The default is 'brute_force'.
+
+        Returns
+        -------
+        proposed_folding_results : dictionary
+            {index: ((start node, end node), folding data)}
+            index : Index of path segment searched from the pathPBZ list supplied.
+            folding data : 2d array with each row containing number of division in the 1st
+            column and percent of folding in the 2nd column.
+            
+        """
+        return self._propose_max_min_folding(self.transformation_matrix, pathPBZ, 
+                                             min_num_pts=min_num_pts, 
+                                             max_num_pts=max_num_pts,
+                                             serach_mode=serach_mode)
     
     def generate_SC_K_from_pc_k_path(self, pathPBZ=None, nk=11, labels=None, kpts_weights=None, 
                                      save_all_kpts:bool=False, save_sc_kpts:bool=False, 

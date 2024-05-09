@@ -102,7 +102,7 @@ save_file_name = 'unfolded_bandstructure.png'
 #                                  print_info='high')
 # # -------- Read the saved unfolded bandstructure saved data file ------------
 # unfolded_bandstructure_ = np.loadtxt(f'{save_to_dir}/bandstructure_unfolded.dat')
-# kpline = np.loadtxt(f'{save_to_dir}/kpoints_unfolded.dat')[:,0]
+# kpline = np.loadtxt(f'{save_to_dir}/kpoints_unfolded.dat')[:,1]
 # with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
 #     special_kpoints_pos_labels = pickle.load(handle)
 # fig, ax, CountFig \
@@ -111,7 +111,8 @@ save_file_name = 'unfolded_bandstructure.png'
 #                        save_figure_dir=save_to_dir, save_file_name=save_file_name, CountFig=None, 
 #                        Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
 #                        mode="density", special_kpoints=special_kpoints_pos_labels, 
-#                        plotSC=True, fatfactor=20, nE=100,smear=0.2, 
+#                        plotSC=True, fatfactor=20, nE=100,smear=0.2, marker='o',
+#                        threshold_weight=0.01, show_legend=True, 
 #                        scatter_color='gray', color_map='viridis')
 
 # Option 2: Continue with previous instance.    
@@ -119,5 +120,6 @@ fig, ax, CountFig \
 = band_unfold.plot_ebs(save_figure_dir=save_to_dir, save_file_name=save_file_name, CountFig=None, 
                       Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                       mode="density", special_kpoints=special_kpoints_pos_labels, 
-                      plotSC=True, fatfactor=20, nE=100,smear=0.2, 
+                      plotSC=True, fatfactor=20, nE=100,smear=0.2, marker='o',
+                      threshold_weight=0.01, show_legend=True, 
                       scatter_color='gray', color_map='viridis')

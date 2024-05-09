@@ -127,12 +127,20 @@ class BandUnfolding:
                                            for kk in kpPBZ_unfolded])
         #self.unfolded_kpts_dat = unfolded_kpts_dat_[unfolded_kpts_dat_[:, 0].argsort()] # No need any more
         self.kpline = bandstructure.KPOINTSline(kpred=self.unfolded_kpts_dat[:,1:], breakTHRESH=break_thresh)
-        # Converting k-indices to k on path (A^-1)
-        self.unfolded_kpts_dat[:,0] = self.kpline
+        # # Converting k-indices to k on path (A^-1)
+        # self.unfolded_kpts_dat[:,0] = self.kpline
         
-        # Add k-path to the energy, weight band structure array
-        self.unfolded_bandstructure = np.concatenate([np.insert(unf, 0, self.kpline[kk], axis=1) 
+        # Insert k on path (A^-1) after k-indices
+        self.unfolded_kpts_dat = np.insert(self.unfolded_kpts_dat,1, self.kpline, axis=1)
+        
+        # # Add k-path to the energy, weight band structure array
+        # self.unfolded_bandstructure = np.concatenate([np.insert(unf, 0, self.kpline[kk], axis=1) 
+        #                                               for kk, unf in kpPBZ_unfolded.items()], axis=0)
+        
+        # Add k-indices and k-path to the energy, weight band structure array
+        self.unfolded_bandstructure = np.concatenate([np.insert(unf, [0, 0], [kk, self.kpline[kk]], axis=1) 
                                                       for kk, unf in kpPBZ_unfolded.items()], axis=0)
+        
         # Print information about folding
         if self.print_information is not None: 
             self._print_info_post(level=self.print_information)          
@@ -149,7 +157,7 @@ class BandUnfolding:
         """
         print(f"{'='*_draw_line_length}\n- Unfolded PC k-points from postprocessed wavefunction file:[k on path (A^-1), k1, k2, k3]")
         for val in self.unfolded_kpts_dat:
-                print('-- '+"  ".join(f"{x:12.8f}" for x in val))
+                print('-- '+"  ".join(f"{x:12.8f}" for x in val[1:]))
 
     def _print_info_post(self, level='low'):
         """
@@ -190,7 +198,7 @@ class BandUnfolding:
         if self.print_information is not None: 
             print(f"{'='*_draw_line_length}\n- Saving unfolded kpoints to file...")
         header_msg  = " Unfolded PC k-points from postprocessed wavefunction file\n"
-        header_msg += " k on path (A^-1), k1, k2, k3\n"
+        header_msg += " k-index, k on path (A^-1), k1, k2, k3\n"
         # Save the sc-kpoints in file
         save_f_name = \
         SaveData2File.save_2_file(data=self.unfolded_kpts_dat, 
@@ -226,7 +234,7 @@ class BandUnfolding:
         if self.print_information is not None: 
             print(f"{'='*_draw_line_length}\n- Saving unfolded bandstructure to file...")
         header_msg  = " Unfolded band structure from postprocessed wavefunction file\n"
-        header_msg += " k on path (A^-1), energy, weight " + \
+        header_msg += " k-index, k on path (A^-1), energy, weight " + \
                         ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
         # Save the unfolded band structure in file
         save_f_name = \

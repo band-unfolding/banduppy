@@ -120,8 +120,8 @@ if do_unfold:
 else:
     print (f"{'='*72}\n- Reading bandstructure data from saved file...")
     unfolded_bandstructure_ = np.loadtxt(f'{results_dir}/bandstructure_unfolded.dat')
-    kpline = np.loadtxt(f'{results_dir}/kpoints_unfolded.dat')[:,0]
-    with open(f'{results_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
+    kpline = np.loadtxt(f'{results_dir}/kpoints_unfolded.dat')[:,1]
+    with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
         special_kpoints_pos_labels = pickle.load(handle)
     print ("- Reading band structure file - done")
 
@@ -129,7 +129,7 @@ else:
 if do_plot:
     print (f"{'='*72}\n- Plotting band structure...")
     # Fermi energy
-    Efermi = 5.9740
+    Efermi = 5.9786
     # Minima in Energy axis to plot
     Emin = -5
     # Maxima in Energy axis to plot

@@ -4,8 +4,6 @@ from ..BasicFunctions.general_plot_functions import GeneratePlots
 
 ### ===========================================================================
 
-
-
 class EBSplot(GeneratePlots):
     """
     Plotting (effective) band structures and related.
@@ -24,15 +22,11 @@ class EBSplot(GeneratePlots):
             Unfolded effective band structure data. 
             Format: k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
             The default is None.
-        save_figure_dir : TYPE, optional
+        save_figure_dir : str/path, optional
             Directory where to save the figure. The default is current directory.
 
-        Returns
-        -------
-        None.
-
         """
-        super().__init__(save_figure_dir=save_figure_dir)
+        GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
         self.efermi = 0.0
         
         if kpath_in_angs is None:
@@ -52,15 +46,19 @@ class EBSplot(GeneratePlots):
             self.plot_result = unfolded_bandstructure.copy()
         
 
-    def plot(self, save_file_name=None, CountFig=None, Ef=None, Emin=None, Emax=None, 
-             pad_energy_scale:float=0.5, mode:str="fatband", yaxis_label:str='E (eV)', 
-             special_kpoints:dict=None, plotSC:bool=True, fatfactor=20, nE:int=100, 
-             smear:float=0.05, scatter_color='gray', color_map='viridis'):
+    def plot(self, ax=None, save_file_name=None, CountFig=None, Ef=None, Emin=None, 
+             Emax=None,  pad_energy_scale:float=0.5, threshold_weight:float=None,  
+             mode:str="fatband", yaxis_label:str='E (eV)', special_kpoints:dict=None, 
+             plotSC:bool=True, marker='o', fatfactor=20, nE:int=100, smear:float=0.05,  
+             scatter_color='gray', color_map='viridis', show_legend:bool=True):
         """
         Scatter/density plot of the band structure.
 
         Parameters
         ----------
+        ax : matplotlib.pyplot axis, optional
+            Figure axis to plot on. If None, new figure will be created.
+            The default is None.
         save_file_name : str, optional
             Name of the figure file. If None, figure will be not saved. 
             The default is None.
@@ -75,6 +73,9 @@ class EBSplot(GeneratePlots):
         pad_energy_scale: float, optional
             Add padding of pad_energy_scale to minimum and maximum energy if Emin
             and Emax are None. The default is 0.5.
+        threshold_weight : float, optional
+            The band centers with band weights lower than the threshhold weights 
+            are discarded. The default is None. If None, this is ignored.
         mode : ['fatband','density'], optional
             Mode of plot. The default is "fatband".
         yaxis_label : str, optional
@@ -84,6 +85,10 @@ class EBSplot(GeneratePlots):
             special kpoints. The default is None.
         plotSC : bool, optional
             Plot supercell bandstructure. The default is True.
+        marker : matplotlib.pyplot markerMarkerStyle, optional
+            The marker style. Marker can be either an instance of the class or 
+            the text shorthand for a particular marker. 
+            The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
         nE : int, optional
@@ -96,6 +101,8 @@ class EBSplot(GeneratePlots):
             band structures is gray. The default is 'gray'.
         color_map: str/ matplotlib colormap
             Colormap for density plot. The default is viridis.
+        show_legend : bool
+            If show legend or not. The default is True.
         
         Raises
         ------
@@ -105,7 +112,8 @@ class EBSplot(GeneratePlots):
         Returns
         -------
         fig : matplotlib.pyplot.figure
-            Figure instance.
+            Figure instance. If ax is not None previously generated fig instance
+            will be used.
         ax : Axis instance
             Figure axis instance.
         CountFig: int or None
@@ -114,29 +122,33 @@ class EBSplot(GeneratePlots):
         """
         
         print('- Plotting band structures...')
+        if ax is None: 
+            self.fig, ax = plt.subplots()
+        
         if Ef == 'auto' or Ef is None: 
             Ef = self.efermi
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
-            self.plot_result[:,1] -= Ef 
+            self.plot_result[:,2] -= Ef 
+            ax.axhline(y=0, color='k', ls='--', lw=1)
             yaxis_label = r"E$-$E$_\mathrm{F}$ (eV)"
             print(f"-- Efermi was set to {Ef} eV")
-            
-        fig, ax = plt.subplots()
-        ax.set_ylabel(yaxis_label)
+ 
+        if Emin is None: Emin = self.plot_result[:,2].min() - pad_energy_scale
+        if Emax is None: Emax = self.plot_result[:,2].max() + pad_energy_scale
         
-        if Emin is None: Emin = self.plot_result[:,1].min() - pad_energy_scale
-        if Emax is None: Emax = self.plot_result[:,1].max() + pad_energy_scale
-        
-        result = self.plot_result[(self.plot_result[:,1] >= Emin - max(smear*10, 0.1)) * 
-                                  (self.plot_result[:,1] <= Emax + max(smear*10, 0.1))]
+        result_ = self.plot_result[(self.plot_result[:,2] >= Emin - max(smear*10, 0.1)) * 
+                                   (self.plot_result[:,2] <= Emax + max(smear*10, 0.1))]
+        result = result_[:,1:]
+        if threshold_weight is not None: result = result[result[:, 2]>threshold_weight]
         
         # Plot as fat band
         if mode=="fatband":
             if plotSC:
                 ax.scatter(result[:, 0], result[:, 1], s=fatfactor, color='gray', label="supercell")
-            ax.scatter(result[:, 0], result[:, 1], s=result[:, 2]*fatfactor, color=scatter_color, label="unfolded")
-            ax.legend(loc=1)
+            ax.scatter(result[:, 0], result[:, 1], s=result[:, 2]*fatfactor, 
+                       marker=marker, color=scatter_color, label="unfolded")
+            if show_legend: ax.legend(loc=1)
         elif mode=="density":
             energy = np.linspace(Emin, Emax, nE)
             density = np.zeros((len(self.kpath_in_angs_),nE), dtype=float)
@@ -171,8 +183,9 @@ class EBSplot(GeneratePlots):
             plt.xticks(x_tiks_positions, x_tiks_labels)
             # Draw vertical lines
             for label in k_labels:
-                plt.axvline(x=label[0], color='k', lw=2)
-                
+                plt.axvline(x=label[0], color='k', ls='--', lw=2)
+        
+        ax.set_ylabel(yaxis_label)
         ax.set_ylim([Emin, Emax])
         ax.set_xlim([self.kpath_in_angs_.min(), self.kpath_in_angs_.max()])
 
@@ -181,5 +194,5 @@ class EBSplot(GeneratePlots):
         else:
             CountFig = self.save_figure(save_file_name, CountFig=CountFig)
             plt.close()
-        return fig, ax, CountFig
+        return self.fig, ax, CountFig
 
