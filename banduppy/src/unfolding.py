@@ -179,7 +179,7 @@ class BandUnfolding:
     def _save_Post_unfolded_PBZ_kpts(self, save_dir, file_name, file_name_suffix):
         """
         Save unfolded PC-kpoints.
-        Format: k on path (A^-1), k1, k2, k3
+        Format: k-index, k on path (A^-1), k1, k2, k3
 
         Parameters
         ----------
@@ -212,7 +212,7 @@ class BandUnfolding:
     def _save_Post_unfolded_bandstucture(self, save_dir, file_name, file_name_suffix, is_spinor:bool=False):
         """
         Save unfolded effective band structure data.
-        Format: k on path (A^-1), k1, k2, k3
+        Format: k-index, k on path (A^-1), k1, k2, k3
 
         Parameters
         ----------
@@ -340,7 +340,7 @@ class BandUnfolding:
         -------
         numpy ndarray
             Unfolded effective band structure.
-            Format: k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
         numpy ndarray
             Unfolded effective band structure k-path.
             Format: k on path (A^-1)

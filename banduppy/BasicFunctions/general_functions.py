@@ -72,6 +72,14 @@ class SaveData2File:
         pass
     
     @staticmethod
+    def default_save_settings(save_data):
+        tmp_save = {'save2file': False, 'fdir': '.', 'fname': 'test', 'fname_suffix': ''}
+        for ll in tmp_save:
+            if ll in save_data:
+                tmp_save[ll] = save_data[ll]
+        return tmp_save
+    
+    @staticmethod
     def save_2_file(data=None, save_dir='.', file_name:str='', file_name_suffix:str='', 
                     header_txt:str='', footer_txt:str='',comments_symbol='! ',
                     np_data_fmt='%12.8f', print_log:bool=True):
