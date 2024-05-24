@@ -15,19 +15,32 @@ Unfolded band structure - flatband mode (Si0.5Ge0.5) |  Unfolded band structure 
 
 <!-- =========================================================== -->
 ## Developers and contributors
+<!-- =========================================================== -->
 
-If you find `BandUPpy` useful, but missing any important part of the functionality of the original [BandUP](https://github.com/band-unfolding/bandup) code,
-please let me know.
+__Developer of BandUPpy :__ 
 
-Author of `BandUPpy` : Stepan S. Tsirkin, University of Zurich, [stepan.tsirkin@uzh.ch](mailto:stepan.tsirkin@uzh.ch)
+* [Stepan S. Tsirkin](https://github.com/stepan-tsirkin), University of Zurich, [stepan.tsirkin@uzh.ch](mailto:stepan.tsirkin@uzh.ch)
 
-Authors of original BandUP : 
+__BandUPpy Package is Restructured by (maintainer):__
+
+* [Badal Mondal](https://github.com/bmondal94) 
+
+__Developer of original BandUP :__ 
 
   *  Paulo V. C. Medeiros, Linköping University, (at present: SMHI, the Swedish Meteorological and Hydrological Institute)
 
   *  Jonas Björk, Linköping University
   
-  *  Stepan S. Tsirkin, (in 2015: Donostia International Physics Center)
+  *  [Stepan S. Tsirkin](https://github.com/stepan-tsirkin), (in 2015: Donostia International Physics Center)
+
+__BandUPpy Contributors:__  [Contributors](https://github.com/band-unfolding/banduppy/graphs/contributors)
+
+* We sincerely thank each and every contributor for their valuable input and support.
+
+__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch, mailto:badalmondal.chembgc@gmail.com) 
+
+* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in [touch with us](mailto:stepan.tsirkin@uzh.ch, mailto:badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
+
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -50,7 +63,15 @@ Authors of original BandUP :
     pip install banduppy
 ```
 
-### 3. Installation using `setup.py`
+### 3. Installation from github repository
+
+```
+    git clone https://github.com/band-unfolding/banduppy.git
+    cd banduppy
+    pip install .  
+```
+
+### 4. Installation using `setup.py` [deprecated]
 Alternatively you can clone the repository and run `setup.py` in the usual manner:
 
 ```
@@ -87,9 +108,9 @@ banduppy package:
         1.4 plot_ebs() [Note: Similar in Plotting class but can not plot band centers]
     2. BandStructure class
         2.1 BandStructure()
-    3. Properties()
+    3. Properties class
         3.1 band_centers_broadening_bandstr()
-    4. Plotting()
+    4. Plotting class
         4.1 plot_ebs()
 ```
 

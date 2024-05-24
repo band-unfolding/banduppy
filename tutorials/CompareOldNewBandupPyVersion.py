@@ -1,7 +1,7 @@
 # ---------------------------- Import modules ---------------------------------
 import banduppy as bp
 # Note: round() function is used in unfolding_path whenever '%' operation is called
-import banduppy.unfolding_path as bp_org 
+import banduppy_old.unfolding_path as bp_org
 #%% ------------------------ Define variables ---------------------------------
 # supercell : 4X4X2 supercell == np.diag([4,4,2]) or
 super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 

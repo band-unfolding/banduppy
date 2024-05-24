@@ -372,6 +372,9 @@ class _KpointsModule:
         header_msg = {}
         header_msg['SC']  = f"K-points for SC bandstructure generated using banduppy-{_pkg_version} package"
         header_msg['SC'] += f"\n{len(self.SBZ_kpts_list)}\nreciprocal"
+        
+        header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{_pkg_version} package"
+        header_msg['SpecialKpoints']  += "Kpoints index: Kpoints lebel"
                 
         # Generate header text for PC kpoints, SC-PC kpoints mapping, and special kpoints  
         if save_all_kpts:
@@ -381,9 +384,6 @@ class _KpointsModule:
             
             header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{_pkg_version} package"
             header_msg['SCPC_map'] += "K-k relation: (K index: K -> k index unique: k unique -> k index: k)"
-            
-            header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{_pkg_version} package"
-            header_msg['SpecialKpoints']  += "Kpoints index: Kpoints lebel"
             
         return header_msg
     
@@ -412,12 +412,12 @@ class _KpointsModule:
         # Generate footer text for SC kpoints
         footer_msg = {}
         footer_msg['SC'] = self._generate_foot_text(self.PBZ_kpts_list_org) if footer_text is None else footer_text
-            
+        footer_msg['SpecialKpoints'] = ''
+        
         # Save PC, SC kpoints    
         if save_all_kpts:
             footer_msg['PC'] = footer_msg['SC']
             footer_msg['SCPC_map'] = ''
-            footer_msg['SpecialKpoints'] = ''           
         return footer_msg
     
     def _generate_print_text(self, save_all_kpts:bool=False):
@@ -443,12 +443,12 @@ class _KpointsModule:
         # Generate footer text for SC kpoints
         print_msg = {}
         print_msg['SC'] = 'Saving Kpoints to file...'
+        print_msg['SpecialKpoints'] = 'Saving special kpoints position indices and labels to file...'
             
         # Save PC, SC kpoints    
         if save_all_kpts:
             print_msg['PC'] = 'Saving kpoints to file...'
-            print_msg['SCPC_map'] = 'Saving SC Kpoints - PC kpoints indices mapping to file...'
-            print_msg['SpecialKpoints'] = 'Saving special kpoints position indices and labels to file...'           
+            print_msg['SCPC_map'] = 'Saving SC Kpoints - PC kpoints indices mapping to file...'           
         return print_msg
 
     def _generate_save_contents(self, footer_text=None, save_all_kpts:bool=False):
@@ -479,8 +479,11 @@ class _KpointsModule:
         print_msg_ = self._generate_print_text(save_all_kpts=save_all_kpts)
 
         save_contents_data['SC'] = (header_msg_['SC'], self.SBZ_kpts_list, 
-                                    footer_msg_['SC'], print_msg_['SC'])
-            
+                                    footer_msg_['SC'], print_msg_['SC'])  
+        save_contents_data['SpecialKpoints'] = (header_msg_['SpecialKpoints'], 
+                                                self.special_kpoints_pos_labels, 
+                                                footer_msg_['SpecialKpoints'],
+                                                print_msg_['SpecialKpoints'])
         if save_all_kpts:
             save_contents_data['PC'] = (header_msg_['PC'], 
                                         self.PBZ_kpts_list_org, 
@@ -490,10 +493,6 @@ class _KpointsModule:
                                               self.SBZ_PBZ_kpts_mapping, 
                                               footer_msg_['SCPC_map'],
                                               print_msg_['SCPC_map'])
-            save_contents_data['SpecialKpoints'] = (header_msg_['SpecialKpoints'], 
-                                                    self.special_kpoints_pos_labels, 
-                                                    footer_msg_['SpecialKpoints'],
-                                                    print_msg_['SpecialKpoints'])
         return save_contents_data
 
 ## ============================================================================ 
