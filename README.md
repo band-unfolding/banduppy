@@ -37,9 +37,9 @@ __BandUPpy Contributors:__  [Contributors](https://github.com/band-unfolding/ban
 
 * We sincerely thank each and every contributor for their valuable input and support.
 
-__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch, mailto:badalmondal.chembgc@gmail.com) 
+__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch,badalmondal.chembgc@gmail.com) 
 
-* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in [touch with us](mailto:stepan.tsirkin@uzh.ch, mailto:badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
+* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in touch with [us](mailto:stepan.tsirkin@uzh.ch,badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
 
 <!-- =========================================================== -->
 
