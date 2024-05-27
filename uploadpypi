@@ -1,0 +1,2 @@
+python -m bulid
+python -m twine upload  --repository banduppy dist/*

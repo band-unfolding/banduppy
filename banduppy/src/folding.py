@@ -1,7 +1,7 @@
 import numpy as np
 from ..BasicFunctions.general_functions import SaveData2File, _BasicFunctionsModule, _draw_line_length
 from .folding_properties import FindProperties
-from .._version import _pkg_version
+from .. import __version__
     
 try:
     from collections.abc import Iterable
@@ -370,19 +370,19 @@ class _KpointsModule:
         """
         # Generate header text for SC kpoints
         header_msg = {}
-        header_msg['SC']  = f"K-points for SC bandstructure generated using banduppy-{_pkg_version} package"
+        header_msg['SC']  = f"K-points for SC bandstructure generated using banduppy-{__version__} package"
         header_msg['SC'] += f"\n{len(self.SBZ_kpts_list)}\nreciprocal"
         
-        header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{_pkg_version} package"
+        header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{__version__} package"
         header_msg['SpecialKpoints']  += "Kpoints index: Kpoints lebel"
                 
         # Generate header text for PC kpoints, SC-PC kpoints mapping, and special kpoints  
         if save_all_kpts:
             # Create text that will be added in the front of file
-            header_msg['PC']  = f"k-points for PC bandstructure generated using banduppy-{_pkg_version} package"
+            header_msg['PC']  = f"k-points for PC bandstructure generated using banduppy-{__version__} package"
             header_msg['PC'] += f"\n{len(self.PBZ_kpts_list_org)}\nreciprocal"
             
-            header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{_pkg_version} package"
+            header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{__version__} package"
             header_msg['SCPC_map'] += "K-k relation: (K index: K -> k index unique: k unique -> k index: k)"
             
         return header_msg

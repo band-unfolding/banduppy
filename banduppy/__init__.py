@@ -4,7 +4,6 @@ if  irrep.__version__ <"1.6.2" :
 
 from  irrep.bandstructure import BandStructure
 from .unfolding import Unfolding, Properties, Plotting
-from ._version import _pkg_version
 
-__version__ = _pkg_version
+__version__ = "0.3.0"
 __all__ = ['Unfolding', 'BandStructure', 'Properties', 'Plotting']

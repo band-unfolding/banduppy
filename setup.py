@@ -5,14 +5,10 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-
-from banduppy import __version__ as version
-
 setuptools.setup(
      name='banduppy',  
-     version=version,
      author="Stepan S. Tsirkin",
-     author_email="stepan.tsirkin@uzh.ch",
+     author_email="stepan.tsirkin@ehu.eus",
      maintainer="Badal Mondal",
      maintainer_email="badalmondal.chembgc@gmail.com",
      description="BandUPpy: Python interface of the BandUP code",
