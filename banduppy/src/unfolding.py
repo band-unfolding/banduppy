@@ -1,6 +1,5 @@
 import numpy as np
 from ..BasicFunctions.general_functions import SaveData2File, _BasicFunctionsModule, _draw_line_length
-from .._version import _pkg_version
 try:
     from irrep.__aux import is_round
 except ImportError:
