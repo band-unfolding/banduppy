@@ -273,10 +273,10 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
         -------
         numpy ndarray
             Unfolded effective band structure. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
         numpy ndarray
             Unfolded effective band structure k-path.
-            Format: k on path (A^-1)
+            Format: [k on path (A^-1)]
 
         """
         if (PBZ_kpts_list_full is None) or \
@@ -395,7 +395,8 @@ class Properties(BandCentersBroadening):
             The default is 'low'. If None, nothing is printed.
 
         """       
-        if print_log is not None: self.print_log_info = print_log.lower()
+        if print_log is not None: print_log = print_log.lower()
+        self.print_log_info = print_log
     
     def band_centers_broadening_bandstr(self, unfolded_bandstructure, 
                                         min_dN_pre_screening:float=1e-4,
@@ -415,7 +416,7 @@ class Properties(BandCentersBroadening):
         ----------
         unfolded_bandstructure : numpy array
             Unfolded effective band structure. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
         min_dN_pre_screening : float, optional
             Discard the bands which has weights below min_dN_pre_screening. This
             pre-screening step helps to minimize the data that will processed
@@ -455,13 +456,14 @@ class Properties(BandCentersBroadening):
         list of array
             Each array contains the final details of band centers in a particular
             kpoint. The list contains band center details for each kpoints.
-            Format: kpoint coordinate, Band center, Band width, Sum of dN.
+            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
         dictionary of dictionary of array or None
             Each array contains the final details of band centers in a particular
             kpoint. The dictionary then contains the details for each SCF cycles with
             keys are the SCF cycle number. The highest level dictionary then contains 
             details for each kpoints with keys are the kpoint indices. Returns None
             if collect_scf_data is false.
+            Format: {kpoint_index: {SCF_cycle_index: [Band center, Band width, Sum of dN]}}
 
         """
         BandCentersBroadening.__init__(self, unfolded_bandstructure=unfolded_bandstructure, 
@@ -489,24 +491,27 @@ class Plotting(EBSplot):
         self.save_figure_directory = save_figure_dir
     
     def plot_ebs(self, kpath_in_angs, unfolded_bandstructure, 
-                 ax=None, save_file_name=None, CountFig=None, 
+                 fig=None, ax=None, save_file_name=None, CountFig=None, 
                  Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
                  threshold_weight:float=None, mode:str="fatband", 
                  yaxis_label:str='E (eV)', special_kpoints:dict=None, plotSC:bool=True,  
                  marker='o', fatfactor=20, nE:int=100, smear:float=0.05, 
                  color='gray', color_map='viridis', show_legend:bool=True,
-                 plot_colormap_bandcenter:bool=True):
+                 plot_colormap_bandcenter:bool=True, show_colorbar:bool=True,
+                 colorbar_label:str=None, vmin=None, vmax=None, 
+                 show_plot:bool=True,**kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
         Parameters
         ----------
-        kpath_in_angs : array, optional
-            k on path (in A^-1) coordinate. The default is None.
-        unfolded_bandstructure : ndarray, optional
+        kpath_in_angs : array
+            k on path (in A^-1) coordinate.
+        unfolded_bandstructure : ndarray
             Unfolded effective band structure data. 
-            Format: k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
-            The default is None.
+            Format: [k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
+        fig : matplotlib.pyplot figure instance, optional
+            Figure instance to plot on. The default is None.
         ax : matplotlib.pyplot axis, optional
             Figure axis to plot on. If None, new figure will be created.
             The default is None.
@@ -556,30 +561,152 @@ class Plotting(EBSplot):
             If show legend or not. The default is True.
         plot_colormap_bandcenter : bool, optional
             If plotting the band ceneters by colormap. The default is True.
+        show_colorbar : bool, optional
+            Plot the colorbar in the figure or not. If fig=None, this is ignored.
+            The default is True.
+        colorbar_label : str, optional
+            Colorbar label. The default is None. If None, ignored.
+        vmin, vmax : float, optional
+            vmin and vmax define the data range that the colormap covers. 
+            By default, the colormap covers the complete value range of the supplied data.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
 
         Returns
         -------
         fig : matplotlib.pyplot.figure
-            Figure instance. If ax is not None previously generated fig instance
-            will be used.
+            Figure instance. If ax is not None previously generated/passed fig instance
+            will be returned. Return None, if no fig instance is inputed along with ax.
         ax : Axis instance
             Figure axis instance.
         CountFig: int or None
             Figure count.
 
         """
-        
+        print('- Plotting band structures...')
         EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
                          unfolded_bandstructure=unfolded_bandstructure, 
                          save_figure_dir=self.save_figure_directory)
 
-        return self.plot(ax=ax, save_file_name=save_file_name, CountFig=CountFig, Ef=Ef, 
-                         Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
-                         threshold_weight=threshold_weight, mode=mode,
-                         yaxis_label=yaxis_label, special_kpoints=special_kpoints, 
-                         plotSC=plotSC, marker=marker, fatfactor=fatfactor, nE=nE, 
-                         smear=smear, color=color, color_map=color_map,
-                         plot_colormap_bandcenter=plot_colormap_bandcenter,
-                         show_legend=show_legend)
+        return self._plot(fig=fig, ax=ax, save_file_name=save_file_name, CountFig=CountFig, Ef=Ef, 
+                          Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
+                          threshold_weight=threshold_weight, mode=mode,
+                          yaxis_label=yaxis_label, special_kpoints=special_kpoints, 
+                          plotSC=plotSC, marker=marker, fatfactor=fatfactor, nE=nE, 
+                          smear=smear, color=color, color_map=color_map,
+                          plot_colormap_bandcenter=plot_colormap_bandcenter,
+                          show_legend=show_legend, show_colorbar=show_colorbar,
+                          colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
+                          show_plot=show_plot, **kwargs_savefig)
+    
+    def plot_scf(self, kpath_in_angs, unfolded_bandstructure, al_scf_data, 
+                 plot_max_scf_steps:int=None, save_file_name=None, 
+                 Ef=None, Emin=None, Emax=None, 
+                 pad_energy_scale:float=0.5, threshold_weight:float=None, 
+                 yaxis_label:str='E (eV)', special_kpoints:dict=None, 
+                 plot_sc_unfold:bool=True, marker='o', fatfactor=20, 
+                 smear:float=0.05, color='gray', color_map='viridis', 
+                 show_legend:bool=True, plot_colormap_bandcenter:bool=True, 
+                 show_colorbar:bool=True, colorbar_label:str=None, 
+                 vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+        """
+        Band centers all scf steps plot.
+
+        Parameters
+        ----------
+        kpath_in_angs : array
+            k on path (in A^-1) coordinate. 
+        unfolded_bandstructure : ndarray
+            Unfolded effective band structure data. 
+            Format: [k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
+        al_scf_data : dictionary
+            All SCF data.
+            Each array contains the final details of band centers in a particular
+            kpoint. The dictionary then contains the details for each SCF cycles with
+            keys are the SCF cycle number. The highest level dictionary then contains 
+            details for each kpoints with keys are the kpoint indices. Returns None
+            if collect_data_scf is false.
+            Format: {kpoint_index: {SCF_cycle_index: [Band center, Band width, Sum of dN]}}
+        plot_max_scf_steps : int, optional
+            How many maximum scf cycle to plot?
+            The default is maximum SCF steps found in the dictionary of all k-points.
+            If scf cycle not found for a particular kpoint previous SCF cycle will be plotted.
+        save_file_name : str, optional
+            Name of the figure file. If None, figure will be not saved. 
+            The default is None.
+        Ef : float, optional
+            Fermi energy. If None, set to 0.0. The default is None.
+        Emin : float, optional
+            Minimum in energy. The default is None.
+        Emax : float, optional
+            Maximum in energy. The default is None.
+        pad_energy_scale: float, optional
+            Add padding of pad_energy_scale to minimum and maximum energy if Emin
+            and Emax are None. The default is 0.5.
+        threshold_weight : float, optional
+            The band centers with band weights lower than the threshhold weights 
+            are discarded. The default is None. If None, this is ignored.
+        yaxis_label : str, optional
+            Y-axis label text. The default is 'E (eV)'.
+        special_kpoints : dictionary, optional
+            Dictionary of special kpoints position and labels. If None, ignore
+            special kpoints. The default is None.
+        plot_sc_unfold : bool, optional
+            Plot supercell unfolded bandstructure. The default is True.
+        marker : matplotlib.pyplot markerMarkerStyle, optional
+            The marker style. Marker can be either an instance of the class or 
+            the text shorthand for a particular marker. 
+            The default is 'o'.
+        fatfactor : int, optional
+            Scatter plot marker size. The default is 20.
+        smear : float, optional
+            Gaussian smearing. The default is 0.05.
+        color : str/color, optional
+            Color for band centers plot when color_map is not used. 
+            The default is 'gray'. The color of supercell
+            band structures is gray always.
+        color_map: str/ matplotlib colormap
+            Colormap for band centers plot. The default is viridis.
+        plot_colormap_bandcenter : bool, optional
+            If plotting the band ceneters by colormap. The default is True.
+        show_legend : bool, optional
+            If show legend or not. The default is True.
+        show_colorbar : bool, optional
+            Plot the colorbar in the figure or not. If fig=None, this is ignored.
+            The default is True.
+        colorbar_label : str, optional
+            Colorbar label. The default is None. If None, ignored.
+        vmin, vmax : float, optional
+            vmin and vmax define the data range that the colormap covers. 
+            By default, the colormap covers the complete value range of the supplied data.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
+        
+        Raises
+        ------
+        ValueError
+            If plot mode is unknown.
+
+        """
+        print('- Plotting band centers in band structures...')
+        EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
+                         unfolded_bandstructure=unfolded_bandstructure, 
+                         save_figure_dir=self.save_figure_directory)
+        
+        return self._plot_scf(al_scf_data, plot_max_scf_steps=plot_max_scf_steps, 
+                             save_file_name=save_file_name, Ef=Ef, Emin=Emin, 
+                             Emax=Emax, pad_energy_scale=pad_energy_scale, 
+                             threshold_weight=threshold_weight, 
+                             yaxis_label=yaxis_label, special_kpoints=special_kpoints,
+                             plot_sc_unfold=plot_sc_unfold, marker=marker, 
+                             fatfactor=fatfactor, smear=smear, color=color, 
+                             color_map=color_map, plot_colormap_bandcenter=plot_colormap_bandcenter,
+                             show_legend=show_legend, show_colorbar=show_colorbar,
+                             colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
+                             show_plot=show_plot, **kwargs_savefig)
         
 

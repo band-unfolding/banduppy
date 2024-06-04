@@ -31,7 +31,7 @@ class _FormatSpecialKpts:
         kl = np.array([kpath_angs[ik] for ik in special_kpts.keys()])
         ll = np.array([k for k in special_kpts.values()])
         borders = [0] + list(np.where((kl[1:]-kl[:-1])>1e-4)[0]+1) + [len(kl)]
-        k_labels=[(kl[b1:b2].mean(),"/".join(set(ll[b1:b2]))) for b1,b2 in zip(borders,borders[1:])]
+        k_labels=[(kl[b1:b2].mean(),"/".join(list(dict.fromkeys(ll[b1:b2])))) for b1,b2 in zip(borders,borders[1:])]
         
         special_kpts_labels = [label[1] for label in k_labels]
         special_kpts_poss = [label[0] for label in k_labels]
@@ -61,7 +61,7 @@ class BandCentersBroadening:
         ----------
         unfolded_bandstructure : numpy array
             Unfolded effective band structure. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
         min_dN_pre_screening : float, optional
             Discard the bands which has weights below min_dN_pre_screening. This
             pre-screening step helps to minimize the data that will processed
@@ -135,13 +135,14 @@ class BandCentersBroadening:
         return_grouped_unfolded_bandstructure_datails : 2d array
             Each array contains the final details of band centers at each
             kpoint. 
-            Format: kpoint coordinate, Band center, Band width, Sum of dN.
+            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
         gather_scf_data_ : dictionary of dictionary of array or None
             Each array contains the final details of band centers in a particular
             kpoint. The dictionary then contains the details for each SCF cycles with
             keys are the SCF cycle number. The highest level dictionary then contains 
             details for each kpoints with keys are the kpoint indices. Returns None
             if collect_data_scf is false.
+            Format: {kpoint_index: {SCF_cycle_index: [Band center, Band width, Sum of dN]}}
 
         """
         print(f"{'-'*72}\n- Finding band center and broadening for band structure...")
@@ -178,7 +179,7 @@ class BandCentersBroadening:
         ----------
         unfolded_bandstructure_current_kpt : 2d numpy array
             Unfolded effective band structure. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
         collect_data_scf : bool, optional
             Whether to save the dtails of band centers in each SCF cycles. 
             The default is False.
@@ -189,16 +190,18 @@ class BandCentersBroadening:
             Index of the kpoint.
         guess_band_details : 2d numpy array
             Band center details at the particular kpoint.
-            Format: kpoint coordinate, Band center, Band width, Sum of dN.
+            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
         all_data_ : dict or None
-            Dictionary containing the band center details of all SCF cycles . 
+            Dictionary containing the band center details of all SCF cycles. 
             Return None if collect_data_scf is False.
+            Format: {SCF_cycle_index: [Band center, Band width, Sum of dN]}
 
         """
         # Collect kpoint information
         kpoints_cord = unfolded_bandstructure_current_kpt[0, :2]
         k_index_ = int(kpoints_cord[0])
-        print (f"{'-'*72}\n- Finding band center for kpoint: {k_index_}")
+        if self.print_output in ['low','medium','high']:
+            print (f"{'-'*72}\n- Finding band center for kpoint: {k_index_}")
         all_data_ = {} if collect_data_scf else None
         
         # Collect dNs and energies in array
@@ -244,7 +247,7 @@ class BandCentersBroadening:
             else:
                 guess_band_centers = refined_band_centers
                 
-            if collect_data_scf: all_data_[count] = guess_band_details
+            if collect_data_scf: all_data_[count] = guess_band_details[:, -3:]
         # guess_band_details = (#kpoint coordinate #Band center #Band width #Sum of dN)
         return k_index_, guess_band_details, all_data_
     
@@ -292,7 +295,7 @@ class BandCentersBroadening:
         ----------
         unfolded_bandstructure : 2d numpy array
             Unfolded effective band structure before removing small weights centers. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
         min_dN : float
             Discard the bands which has weights below min_dN_pre_screening. This
             pre-screening step helps to minimize the data that will processed
@@ -302,7 +305,7 @@ class BandCentersBroadening:
         -------
         2d numpy array
             Unfolded effective band structure after removing small weights centers. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
 
         """
         # Pre-screening: get rid of very small weights
@@ -320,13 +323,13 @@ class BandCentersBroadening:
         ----------
         unfolded_bandstructure : 2d numpy array
             Unfolded effective band structure. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
 
         Returns
         -------
         unfolded_bandstructure : 2d numpy array
             Unfolded effective band structure after removing duplicates. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
 
         """
         # Eliminating duplicated points, e.g.: L-G,G-X -> get rid of two Gs
@@ -352,7 +355,7 @@ class BandCentersBroadening:
         ----------
         unfolded_bandstructure : 2d numpy array
             Unfolded effective band structure. 
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
         err_tolerance : float, optional
             The tolerance to group the bands set per unique kpoints. 
             The default is 1e-8.
@@ -361,7 +364,7 @@ class BandCentersBroadening:
         -------
         list
             List of unfolded effective band structure group by kpoints.
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor..
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
 
         """
         # Get unique kpoints coordinate
@@ -441,7 +444,7 @@ class BandCentersBroadening:
         -------
         2d numpy array
             Band center details at the particular kpoint.
-            Format: kpoint coordinate, Band center, Band width, Sum of dN.
+            Format: [Band center, Band width, Sum of dN]
 
         """
         guess_energy_width = cls._calculate_possible_energy_width(guess_band_centers, 
@@ -473,7 +476,7 @@ class BandCentersBroadening:
         ----------
         guess_band_details : 2d numpy array
             Band center details at the particular kpoint.
-            Format: kpoint coordinate, Band center, Band width, Sum of dN.
+            Format: [Band center, Band width, Sum of dN]
         min_energy : TYPE
             DESCRIPTION.
         min_sum_dNs_for_a_band : float
@@ -485,7 +488,7 @@ class BandCentersBroadening:
         -------
         2d numpy array
             Band center details at the particular kpoint after refining.
-            Format: kpoint coordinate, Band center, Band width, Sum of dN.
+            Format: [Band center, Band width, Sum of dN]
 
         """
         refined_band_centers = []
@@ -537,7 +540,7 @@ class BandCentersBroadening:
     def _save_band_centers(self, data2save, save_dir, file_name, file_name_suffix):
         """
         Save unfolded band centers data.
-        Format: kpoint coordinate, Band center, Band width, Sum of dN.
+        Format: [kpoint coordinate, Band center, Band width, Sum of dN]
 
         Parameters
         ----------

@@ -70,6 +70,10 @@ __Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch,b
     cd banduppy
     pip install .  
 ```
+Or, without cloning
+```
+    pip install git+https://github.com/band-unfolding/banduppy.git #@specific_branch
+```
 
 ### 4. Installation using `setup.py` [deprecated]
 Alternatively you can clone the repository and run `setup.py` in the usual manner:
@@ -112,6 +116,7 @@ banduppy package:
         3.1 band_centers_broadening_bandstr()
     4. Plotting class
         4.1 plot_ebs()
+        4.2 plot_scf()
 ```
 
 #### 1. Lat's start
@@ -246,7 +251,6 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                                                  collect_scf_data=False)
 ```
 #### 4. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
-##### --------------------- Plot band structure ---------------------------------
 ```
     # Fermi energy
     Efermi = 5.9740
@@ -258,6 +262,7 @@ __Option 2:__ If this part is used independently from the above instances re-ini
     save_file_name = 'unfolded_bandstructure.png'
 ```
 __Option 1:__ Continue with previous instance.
+##### --------------------- Plot band structure ---------------------------------
 ```
     fig, ax, CountFig \
     = band_unfold.plot_ebs(save_figure_dir=save_to_dir, save_file_name=save_file_name, CountFig=None, 
@@ -277,7 +282,10 @@ __Option 2:__ Using BandUPpy Plotting module.
     kpline = np.loadtxt(f'{save_to_dir}/kpoints_unfolded.dat')[:,1]
     with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
         special_kpoints_pos_labels = pickle.load(handle)
-        
+```
+##### --------------------- Plot band structure ----------------------------------
+```
+    
     fig, ax, CountFig \
     = plot_unfold.plot_ebs(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_, 
                            save_file_name=save_file_name, CountFig=None, 
@@ -287,12 +295,28 @@ __Option 2:__ Using BandUPpy Plotting module.
                            threshold_weight=0.01, show_legend=True, 
                            color='gray', color_map='viridis')
 ```
+##### --------- Plot and overlay multiple band structures ------------
+```
+    fig, ax, CountFig \
+    = plot_unfold.plot_ebs(kpath_in_angs=kpline1, 
+                            unfolded_bandstructure=unfolded_bandstructure_1, 
+                            save_file_name=None, CountFig=None, threshold_weight=0.1,
+                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
+                            mode="fatband", special_kpoints=special_kpoints_pos_labels1, 
+                            plotSC=True, fatfactor=20, nE=100, smear=0.2,
+                            color='red', color_map='viridis', show_plot=False)
+    
+    fig, ax, CountFig \
+    = plot_unfold.plot_ebs(ax=ax, kpath_in_angs=kpline1, 
+                            unfolded_bandstructure=unfolded_bandstructure_2, 
+                            save_file_name=save_file_name, CountFig=None, 
+                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
+                            mode="band_centers", special_kpoints=None, marker='x', 
+                            smear=0.2, color='black', color_map='viridis')
+```
+
 ##### ----------------- Plot the band centers -----------------------------------
 ```
-    # --------------------- Initiate Plotting method ----------------------------
-    plot_unfold = banduppy.Plotting(save_figure_dir=save_to_dir)
-
-    # --------------------- Plot band centers and band width --------------------
     fig, ax, CountFig \
         = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
                                unfolded_bandstructure=unfolded_bandstructure_properties, 
@@ -302,28 +326,18 @@ __Option 2:__ Using BandUPpy Plotting module.
                                marker='x', smear=0.2, plot_colormap_bandcenter=True,
                                color='black', color_map='viridis')
 ```
-
-##### ------------ Plot and overlay multiple band structures --------------------
+##### -------------- Plot the band centers SCF cycles ---------------------
 ```
-    fig, ax, CountFig \
-    = plot_unfold.plot_ebs(kpath_in_angs=kpline1, 
-                            unfolded_bandstructure=unfolded_bandstructure_1, 
-                            save_file_name=None, CountFig=None, threshold_weight=0.1,
-                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                            mode="fatband", special_kpoints=special_kpoints_pos_labels1, 
-                            plotSC=True, fatfactor=20, nE=100, smear=0.2,
-                            color='red', color_map='viridis')
-    
-    fig, ax, CountFig \
-    = plot_unfold.plot_ebs(ax=ax, kpath_in_angs=kpline1, 
-                            unfolded_bandstructure=unfolded_bandstructure_properties, 
-                            save_file_name=save_file_name, CountFig=None, 
-                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                            mode="band_centers", special_kpoints=None, 
-                            marker='x', smear=0.2,
-                            color='black', color_map='viridis')
+    plot_unfold.plot_scf(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_,
+                         al_scf_data=all_scf_data, plot_max_scf_steps=3, save_file_name=save_file_name,
+                         Ef=Efermi, Emin=Emin, Emax=Emax,pad_energy_scale=0.5, threshold_weight=0.01, 
+                         special_kpoints=special_kpoints_pos_labels, plot_sc_unfold=True, marker='o', 
+                         fatfactor=20, smear=0.05, color=None, color_map='viridis', show_legend=False, 
+                         plot_colormap_bandcenter=True, show_colorbar=True, colorbar_label=None, 
+                         vmin=None, vmax=None, dpi=72)
 ```
 <!-- =========================================================== -->
+
 
 <!-- =========================================================== -->
 ## Citations and references:
