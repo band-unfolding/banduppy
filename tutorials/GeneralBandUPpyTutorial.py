@@ -89,11 +89,16 @@ unfolded_bandstructure_, kpline \
 # PRB 89, 041407(R) (2014) paper.
 # -------------------- Initiate Properties method -----------------------------
 unfolded_band_properties = banduppy.Properties(print_log='high')
+
+# Experience suggests to tune the following 3 variables for improving band centers determination
+min_dN = 1e-5 
 min_sum_dNs_for_a_band = 0.05 
 threshold_dN_2b_trial_band_center = 0.05
+
+# These next two variables do not have strong influence on determining band centers
 prec_pos_band_centers = 1e-5 # in eV
 err_tolerance = 1e-8
-min_dN = 1e-5  
+#===================================
 
 unfolded_bandstructure_properties, all_scf_data = \
     unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
@@ -148,7 +153,7 @@ plot_unfold = banduppy.Plotting(save_figure_dir=save_to_dir)
 fig, ax, CountFig \
     = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
                            unfolded_bandstructure=unfolded_bandstructure_properties, 
-                           save_file_name=save_file_name, CountFig=None, 
+                           save_file_name=save_file_name, CountFig=None, threshold_weight=min_dN,
                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                            mode="band_centers", special_kpoints=special_kpoints_pos_labels, 
                            marker='x', smear=0.2, plot_colormap_bandcenter=True,

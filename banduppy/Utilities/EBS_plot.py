@@ -141,6 +141,8 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
             self.fig, ax = plt.subplots()
         else:
             self.fig = fig 
+            
+        if yaxis_label is None: yaxis_label=''
         
         if mode != "band_centers" and len(self.plot_result[0]) > 3: 
             self.plot_result = self.plot_result[:, 1:]
@@ -151,9 +153,9 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         if Ef is not None:
             YYY = self.plot_result[:, 1] - Ef 
             ax.axhline(y=0, color='k', ls='--', lw=1)
-            yaxis_label = r"E$-$E$_\mathrm{F}$ (eV)"
+            if yaxis_label == 'E (eV)': yaxis_label = r"E$-$E$_\mathrm{F}$ (eV)"
             print(f"-- Efermi was set to {Ef} eV")
- 
+
         if Emin is None: Emin = YYY.min() - pad_energy_scale
         if Emax is None: Emax = YYY.max() + pad_energy_scale
         
@@ -485,7 +487,7 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
             print(f'-- Plotting SCF step: {scf_step}')
             fig, ax = plt.subplots()
             fig, ax, _ \
-            = self.plot(fig=fig, ax=ax, save_file_name=None, Ef=Ef, 
+            = self._plot(fig=fig, ax=ax, save_file_name=None, Ef=Ef, 
                         Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
                         threshold_weight=threshold_weight, mode=plot_mode,
                         yaxis_label=yaxis_label, special_kpoints=special_kpoints, 

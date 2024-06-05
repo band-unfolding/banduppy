@@ -19,7 +19,7 @@ Unfolded band structure - flatband mode (Si0.5Ge0.5) |  Unfolded band structure 
 
 __Developer of BandUPpy :__ 
 
-* [Stepan S. Tsirkin](https://github.com/stepan-tsirkin), University of Zurich, [stepan.tsirkin@uzh.ch](mailto:stepan.tsirkin@uzh.ch)
+* [Stepan S. Tsirkin](https://github.com/stepan-tsirkin)
 
 __BandUPpy Package is Restructured by (maintainer):__
 
@@ -37,9 +37,9 @@ __BandUPpy Contributors:__  [Contributors](https://github.com/band-unfolding/ban
 
 * We sincerely thank each and every contributor for their valuable input and support.
 
-__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch,badalmondal.chembgc@gmail.com) 
+__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@ehu.eus,badalmondal.chembgc@gmail.com) 
 
-* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in touch with [us](mailto:stepan.tsirkin@uzh.ch,badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
+* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in touch with [us](mailto:stepan.tsirkin@ehu.eus,badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
 
 <!-- =========================================================== -->
 
@@ -234,11 +234,14 @@ __Option 2:__ If this part is used independently from the above instances re-ini
 # PRB 89, 041407(R) (2014) paper.
 # -------------------- Initiate Properties method -----------------------------
     unfolded_band_properties = banduppy.Properties(print_log='high')
+    # Experience suggests to tune the following 3 variables for improving band centers determination
+    min_dN = 1e-5
     min_sum_dNs_for_a_band = 0.05 
     threshold_dN_2b_trial_band_center = 0.05
+    # These next two variables do not have strong influence on determining band centers
     prec_pos_band_centers = 1e-5 # in eV
     err_tolerance = 1e-8
-    min_dN = 1e-5  
+
     
     unfolded_bandstructure_properties, all_scf_data = \
         unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
@@ -320,7 +323,7 @@ __Option 2:__ Using BandUPpy Plotting module.
     fig, ax, CountFig \
         = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
                                unfolded_bandstructure=unfolded_bandstructure_properties, 
-                               save_file_name=save_file_name, CountFig=None, 
+                               save_file_name=save_file_name, CountFig=None, threshold_weight=min_dN,
                                Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                                mode="band_centers", special_kpoints=special_kpoints_pos_labels, 
                                marker='x', smear=0.2, plot_colormap_bandcenter=True,
@@ -330,7 +333,7 @@ __Option 2:__ Using BandUPpy Plotting module.
 ```
     plot_unfold.plot_scf(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_,
                          al_scf_data=all_scf_data, plot_max_scf_steps=3, save_file_name=save_file_name,
-                         Ef=Efermi, Emin=Emin, Emax=Emax,pad_energy_scale=0.5, threshold_weight=0.01, 
+                         Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, threshold_weight=min_dN,
                          special_kpoints=special_kpoints_pos_labels, plot_sc_unfold=True, marker='o', 
                          fatfactor=20, smear=0.05, color=None, color_map='viridis', show_legend=False, 
                          plot_colormap_bandcenter=True, show_colorbar=True, colorbar_label=None, 
@@ -338,38 +341,43 @@ __Option 2:__ Using BandUPpy Plotting module.
 ```
 <!-- =========================================================== -->
 
+<!-- =========================================================== -->
+## Tips and tricks:
+
+__TBD__
+<!-- =========================================================== -->
 
 <!-- =========================================================== -->
 ## Citations and references:
 
-If you use `BandUPpy` in your work, you should:
+If you use `BandUPpy` in your work, please:
 
-  * **State EXPLICITLY that you've used the BandUP code** 
-    (or a modified version of it, if this is the case).
-  * **Read and cite the following papers** (and the appropriate
-    references therein):
+  * **State EXPLICITLY that you have used the BandUP code** (or a modified version of it, if this is the case), for instance, adding a sentence like: 
+
+         "The unfolding has been performed using the BandUP(py) code"
+
+  * **Read and cite the following papers** (and the appropriate references therein):
     
->> Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk,
-   [Phys. Rev. B **89**, 041407(R) (2014)](http://dx.doi.org/10.1103/PhysRevB.89.041407)  
->> Paulo V. C. Medeiros, Stepan S. Tsirkin, Sven Stafström, and Jonas Björk,
-   [Phys. Rev. B **91**, 041116(R) (2015)](http://dx.doi.org/10.1103/PhysRevB.91.041116)
+>> 1. Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk,
+   [Phys. Rev. B **89**, 041407(R) (2014)](http://doi.org/10.1103/PhysRevB.89.041407)  
+>> 2. Paulo V. C. Medeiros, Stepan S. Tsirkin, Sven Stafström, and Jonas Björk,
+   [Phys. Rev. B **91**, 041116(R) (2015)](http://doi.org/10.1103/PhysRevB.91.041116)  
+>> 3. Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin,
+   "IrRep: Symmetry eigenvalues and irreducible representations of ab initio band structures", [Comput. Phys. Commun. **272**, 108226 (2022)](https://doi.org/10.1016/j.cpc.2021.108226)
 
+__Bibliography file:__ Here is the [bibliography (.bib) file](REFERENCES.md) for your convenience.
 
-If you use `BandUPpy`,  please also cite
-
->> Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin 
-   "IrRep: symmetry eigenvalues and irreducible representations of ab initio band structures", [arXiv:2009.01764](https://arxiv.org/abs/2009.01764)
-
-An appropriate way of acknowledging the use of BandUP in your
-publications would be, for instance, adding a sentence like: 
-
-         "The unfolding has been performed using the BandUP code"
-
-followed by the citation to our papers.
-
-### Refer to for further details
+## Further details
 ##### <http://www.ifm.liu.se/theomod/compphys/band-unfolding>
 ##### <https://github.com/band-unfolding/bandup>
+
+<!-- =========================================================== -->
+
+<!-- =========================================================== -->
+## Version release
+__Latest release: v0.3.2__
+
+Chekout out [version release history here](RELEASE.md) for the full list of updates and upgrades.
 
 <!-- =========================================================== -->
 

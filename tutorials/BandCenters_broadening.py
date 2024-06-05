@@ -22,14 +22,17 @@ with open(f'{SimulationParentFolder}/Si_Ge_supercell/KPOINTS_SpecialKpoints.pkl'
     special_kpoints_pos_labels = pickle.load(handle)
 print ("- Reading band structure file - done")
 
-#%%
+#%% ------------------- Determine band centers and band widths ----------------
+# Experience suggests to tune the following 3 variables for improving band centers determination
+min_dN = 1e-5  # 1e-4 should be OK
 min_sum_dNs_for_a_band = 0.05 # 1e-1 is OK
 # I used to set threshold_dN_2b_trial_band_center = 1e-1 or 2e-1 (work for most of the cases), but this is a complicated parameter...
 threshold_dN_2b_trial_band_center = 0.05
+
+# These next two variables do not have strong influence on determining band centers
 prec_pos_band_centers = 1e-5 # in eV
 err_tolerance = 1e-8
-min_dN = 1e-5  # 1e-4 should be OK
-
+#===================================
 
 unfolded_bandstructure_properties, all_scf_data = \
     unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
@@ -48,10 +51,11 @@ Efermi = 5.5305; Emin = -5; Emax = 5
 fig, ax, CountFig \
 = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
                         unfolded_bandstructure=unfolded_bandstructure_, 
-                        save_file_name=None, CountFig=None, threshold_weight=0.1,
+                        save_file_name=None, CountFig=None, threshold_weight=min_dN,
                         Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
+                        threshold_weight=min_dN,
                         mode="fatband", special_kpoints=special_kpoints_pos_labels, 
-                        plotSC=False, fatfactor=10, nE=100,smear=0.2, 
+                        plotSC=False, fatfactor=10, nE=100,smear=0.2, show_plot=False,
                         color='k', color_map='viridis', show_legend=False)
 
 fig, ax, CountFig \
