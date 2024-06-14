@@ -23,26 +23,39 @@ with open(f'{SimulationParentFolder}/Si_Ge_supercell/KPOINTS_SpecialKpoints.pkl'
 print ("- Reading band structure file - done")
 
 #%% ------------------- Determine band centers and band widths ----------------
-# Experience suggests to tune the following 3 variables for improving band centers determination
-min_dN = 1e-5  # 1e-4 should be OK
-min_sum_dNs_for_a_band = 0.05 # 1e-1 is OK
-# I used to set threshold_dN_2b_trial_band_center = 1e-1 or 2e-1 (work for most of the cases), but this is a complicated parameter...
+#===================================
+# Discard the bands which has weights below min_dN to start with. 
+# This pre-screening step helps to minimize the data that will processed.
+# This parameter just pre-screen/minimize amount of data that will be passed to
+# band center determination SCF algorithm and independent of min_sum_dNs_for_a_band parameter.
+min_dN = 1e-5 
+# Initial guess of the band centers based on the threshold wights.
 threshold_dN_2b_trial_band_center = 0.05
-
-# These next two variables do not have strong influence on determining band centers
-prec_pos_band_centers = 1e-5 # in eV
+# Cut off criteria for minimum weights that a band center should have. 
+# The band centers with lower weights than min_sum_dNs_for_a_band will be
+# discarded during SCF refinements. If min_sum_dNs_for_a_band  
+# is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
+# will be reset to threshold_dN_2b_trial_band_center value.
+min_sum_dNs_for_a_band = 0.05 
+#===================================
+# The tolerance to group the bands set per unique kpoints value. This determines if two
+# flotting point numbers are same or not. This is not a critical parameter for 
+# band center determination algorithm.
 err_tolerance = 1e-8
+# Precision when compared band centers from previous and current SCF
+# iteration. SCF is considered converged if this precision is reached.
+prec_pos_band_centers = 1e-5 # in eV
 #===================================
 
 unfolded_bandstructure_properties, all_scf_data = \
     unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
                                                              min_dN_pre_screening=min_dN,
-                                                             threshold_dN_2b_trial_band_center=threshold_dN_2b_trial_band_center,
+                                                             threshold_dN_2b_trial_band_center=
+                                                             threshold_dN_2b_trial_band_center,
                                                              min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
                                                              precision_pos_band_centers=prec_pos_band_centers,
-                                                             err_tolerance_compare_kpts=err_tolerance,
-                                                             collect_scf_data=False,
-                                                             save_data = {'save2file': True})
+                                                             err_tolerance_compare_kpts_val=err_tolerance,
+                                                             collect_scf_data=False)
 #%% ============================== Plottings ==================================
 plot_unfold = banduppy.Plotting(save_figure_dir=SimulationParentFolder)
 

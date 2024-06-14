@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ..BasicFunctions.general_plot_functions import GeneratePlots
-from .EBS_properties import _FormatSpecialKpts
+from .EBS_properties import _GeneralFunctionsDefs, _FormatSpecialKpts
 
 ### ===========================================================================
-class EBSplot(GeneratePlots, _FormatSpecialKpts):
+class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
     """
     Plotting (effective) band structures and related.
 
@@ -19,11 +19,23 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         kpath_in_angs : array, optional
             k on path (in A^-1) coordinate. The default is None.
         unfolded_bandstructure : ndarray, optional
-            Unfolded effective band structure data. 
-            Format: k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor.] or
+            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
             The default is None.
         save_figure_dir : str/path, optional
             Directory where to save the figure. The default is current directory.
+            
+        Returns
+        -------
+        kpath_in_angs : array
+            k on path (in A^-1) coordinate.
+        unfolded_bandstructure : ndarray
+            Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy, weight] or
+            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        efermi : float
+            Default Fermi energy. Set to 0.0.
 
         """
         GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
@@ -39,11 +51,13 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         
         if unfolded_bandstructure is None:
             try:
-                self.plot_result = self.unfolded_bandstructure.copy()
+                plt_result = self.unfolded_bandstructure.copy() 
             except:
                 raise ValueError('No bandstructure data file is found')
         else:
-            self.plot_result = unfolded_bandstructure.copy()
+            plt_result = unfolded_bandstructure.copy() 
+            
+        self.plot_result = _GeneralFunctionsDefs._reformat_columns_full_bandstr_data(plt_result)
     
     def _plot(self, fig=None, ax=None, save_file_name=None, CountFig=None, Ef=None, Emin=None, 
               Emax=None,  pad_energy_scale:float=0.5, threshold_weight:float=None,  
@@ -147,25 +161,17 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         if mode != "band_centers" and len(self.plot_result[0]) > 3: 
             self.plot_result = self.plot_result[:, 1:]
         
-        if Ef == 'auto' or Ef is None: 
-            Ef = self.efermi
+        if Ef == 'auto' or Ef is None:  Ef = self.efermi
+            
+        Emin, Emax, result = \
+            _GeneralFunctionsDefs._get_data_in_energy_window(self.plot_result, 
+                                                             Ef, Emin=Emin, Emax=Emax,  
+                                                             pad_energy_scale=pad_energy_scale, 
+                                                             threshold_weight=threshold_weight)
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
-            YYY = self.plot_result[:, 1] - Ef 
             ax.axhline(y=0, color='k', ls='--', lw=1)
             if yaxis_label == 'E (eV)': yaxis_label = r"E$-$E$_\mathrm{F}$ (eV)"
-            print(f"-- Efermi was set to {Ef} eV")
-
-        if Emin is None: Emin = YYY.min() - pad_energy_scale
-        if Emax is None: Emax = YYY.max() + pad_energy_scale
-        
-        pos_right_energy_window = (YYY >= Emin - max(smear*10, 0.1)) * (YYY <= Emax + max(smear*10, 0.1))
-        result = self.plot_result[pos_right_energy_window]
-        result[:, 1] = YYY[pos_right_energy_window]
-
-        # Set weights to 0 which are below threshold_weight
-        if threshold_weight is not None: 
-            result[result[:, -1] < threshold_weight, -1] = 0
         
         # Plot as fat band
         if mode == "fatband":
@@ -173,6 +179,7 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
                                                  scatter_color=color, show_legend=show_legend,
                                                  plotSC=plotSC)
         elif mode == "density":
+            
             ax, return_plot = self._plot_density(result, ax, Emin, Emax, nE, self.kpath_in_angs_, 
                                                  smear, cmap=color_map, vmin=vmin, vmax=vmax)
         elif mode == 'band_centers':
@@ -203,10 +210,7 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         ax.set_xlim([self.kpath_in_angs_.min(), self.kpath_in_angs_.max()])
 
         if save_file_name is None:
-            if show_plot: 
-                plt.show()
-            else:
-                pass
+            if show_plot: plt.show()
         else:
             CountFig = self.save_figure(save_file_name, fig=self.fig, CountFig=CountFig, **kwargs_savefig)
             plt.close()
@@ -327,6 +331,7 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         ----------
         data_4_plot : numpy 2d array
             Data to plot.
+            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
         ax : matplotlib.pyplot axis, optional
             Figure axis to plot on.
         color : matplotlib color/str, optional
@@ -462,6 +467,12 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
         elif plot_max_scf_steps <1 : 
             print('Warning: scf steps indices starts with 1.')
             plot_max_scf_steps = 1
+        else:
+            max_scf_steps_f = max([max(al_scf_data[JJ].keys()) for JJ in al_scf_data.keys()])
+            if plot_max_scf_steps > max_scf_steps_f:
+                _rtx__ = f'Requested {plot_max_scf_steps} maximum SCF steps plot. Found {max_scf_steps_f} maximum SCF steps in dictionary.'
+                print(f'Warning: {_rtx__}. Will plot {max_scf_steps_f} SCF steps.')
+                plot_max_scf_steps = max_scf_steps_f
         
         # Find the maximum and minimum in color scale
         if plot_colormap_bandcenter:
@@ -481,9 +492,9 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
             
         plot_mode = 'fatband' if plot_sc_unfold else 'only_for_all_scf'
         if Ef == 'auto' or Ef is None: Ef = self.efermi
-        count_fig_pec = len(str(plot_max_scf_steps))
+        count_fig_pec = len(str(plot_max_scf_steps+1))
         
-        for scf_step in range(1, plot_max_scf_steps): # loop over scf cycle
+        for scf_step in range(1, plot_max_scf_steps+1): # loop over scf cycle
             print(f'-- Plotting SCF step: {scf_step}')
             fig, ax = plt.subplots()
             fig, ax, _ \
@@ -522,10 +533,7 @@ class EBSplot(GeneratePlots, _FormatSpecialKpts):
             # ax.set_xlim([self.kpath_in_angs_.min(), self.kpath_in_angs_.max()])
 
             if save_file_name is None:
-                if show_plot:
-                    plt.show()
-                else:
-                    pass
+                if show_plot: plt.show()
             else:
                 _ = self.save_figure(save_file_name_, fig=fig, CountFig=None, **kwargs_savefig)
                 plt.close()

@@ -113,10 +113,15 @@ banduppy package:
     2. BandStructure class
         2.1 BandStructure()
     3. Properties class
+        3.1 collect_bandstr_data_only_in_energy_window()
         3.1 band_centers_broadening_bandstr()
-    4. Plotting class
-        4.1 plot_ebs()
-        4.2 plot_scf()
+    4. SaveBandStructuredata class
+        4.1 save_unfolded_pc_kpts()
+        4.2 save_unfolded_bandstucture()
+        4.3 save_unfolded_bandcenter()
+    5. Plotting class
+        5.1 plot_ebs()
+        5.2 plot_scf()
 ```
 
 #### 1. Lat's start
@@ -228,21 +233,19 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                                 'fname': 'bandstructure_unfolded',
                                                 'fname_suffix': ''})
 ```
-#### 5. Determine band centers and band width
-```
-# This uses SCF algorithm of automatic band center determination from 
-# PRB 89, 041407(R) (2014) paper.
-# -------------------- Initiate Properties method -----------------------------
+#### 4. Determine band centers and band width
+Band ceneters are determined using the SCF algorithm of automatic band center determination from [Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk, Phys. Rev. B **89**, 041407(R) (2014)](http://doi.org/10.1103/PhysRevB.89.041407) paper.
+```.
+    # -------------------- Initiate Properties method -----------------------------
     unfolded_band_properties = banduppy.Properties(print_log='high')
-    # Experience suggests to tune the following 3 variables for improving band centers determination
-    min_dN = 1e-5
-    min_sum_dNs_for_a_band = 0.05 
-    threshold_dN_2b_trial_band_center = 0.05
-    # These next two variables do not have strong influence on determining band centers
-    prec_pos_band_centers = 1e-5 # in eV
-    err_tolerance = 1e-8
-
-    
+    #===================================
+    min_dN = 1e-5 # get rid of small weights bands
+    threshold_dN_2b_trial_band_center = 0.05 # initial guess of the band centers based on the threshold wights.
+    min_sum_dNs_for_a_band = 0.05 # Cut off criteria for minimum weights that a band center should have.
+    #===================================
+    err_tolerance = 1e-8 # The tolerance to group the bands set per unique kpoints value.
+    prec_pos_band_centers = 1e-5 # in eV # Precision when compared band centers from previous and current SCF
+    #===================================
     unfolded_bandstructure_properties, all_scf_data = \
         unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
                                                                  min_dN_pre_screening=min_dN,
@@ -250,10 +253,24 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                                                  threshold_dN_2b_trial_band_center,
                                                                  min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
                                                                  precision_pos_band_centers=prec_pos_band_centers,
-                                                                 err_tolerance_compare_kpts=err_tolerance,
+                                                                 err_tolerance_compare_kpts_val=err_tolerance,
                                                                  collect_scf_data=False)
 ```
-#### 4. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
+#### 5. Determine effective mass (parabolic and non-parabolic) from part of the band structure or band center data
+```
+    TBA
+```
+#### 6. Determine alloy-scattering potential from part of the band structure or band center data
+This is based on the ... paper.
+```
+    TBA
+```
+#### 7. Save unfolded band structure and band center data
+It is possible to save the data during the function call for unfolding and band ceneter determination within their corresponding class as shown above.
+
+__Alternatively,__ you can use `SaveBandStructuredata` class to save the different data. This can be useful if you want save those data after some post processing (for e.g. want to save part of the data only). Note that the data format should be compatible with the required data format for each functions.
+
+#### 8. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
 ```
     # Fermi energy
     Efermi = 5.9740
@@ -344,7 +361,14 @@ __Option 2:__ Using BandUPpy Plotting module.
 <!-- =========================================================== -->
 ## Tips and tricks:
 
-__TBD__
+__Problem:__ I am getting `RuntimeError` in one of my calculations using VASP. How can I resolve this?
+
+`RuntimeError: *** error - computed ncnt=18134 != input nplane=18133`
+
+**Answer**: VASP does not write which plane waves it uses to the `WAVECAR` file. Therefore, when `banduppy` (specifically `IrRep`) reads the band structure, it tries to mimic `VASP`'s selection and ordering of plane waves that fall within the cut-off sphere. Occasionally, due to numerical errors, one code might consider a plane wave within the sphere while the other does not. This discrepancy can result in an extra vector, as seen in the above case. To address this, use a small correction coefficient (`_correct_Ecut0`) value. This slightly adjusts the `Ecut` to either exclude or include plane waves near the boundary of the cut-off sphere. In the example case, use small negative correction to exclude plane waves near the boundary of the cut-off sphere. Use small positive correction when `computed ncnt < input nplane`.
+
+`bands = banduppy.BandStructure(code="vasp", spinor=spinorbit, fPOS = "POSCAR", fWAV = "WAVECAR", _correct_Ecut0=-1e-7)`
+
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->

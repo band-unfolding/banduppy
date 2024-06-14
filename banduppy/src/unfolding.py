@@ -6,7 +6,96 @@ except ImportError:
     from irrep.utility import is_round
 
 ### ===========================================================================
-class BandUnfolding:
+class _GeneralFnsDefs:
+    """
+    Some of the general function definitions.
+    """
+    @classmethod
+    def _save_Post_unfolded_PBZ_kpts(cls, unfolded_kpts_dat, save_dir, file_name, 
+                                     file_name_suffix, print_information='low'):
+        """
+        Save unfolded PC-kpoints.
+
+        Parameters
+        ----------
+        unfolded_kpts_dat : numpy array
+            Unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
+        save_dir : str or path
+            Directory path where to save the file.
+        file_name : str
+            Name of the file.
+        file_name_suffix : str
+            Suffix to add to the file name.
+        print_information : [None,'low','medium','high'], optional
+                Level of printing information. 
+                The default is 'low'. If None, nothing is printed.
+
+        Returns
+        -------
+        None.
+
+        """
+        if print_information is not None: 
+            print(f"{'='*_draw_line_length}\n- Saving unfolded kpoints to file...")
+        header_msg  = " Unfolded PC k-points from postprocessed wavefunction file\n"
+        header_msg += " k-index, k on path (A^-1), k1, k2, k3\n"
+        # Save the sc-kpoints in file
+        save_f_name = \
+        SaveData2File.save_2_file(data=unfolded_kpts_dat, 
+                                  save_dir=save_dir, file_name=file_name,
+                                  file_name_suffix=f'{file_name_suffix}.dat', 
+                                  header_txt=header_msg, comments_symbol='#',
+                                  print_log=bool(print_information))
+        if print_information is not None: 
+            print(f'-- Filepath: {save_f_name}\n- Done')
+
+    @classmethod
+    def _save_Post_unfolded_bandstucture(cls, unfolded_bandstructure, save_dir, file_name, file_name_suffix, 
+                                         print_information='low', is_spinor:bool=False):
+        """
+        Save unfolded effective band structure data.
+
+        Parameters
+        ----------
+        unfolded_bandstructure : numpy ndarray
+            Unfolded effective band structure.
+            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor]
+        save_dir : str or path
+            Directory path where to save the file.
+        file_name : str
+            Name of the file.
+        file_name_suffix : str
+            Suffix to add to the file name.
+        is_spinor : bool, optional
+            If the bands in wave function files are non-degenerate (spinor). 
+            The default is False.
+        print_information : [None,'low','medium','high'], optional
+                Level of printing information. 
+                The default is 'low'. If None, nothing is printed.
+
+        Returns
+        -------
+        None.
+
+        """
+        if print_information is not None: 
+            print(f"{'='*_draw_line_length}\n- Saving unfolded bandstructure to file...")
+        header_msg  = " Unfolded band structure from postprocessed wavefunction file\n"
+        header_msg += " k-index, k on path (A^-1), energy, weight " + \
+                        ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
+        # Save the unfolded band structure in file
+        save_f_name = \
+        SaveData2File.save_2_file(data=unfolded_bandstructure, 
+                                  save_dir=save_dir, file_name=file_name,
+                                  file_name_suffix=f'{file_name_suffix}.dat', 
+                                  header_txt=header_msg, comments_symbol='#',
+                                  print_log=bool(print_information)) #,
+                                  #np_data_fmt='%.18e')
+        if print_information is not None: 
+            print(f'-- Filepath: {save_f_name}\n- Done')
+
+class BandUnfolding(_GeneralFnsDefs):
     """
     Band unfolding from supercell to primitive cell band structure (effective band structure).
 
@@ -174,77 +263,6 @@ class BandUnfolding:
         """
         if level == 'high':
             self._print_Post_unfolded_PBZ_kpts()
-                    
-    def _save_Post_unfolded_PBZ_kpts(self, save_dir, file_name, file_name_suffix):
-        """
-        Save unfolded PC-kpoints.
-        Format: k-index, k on path (A^-1), k1, k2, k3
-
-        Parameters
-        ----------
-        save_dir : str or path
-            Directory path where to save the file.
-        file_name : str
-            Name of the file.
-        file_name_suffix : str
-            Suffix to add to the file name.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.print_information is not None: 
-            print(f"{'='*_draw_line_length}\n- Saving unfolded kpoints to file...")
-        header_msg  = " Unfolded PC k-points from postprocessed wavefunction file\n"
-        header_msg += " k-index, k on path (A^-1), k1, k2, k3\n"
-        # Save the sc-kpoints in file
-        save_f_name = \
-        SaveData2File.save_2_file(data=self.unfolded_kpts_dat, 
-                                  save_dir=save_dir, file_name=file_name,
-                                  file_name_suffix=f'{file_name_suffix}.dat', 
-                                  header_txt=header_msg, comments_symbol='#',
-                                  print_log=bool(self.print_information))
-        if self.print_information is not None: 
-            print(f'-- Filepath: {save_f_name}\n- Done')
-        
-    def _save_Post_unfolded_bandstucture(self, save_dir, file_name, file_name_suffix, is_spinor:bool=False):
-        """
-        Save unfolded effective band structure data.
-        Format: k-index, k on path (A^-1), k1, k2, k3
-
-        Parameters
-        ----------
-        save_dir : str or path
-            Directory path where to save the file.
-        file_name : str
-            Name of the file.
-        file_name_suffix : str
-            Suffix to add to the file name.
-        is_spinor : bool, optional
-            If the bands in wave function files are non-degenerate (spinor). 
-            The default is False.
-
-        Returns
-        -------
-        None.
-
-        """
-        if self.print_information is not None: 
-            print(f"{'='*_draw_line_length}\n- Saving unfolded bandstructure to file...")
-        header_msg  = " Unfolded band structure from postprocessed wavefunction file\n"
-        header_msg += " k-index, k on path (A^-1), energy, weight " + \
-                        ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
-        # Save the unfolded band structure in file
-        save_f_name = \
-        SaveData2File.save_2_file(data=self.unfolded_bandstructure, 
-                                  save_dir=save_dir, file_name=file_name,
-                                  file_name_suffix=f'{file_name_suffix}.dat', 
-                                  header_txt=header_msg, comments_symbol='#',
-                                  print_log=bool(self.print_information)) #,
-                                  #np_data_fmt='%.18e')
-        if self.print_information is not None: 
-            print(f'-- Filepath: {save_f_name}\n- Done')
             
     def _save_unfolded_kpts_bandstr(self,
                                     save_unfolded_kpts = {'save2file': False,
@@ -261,7 +279,7 @@ class BandUnfolding:
         Parameters
         ----------
         save_unfolded_kpts : dictionary, optional
-            save2file :: Save unfolded kpoints or not? 
+            save2file :: Save unfolded kpoints data to file or not? 
             fir :: str or path
                 Directory path where to save the file.
             fname :: str
@@ -270,7 +288,7 @@ class BandUnfolding:
                 Suffix to add to the file name.
             The default is {'save2file': False, 'fdir': '.', 'fname': 'kpoints_unfolded', 'fname_suffix': ''}.
         save_unfolded_bandstr : dictionary, optional
-            save2file :: Save unfolded kpoints or not? 
+            save2file :: Save unfolded bandstructure data to file or not? 
             fir :: str or path
                 Directory path where to save the file.
             fname :: str
@@ -285,15 +303,21 @@ class BandUnfolding:
 
         """
         # Save unfolded kpoints after post processing of wave function file
+        save_unfolded_kpts = SaveData2File.default_save_settings(save_unfolded_kpts)
         if save_unfolded_kpts['save2file']:
-            self._save_Post_unfolded_PBZ_kpts(save_dir=save_unfolded_kpts["fdir"], 
+            self._save_Post_unfolded_PBZ_kpts(unfolded_kpts_dat=self.unfolded_kpts_dat, 
+                                              save_dir=save_unfolded_kpts["fdir"], 
                                               file_name=save_unfolded_kpts["fname"], 
-                                              file_name_suffix=save_unfolded_kpts["fname_suffix"])
+                                              file_name_suffix=save_unfolded_kpts["fname_suffix"],
+                                              print_information=self.print_information)
         # Save unfolded band structure after post processing of wave function file
+        save_unfolded_bandstr = SaveData2File.default_save_settings(save_unfolded_bandstr)
         if save_unfolded_bandstr['save2file']:
-            self._save_Post_unfolded_bandstucture(save_dir=save_unfolded_bandstr["fdir"], 
+            self._save_Post_unfolded_bandstucture(unfolded_bandstructure=self.unfolded_bandstructure, 
+                                                  save_dir=save_unfolded_bandstr["fdir"], 
                                                   file_name=save_unfolded_bandstr["fname"], 
-                                                  file_name_suffix=save_unfolded_bandstr["fname_suffix"])
+                                                  file_name_suffix=save_unfolded_bandstr["fname_suffix"],
+                                                  print_information=self.print_information)
 
     def unfold(self, bandstructure, kline_discontinuity_threshold = 0.1,
                save_unfolded_kpts = {'save2file': False, 
@@ -317,7 +341,7 @@ class BandUnfolding:
             to a large value if the unfolded kpoints line is continuous.
             The default is 0.1.
         save_unfolded_kpts : dictionary, optional
-            save2file :: Save unfolded kpoints or not? 
+            save2file :: Save unfolded kpoints data to file or not? 
             fir :: str or path
                 Directory path where to save the file.
             fname :: str
@@ -326,7 +350,7 @@ class BandUnfolding:
                 Suffix to add to the file name.
             The default is {'save2file': False, 'fdir': '.', 'fname': 'kpoints_unfolded', 'fname_suffix': ''}.
         save_unfolded_bandstr : dictionary, optional
-            save2file :: Save unfolded kpoints or not? 
+            save2file :: Save unfolded band structure data to file or not? 
             fir :: str or path
                 Directory path where to save the file.
             fname :: str
