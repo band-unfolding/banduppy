@@ -5,7 +5,7 @@ import numpy as np
 import pickle
 import banduppy
 
-print(f'- Bandup version: {banduppy.__version__}')
+print(f'- BandUPpy version: {banduppy.__version__}')
 
 #%% ----------------------------- Set job -------------------------------------
 spinorbit = True
@@ -92,14 +92,14 @@ if do_non_self_consistent:
 
 #%% ------------------------ Read wave function file --------------------------
 if read_bandstructure:
-    print (f"{'='*72}\n- Reading bandstructure...")
+    print (f"{'='*72}\n- Reading band structure...")
     bands = banduppy.BandStructure(code="vasp", spinor=False, 
                                    fPOS = f"{sim_folder}/POSCAR",
                                    fWAV = f"{sim_folder}/WAVECAR")
     pickle.dump(bands,open(f"{results_dir}/bandstructure.pickle","wb"))
-    print ("- Reading bandstructure - done")
+    print ("- Reading band structure - done")
 else:
-    print (f"{'='*72}\n- Unpickling bandstructure...")
+    print (f"{'='*72}\n- Unpickling band structure...")
     bands = pickle.load(open(f"{results_dir}/bandstructure.pickle","rb"))  
     print ("- Unpickling - done")
 
@@ -118,7 +118,7 @@ if do_unfold:
                                                 'fname_suffix': ''})
     print ("- Unfolding - done")
 else:
-    print (f"{'='*72}\n- Reading bandstructure data from saved file...")
+    print (f"{'='*72}\n- Reading band structure data from saved file...")
     unfolded_bandstructure_ = np.loadtxt(f'{results_dir}/bandstructure_unfolded.dat')
     kpline = np.loadtxt(f'{results_dir}/kpoints_unfolded.dat')[:,1]
     with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
@@ -136,14 +136,24 @@ if do_plot:
     Emax = 5
     # Filename to save the figure. If None, figure will not be saved
     save_file_name = 'unfolded_bandstructure.png'
+
+    plot_unfold = banduppy.Plotting(save_figure_dir=results_dir)
     
     fig, ax, CountFig \
-    = band_unfold.plot_ebs(kpath_in_angs=kpline, 
-                            unfolded_bandstructure=unfolded_bandstructure_, 
-                            save_figure_dir=results_dir, 
-                            save_file_name=save_file_name, CountFig=None, 
-                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                            mode="density", special_kpoints=special_kpoints_pos_labels, 
-                            plotSC=True, fatfactor=20, nE=100,smear=0.2, 
-                            scatter_color='red', color_map='viridis')
+    = plot_unfold.plot_ebs(kpath_in_angs=kpline,
+                           unfolded_bandstructure=unfolded_bandstructure_,
+                           save_file_name=save_file_name, CountFig=None,
+                           Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5,
+                           mode="fatband", special_kpoints=special_kpoints_pos_labels,
+                           plotSC=True, fatfactor=20, nE=100,smear=0.2,
+                           color='red', color_map='viridis', show_colorbar=False)
+    
+#%%
+    fig, ax, CountFig \
+    = band_unfold.plot_ebs(save_figure_dir=results_dir,
+                           save_file_name=save_file_name, CountFig=None, 
+                           Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
+                           mode="fatband", special_kpoints=special_kpoints_pos_labels, 
+                           plotSC=True, fatfactor=20, nE=100,smear=0.2, 
+                           color='red', color_map='viridis', show_colorbar=False)
     print ("- Plotting band structure - done")

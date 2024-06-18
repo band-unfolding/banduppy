@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from ..BasicFunctions.general_plot_functions import GeneratePlots
+from ..BasicFunctions.general_plot_functions import _GeneratePlots
 from .EBS_properties import _GeneralFunctionsDefs, _FormatSpecialKpts
 
 ### ===========================================================================
-class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
+class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
     """
     Plotting (effective) band structures and related.
 
@@ -38,7 +38,7 @@ class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             Default Fermi energy. Set to 0.0.
 
         """
-        GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
+        _GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
         self.efermi = 0.0
         
         if kpath_in_angs is None:
@@ -64,7 +64,7 @@ class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
               mode:str="fatband", yaxis_label:str='E (eV)', special_kpoints:dict=None, 
               plotSC:bool=True, marker='o', fatfactor=20, nE:int=100, smear:float=0.05,  
               color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
-              show_legend:bool=True, show_colorbar:bool=True, colorbar_label:str=None,
+              show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None,
               vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
@@ -124,7 +124,7 @@ class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             If show legend or not. The default is True.
         show_colorbar : bool, optional
             Plot the colorbar in the figure or not. If fig=None, this is ignored.
-            The default is True.
+            The default is False.
         colorbar_label : str, optional
             Colorbar label. The default is None. If None, ignored.
         vmin, vmax : float, optional
@@ -212,7 +212,7 @@ class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         if save_file_name is None:
             if show_plot: plt.show()
         else:
-            CountFig = self.save_figure(save_file_name, fig=self.fig, CountFig=CountFig, **kwargs_savefig)
+            CountFig = self._save_figure(save_file_name, fig=self.fig, CountFig=CountFig, **kwargs_savefig)
             plt.close()
         return self.fig, ax, CountFig
     
@@ -535,5 +535,5 @@ class EBSplot(GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             if save_file_name is None:
                 if show_plot: plt.show()
             else:
-                _ = self.save_figure(save_file_name_, fig=fig, CountFig=None, **kwargs_savefig)
+                _ = self._save_figure(save_file_name_, fig=fig, CountFig=None, **kwargs_savefig)
                 plt.close()

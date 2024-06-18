@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import banduppy
 
-print(f'- Bandup version: {banduppy.__version__}')
+print(f'- BandUPpy version: {banduppy.__version__}')
 
 #%% ------------------------ Define variables ---------------------------------
 # supercell : 4X4X2 supercell == np.diag([4,4,2]) or

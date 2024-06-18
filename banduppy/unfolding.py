@@ -1,8 +1,8 @@
-from .src import BandFolding, BandUnfolding, _GeneralFnsDefs
-from .Utilities import _GeneralFunctionsDefs, EBSplot, FoldingDegreePlot, BandCentersBroadening, EffectiveMass
+from .src import _BandFolding, _BandUnfolding, _GeneralFnsDefs
+from .Utilities import _GeneralFunctionsDefs, _EBSplot, _FoldingDegreePlot, _BandCentersBroadening, _EffectiveMass
 
 ### ===========================================================================    
-class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
+class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
     """
     Band folding from primitive to supercell.
 
@@ -21,7 +21,7 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
 
         """       
         if print_log is not None: print_log = print_log.lower()
-        BandFolding.__init__(self, supercell=supercell, print_info=print_log)
+        _BandFolding.__init__(self, supercell=supercell, print_info=print_log)
         
     def propose_maximum_minimum_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
                                         serach_mode:str='brute_force', draw_plots:bool=True, 
@@ -75,17 +75,17 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
             If draw_plots=True, also returns fig, ax, and CountFig.
         """
         proposed_folding_results = \
-             self.propose_best_least_folding(pathPBZ, min_num_pts=min_num_pts, 
-                                             max_num_pts=max_num_pts,
-                                             serach_mode=serach_mode)
+             self._propose_best_least_folding(pathPBZ, min_num_pts=min_num_pts, 
+                                              max_num_pts=max_num_pts,
+                                              serach_mode=serach_mode)
         if draw_plots:
-            FoldingDegreePlot.__init__(self, fold_results_dictionary=proposed_folding_results, 
-                                       save_figure_dir=save_dir)
-            fig, ax, CountFig = self.plot_folding(save_file_name=save_file_name, 
-                                                  CountFig=CountFig, 
-                                                  yaxis_label=yaxis_label,
-                                                  xaxis_label=xaxis_label, 
-                                                  line_color=line_color)
+            _FoldingDegreePlot.__init__(self, fold_results_dictionary=proposed_folding_results, 
+                                        save_figure_dir=save_dir)
+            fig, ax, CountFig = self._plot_folding(save_file_name=save_file_name, 
+                                                   CountFig=CountFig, 
+                                                   yaxis_label=yaxis_label,
+                                                   xaxis_label=xaxis_label, 
+                                                   line_color=line_color)
             return proposed_folding_results, fig, ax, CountFig
         return proposed_folding_results
         
@@ -148,13 +148,13 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
             SC unique kpoints indices for reverse engineer.
 
         """
-        return self.generate_SC_K_from_pc_k_path(pathPBZ=pathPBZ, nk=nk, labels=labels, 
-                                                 kpts_weights=kpts_weights, 
-                                                 save_all_kpts=save_all_kpts, 
-                                                 save_sc_kpts=save_sc_kpts, 
-                                                 save_dir=save_dir, file_name=file_name, 
-                                                 file_name_suffix=file_name_suffix, 
-                                                 file_format=file_format)
+        return self._generate_SC_K_from_pc_k_path(pathPBZ=pathPBZ, nk=nk, labels=labels, 
+                                                  kpts_weights=kpts_weights, 
+                                                  save_all_kpts=save_all_kpts, 
+                                                  save_sc_kpts=save_sc_kpts, 
+                                                  save_dir=save_dir, file_name=file_name, 
+                                                  file_name_suffix=file_name_suffix, 
+                                                  file_format=file_format)
             
     def generate_SC_Kpts_from_pc_kpts(self, kpointsPBZ=None, kpts_weights=None,
                                       save_all_kpts:bool=False, save_sc_kpts:bool=False, 
@@ -208,13 +208,13 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
             Position and labels of special kpoints, will be used in plotting.
 
         """
-        return self.generate_K_from_k(kpointsPBZ=kpointsPBZ, kpts_weights=kpts_weights,
-                                      save_all_kpts=save_all_kpts, 
-                                      save_sc_kpts=save_sc_kpts, 
-                                      save_dir=save_dir, file_name=file_name, 
-                                      file_name_suffix=file_name_suffix, 
-                                      file_format=file_format, footer_msg=footer_msg,
-                                      special_kpoints_pos_labels=special_kpoints_pos_labels)
+        return self._generate_K_from_k(kpointsPBZ=kpointsPBZ, kpts_weights=kpts_weights,
+                                       save_all_kpts=save_all_kpts, 
+                                       save_sc_kpts=save_sc_kpts, 
+                                       save_dir=save_dir, file_name=file_name, 
+                                       file_name_suffix=file_name_suffix, 
+                                       file_format=file_format, footer_msg=footer_msg,
+                                       special_kpoints_pos_labels=special_kpoints_pos_labels)
     
     def Unfold(self, bandstructure,  
                PBZ_kpts_list_full=None, SBZ_kpts_list=None, SBZ_PBZ_kpts_map=None,
@@ -280,32 +280,36 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
         """
         if (PBZ_kpts_list_full is None) or \
             (SBZ_kpts_list in None) or (SBZ_PBZ_kpts_map is None):
-            BandUnfolding.__init__(self, self.transformation_matrix, 
-                                   self.PBZ_kpts_list_org, self.SBZ_kpts_list, 
-                                   self.SBZ_PBZ_kpts_mapping,
-                                   print_info=self.print_information)
+            _BandUnfolding.__init__(self, self.transformation_matrix, 
+                                    self.PBZ_kpts_list_org, self.SBZ_kpts_list, 
+                                    self.SBZ_PBZ_kpts_mapping,
+                                    print_info=self.print_information)
         else:
-            BandUnfolding.__init__(self, self.transformation_matrix, 
-                                   PBZ_kpts_list_full, SBZ_kpts_list, 
-                                   SBZ_PBZ_kpts_map, 
-                                   print_info=self.print_information)
+            _BandUnfolding.__init__(self, self.transformation_matrix, 
+                                    PBZ_kpts_list_full, SBZ_kpts_list, 
+                                    SBZ_PBZ_kpts_map, 
+                                    print_info=self.print_information)
         
-        return self.unfold(bandstructure, 
-                           kline_discontinuity_threshold = kline_discontinuity_threshold,
-                           save_unfolded_kpts = save_unfolded_kpts,
-                           save_unfolded_bandstr = save_unfolded_bandstr)
+        return self._unfold(bandstructure, 
+                            kline_discontinuity_threshold = kline_discontinuity_threshold,
+                            save_unfolded_kpts = save_unfolded_kpts,
+                            save_unfolded_bandstr = save_unfolded_bandstr)
 
-    def plot_ebs(self, ax=None, save_figure_dir='.', save_file_name=None, CountFig=None, 
-                 Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
-                 threshold_weight:float=None, mode:str="fatband", 
-                 yaxis_label:str='E (eV)', special_kpoints:dict=None, plotSC:bool=True,  
-                 marker='o', fatfactor=20, nE:int=100, smear:float=0.05, 
-                 scatter_color='gray', color_map='viridis', show_legend:bool=True):
+    def plot_ebs(self, fig=None, ax=None, save_figure_dir='.', save_file_name=None,  
+                 CountFig=None, Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
+                 threshold_weight:float=None, mode:str="fatband", yaxis_label:str='E (eV)', 
+                 special_kpoints:dict=None, plotSC:bool=True, marker='o', fatfactor=20, 
+                 nE:int=100, smear:float=0.05, color='gray', color_map='viridis', 
+                 show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None, 
+                 vmin=None, vmax=None, show_plot:bool=True,**kwargs_savefig):
+        
         """
         Scatter/density plot of the band structure.
 
         Parameters
         ----------
+        fig : matplotlib.pyplot figure instance, optional
+            Figure instance to plot on. The default is None.
         ax : matplotlib.pyplot axis, optional
             Figure axis to plot on. If None, new figure will be created.
             The default is None.
@@ -348,13 +352,25 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
             The default is 100.
         smear : float, optional
             Gaussian smearing. The default is 0.05.
-        scatter_color : str/color, optional
+        color : str/color, optional
             Color of scatter plot of unfolded band structure. The color of supercell
             band structures is gray. The default is 'gray'.
         color_map: str/ matplotlib colormap
             Colormap for density plot. The default is viridis.
         show_legend : bool
             If show legend or not. The default is True.
+        show_colorbar : bool, optional
+            Plot the colorbar in the figure or not. If fig=None, this is ignored.
+            The default is False.
+        colorbar_label : str, optional
+            Colorbar label. The default is None. If None, ignored.
+        vmin, vmax : float, optional
+            vmin and vmax define the data range that the colormap covers. 
+            By default, the colormap covers the complete value range of the supplied data.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
 
         Returns
         -------
@@ -368,17 +384,18 @@ class Unfolding(BandFolding, BandUnfolding, EBSplot, FoldingDegreePlot):
 
         """
         
-        EBSplot.__init__(self, save_figure_dir=save_figure_dir)
+        _EBSplot.__init__(self, save_figure_dir=save_figure_dir)
 
-        return self.plot(ax=ax, save_file_name=save_file_name, CountFig=CountFig, Ef=Ef, 
-                         Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
-                         threshold_weight=threshold_weight, mode=mode,
-                         yaxis_label=yaxis_label, special_kpoints=special_kpoints, 
-                         plotSC=plotSC, marker=marker, fatfactor=fatfactor, nE=nE, 
-                         smear=smear, scatter_color=scatter_color, color_map=color_map,
-                         show_legend=show_legend)
+        return self._plot(fig=fig, ax=ax, save_file_name=save_file_name, CountFig=CountFig,  
+                          Ef=Ef, Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
+                          threshold_weight=threshold_weight, mode=mode, yaxis_label=yaxis_label, 
+                          special_kpoints=special_kpoints, plotSC=plotSC, marker=marker, 
+                          fatfactor=fatfactor, nE=nE, smear=smear, color=color, color_map=color_map,
+                          show_legend=show_legend, show_colorbar=show_colorbar,
+                          colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
+                          show_plot=show_plot, **kwargs_savefig)
     
-class Properties(BandCentersBroadening, EffectiveMass):
+class Properties(_BandCentersBroadening, _EffectiveMass):
     """
     Calculate properties from unfolded band structure.
 
@@ -445,9 +462,9 @@ class Properties(BandCentersBroadening, EffectiveMass):
          
         unfolded_bandcenters_window = \
         _GeneralFunctionsDefs._get_bandstr_data_only_in_energy_kpts_window(unfolded_bandstructure, Ef=Ef, 
-                                                          Emin=Emin, Emax=Emax,  
-                                                          pad_energy_scale=pad_energy_scale, 
-                                                          min_dN_screen=min_dN_screen)
+                                                                           Emin=Emin, Emax=Emax,  
+                                                                           pad_energy_scale=pad_energy_scale, 
+                                                                           min_dN_screen=min_dN_screen)
         
         _GeneralFunctionsDefs._save_band_centers(data2save=unfolded_bandcenters_window, 
                                                  print_log=self.print_log_info,
@@ -524,15 +541,15 @@ class Properties(BandCentersBroadening, EffectiveMass):
             Format: {kpoint_index: {SCF_cycle_index: [Band center, Band width, Sum of dN]}}
 
         """
-        BandCentersBroadening.__init__(self, unfolded_bandstructure=unfolded_bandstructure, 
-                                       min_dN_pre_screening=min_dN_pre_screening,
-                                       threshold_dN_2b_trial_band_center=threshold_dN_2b_trial_band_center,
-                                       min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
-                                       precision_pos_band_centers=precision_pos_band_centers,
-                                       err_tolerance_compare_kpts_val=err_tolerance_compare_kpts_val,
-                                       print_log=self.print_log_info)
-        return self.scfs_band_centers_broadening(collect_data_scf=collect_scf_data,
-                                                 save_data=save_data)
+        _BandCentersBroadening.__init__(self, unfolded_bandstructure=unfolded_bandstructure, 
+                                        min_dN_pre_screening=min_dN_pre_screening,
+                                        threshold_dN_2b_trial_band_center=threshold_dN_2b_trial_band_center,
+                                        min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
+                                        precision_pos_band_centers=precision_pos_band_centers,
+                                        err_tolerance_compare_kpts_val=err_tolerance_compare_kpts_val,
+                                        print_log=self.print_log_info)
+        return self._scfs_band_centers_broadening(collect_data_scf=collect_scf_data,
+                                                  save_data=save_data)
     
 class SaveBandStructuredata:
     """
@@ -638,7 +655,7 @@ class SaveBandStructuredata:
         return
     
 
-class Plotting(EBSplot):
+class Plotting(_EBSplot):
     
     def __init__(self, save_figure_dir='.'):
         """
@@ -659,7 +676,7 @@ class Plotting(EBSplot):
                  yaxis_label:str='E (eV)', special_kpoints:dict=None, plotSC:bool=True,  
                  marker='o', fatfactor=20, nE:int=100, smear:float=0.05, 
                  color='gray', color_map='viridis', show_legend:bool=True,
-                 plot_colormap_bandcenter:bool=True, show_colorbar:bool=True,
+                 plot_colormap_bandcenter:bool=True, show_colorbar:bool=False,
                  colorbar_label:str=None, vmin=None, vmax=None, 
                  show_plot:bool=True,**kwargs_savefig):
         """
@@ -726,7 +743,7 @@ class Plotting(EBSplot):
             If plotting the band ceneters by colormap. The default is True.
         show_colorbar : bool, optional
             Plot the colorbar in the figure or not. If fig=None, this is ignored.
-            The default is True.
+            The default is False.
         colorbar_label : str, optional
             Colorbar label. The default is None. If None, ignored.
         vmin, vmax : float, optional
@@ -749,7 +766,7 @@ class Plotting(EBSplot):
 
         """
         print('- Plotting band structures...')
-        EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
+        _EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
                          unfolded_bandstructure=unfolded_bandstructure, 
                          save_figure_dir=self.save_figure_directory)
 
@@ -856,7 +873,7 @@ class Plotting(EBSplot):
 
         """
         print('- Plotting band centers in band structures...')
-        EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
+        _EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
                          unfolded_bandstructure=unfolded_bandstructure, 
                          save_figure_dir=self.save_figure_directory)
         

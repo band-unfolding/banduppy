@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 import banduppy
 
-print(f'- Bandup version: {banduppy.__version__}')
+print(f'- BandUPpy version: {banduppy.__version__}')
 
 #%% ----------------------------- Set job -------------------------------------
 SimulationParentFolder = '/local/MyGitHub/TestInstall/Test/OverLayBandStructures/' 

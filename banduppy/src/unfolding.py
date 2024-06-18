@@ -1,5 +1,5 @@
 import numpy as np
-from ..BasicFunctions.general_functions import SaveData2File, _BasicFunctionsModule, _draw_line_length
+from ..BasicFunctions.general_functions import _SaveData2File, _BasicFunctionsModule, _draw_line_length
 try:
     from irrep.__aux import is_round
 except ImportError:
@@ -42,11 +42,11 @@ class _GeneralFnsDefs:
         header_msg += " k-index, k on path (A^-1), k1, k2, k3\n"
         # Save the sc-kpoints in file
         save_f_name = \
-        SaveData2File.save_2_file(data=unfolded_kpts_dat, 
-                                  save_dir=save_dir, file_name=file_name,
-                                  file_name_suffix=f'{file_name_suffix}.dat', 
-                                  header_txt=header_msg, comments_symbol='#',
-                                  print_log=bool(print_information))
+        _SaveData2File._save_2_file(data=unfolded_kpts_dat, 
+                                    save_dir=save_dir, file_name=file_name,
+                                    file_name_suffix=f'{file_name_suffix}.dat', 
+                                    header_txt=header_msg, comments_symbol='#',
+                                    print_log=bool(print_information))
         if print_information is not None: 
             print(f'-- Filepath: {save_f_name}\n- Done')
 
@@ -86,16 +86,16 @@ class _GeneralFnsDefs:
                         ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
         # Save the unfolded band structure in file
         save_f_name = \
-        SaveData2File.save_2_file(data=unfolded_bandstructure, 
-                                  save_dir=save_dir, file_name=file_name,
-                                  file_name_suffix=f'{file_name_suffix}.dat', 
-                                  header_txt=header_msg, comments_symbol='#',
-                                  print_log=bool(print_information)) #,
-                                  #np_data_fmt='%.18e')
+        _SaveData2File._save_2_file(data=unfolded_bandstructure, 
+                                    save_dir=save_dir, file_name=file_name,
+                                    file_name_suffix=f'{file_name_suffix}.dat', 
+                                    header_txt=header_msg, comments_symbol='#',
+                                    print_log=bool(print_information)) #,
+                                      #np_data_fmt='%.18e')
         if print_information is not None: 
             print(f'-- Filepath: {save_f_name}\n- Done')
 
-class BandUnfolding(_GeneralFnsDefs):
+class _BandUnfolding(_GeneralFnsDefs):
     """
     Band unfolding from supercell to primitive cell band structure (effective band structure).
 
@@ -303,7 +303,7 @@ class BandUnfolding(_GeneralFnsDefs):
 
         """
         # Save unfolded kpoints after post processing of wave function file
-        save_unfolded_kpts = SaveData2File.default_save_settings(save_unfolded_kpts)
+        save_unfolded_kpts = _SaveData2File._default_save_settings(save_unfolded_kpts)
         if save_unfolded_kpts['save2file']:
             self._save_Post_unfolded_PBZ_kpts(unfolded_kpts_dat=self.unfolded_kpts_dat, 
                                               save_dir=save_unfolded_kpts["fdir"], 
@@ -311,7 +311,7 @@ class BandUnfolding(_GeneralFnsDefs):
                                               file_name_suffix=save_unfolded_kpts["fname_suffix"],
                                               print_information=self.print_information)
         # Save unfolded band structure after post processing of wave function file
-        save_unfolded_bandstr = SaveData2File.default_save_settings(save_unfolded_bandstr)
+        save_unfolded_bandstr = _SaveData2File._default_save_settings(save_unfolded_bandstr)
         if save_unfolded_bandstr['save2file']:
             self._save_Post_unfolded_bandstucture(unfolded_bandstructure=self.unfolded_bandstructure, 
                                                   save_dir=save_unfolded_bandstr["fdir"], 
@@ -319,15 +319,15 @@ class BandUnfolding(_GeneralFnsDefs):
                                                   file_name_suffix=save_unfolded_bandstr["fname_suffix"],
                                                   print_information=self.print_information)
 
-    def unfold(self, bandstructure, kline_discontinuity_threshold = 0.1,
-               save_unfolded_kpts = {'save2file': False, 
-                                     'fdir': '.',
-                                     'fname': 'kpoints_unfolded',
-                                     'fname_suffix': ''},
-               save_unfolded_bandstr = {'save2file': False, 
-                                        'fdir': '.',
-                                        'fname': 'bandstructure_unfolded',
-                                        'fname_suffix': ''}): 
+    def _unfold(self, bandstructure, kline_discontinuity_threshold = 0.1,
+                save_unfolded_kpts = {'save2file': False, 
+                                      'fdir': '.',
+                                      'fname': 'kpoints_unfolded',
+                                      'fname_suffix': ''},
+                save_unfolded_bandstr = {'save2file': False, 
+                                         'fdir': '.',
+                                         'fname': 'bandstructure_unfolded',
+                                         'fname_suffix': ''}): 
         """
         
 

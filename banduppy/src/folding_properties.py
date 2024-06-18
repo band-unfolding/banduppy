@@ -2,26 +2,26 @@ import numpy as np
 from ..BasicFunctions.general_functions import _draw_line_length
     
 ### ===========================================================================
-class FindProperties:
+class _FindProperties:
     def __init__(self):
         pass
     
     @property
-    def nkptSBZ(self):
+    def _nkptSBZ(self):
         '''
         Return number of (unique) SC kpoints.
         '''
         return(self.SBZ_kpts_list.shape[0])
     
     @property
-    def nkptPBZ(self):
+    def _nkptPBZ(self):
         '''
         Return number of PC kpoints.
         '''
         return(self.PBZ_kpts_list_org.shape[0])
 
     @property
-    def nkptPBZ_unique(self):
+    def _nkptPBZ_unique(self):
         '''
         Return number of PC kpoints.
         '''
@@ -44,9 +44,9 @@ class FindProperties:
 
         """
         print(f"{'='*_draw_line_length}\n- Folding info:")
-        print(f"-- Total number of unique PC kpoints: {self.nkptPBZ} ({self.nkptPBZ_unique} unique)")
-        print(f"-- {self.nkptPBZ_unique} unique PC k-points => {self.nkptSBZ} unique SC K-points")
-        print(f'-- Percentage folding: {(self.nkptPBZ_unique-self.nkptSBZ)/self.nkptPBZ_unique*100:.3f} %')
+        print(f"-- Total number of unique PC kpoints: {self._nkptPBZ} ({self._nkptPBZ_unique} unique)")
+        print(f"-- {self._nkptPBZ_unique} unique PC k-points => {self._nkptSBZ} unique SC K-points")
+        print(f'-- Percentage folding: {(self._nkptPBZ_unique-self._nkptSBZ)/self._nkptPBZ_unique*100:.3f} %')
         if level in ['medium','high']:
             print(f"{'='*_draw_line_length}")
             print(f'- Special k-points (pos_index, label): {self.special_kpoints_pos_labels}')
@@ -55,7 +55,7 @@ class FindProperties:
             else:
                 self._print_PBZ_SBZ_kpts_mapping()
 
-    def kpoints_SBZ_str(self):
+    def _kpoints_SBZ_str(self):
         """
         Create string of SC kpoints generated.
 

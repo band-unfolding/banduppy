@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import banduppy
 
-print(f'- Bandup version: {banduppy.__version__}')
+print(f'- BandUPpy version: {banduppy.__version__}')
 print('Note: The lattice parameters for all three Si, Ge and Si-Ge supercells are kept same.')
 
 #%% ----------------------------- Set job -------------------------------------

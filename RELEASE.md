@@ -4,8 +4,11 @@ __v0.3.2__
 
 * Improved band structures plotting
 * Implemented plotting band centers at each SCF cycles
+* Implemened save band structure data independently
+* Implemented effective mass and alloy-scattering potential modules
+* Added version track file
 * Added bibliograpy file (.bib) for referencing
-* Added tips and tricks
+* Added tips and tricks in README
 * Documentation improved
 
 __v0.3.1__

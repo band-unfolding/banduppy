@@ -266,9 +266,9 @@ This is based on the ... paper.
     TBA
 ```
 #### 7. Save unfolded band structure and band center data
-It is possible to save the data during the function call for unfolding and band ceneter determination within their corresponding class as shown above.
+One can save the generated data within the function call for unfolding and band ceneter determination routines as shown above. [recommened]
 
-__Alternatively,__ you can use `SaveBandStructuredata` class to save the different data. This can be useful if you want save those data after some post processing (for e.g. want to save part of the data only). Note that the data format should be compatible with the required data format for each functions.
+__However,__ you may want save the generated data (from the above function calls) after some post processing, for e.g., you want to save part of the data only. __In such cases,__ you can use functions from `SaveBandStructuredata` class to save those data. Note that the data format should be compatible with the required data format for each functions.
 
 #### 8. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
 ```
@@ -331,7 +331,7 @@ __Option 2:__ Using BandUPpy Plotting module.
                             unfolded_bandstructure=unfolded_bandstructure_2, 
                             save_file_name=save_file_name, CountFig=None, 
                             Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                            mode="band_centers", special_kpoints=None, marker='x', 
+                            mode="fatband", special_kpoints=None, marker='x',
                             smear=0.2, color='black', color_map='viridis')
 ```
 
@@ -424,8 +424,7 @@ along with BandUP.  If not, see <http://www.gnu.org/licenses/>.
 
 <!-- =========================================================== -->
 ## Upcoming (TBD)
-1. Effective mass implementation
-2. Scattering potential implementation
-3. Orbital contribution projection implementation
+1. Orbital contribution projection implementation
+2. Improve band center determination algorithm
 <!-- =========================================================== -->
 

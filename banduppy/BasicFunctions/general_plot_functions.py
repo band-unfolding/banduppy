@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 ### ===========================================================================
 
-class GeneratePlots:
+class _GeneratePlots:
     def __init__(self, save_figure_dir='.'):
         """
         Initialize the plotting class.
@@ -32,7 +32,7 @@ class GeneratePlots:
         plt.rcParams.update(params)
         plt.rc('font', size=24)
 
-    def save_figure(self,fig_name, fig=None, CountFig=None, **kwargs_savefig):
+    def _save_figure(self,fig_name, fig=None, CountFig=None, **kwargs_savefig):
         if fig is not None:
             fig.savefig(f'{self.save_figure_folder}/{fig_name}', 
                         bbox_inches='tight', **kwargs_savefig)

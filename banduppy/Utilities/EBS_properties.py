@@ -1,5 +1,5 @@
 import numpy as np
-from ..BasicFunctions.general_functions import SaveData2File, _draw_line_length
+from ..BasicFunctions.general_functions import _SaveData2File, _draw_line_length
 
 ### ===========================================================================
 class _GeneralFunctionsDefs:
@@ -154,19 +154,19 @@ class _GeneralFunctionsDefs:
         None.
 
         """  
-        save_data = SaveData2File.default_save_settings(save_data_f_prop)
+        save_data = _SaveData2File._default_save_settings(save_data_f_prop)
         if save_data['save2file']:     
             if print_log is not None: 
                 print(f"{'='*_draw_line_length}\n- Saving unfolded band centers to file...")
             header_msg  = " Unfolded band centers data\n"
             header_msg += " k on path (A^-1), Band center energy, Band width, Sum of dN\n"
             # Save the sc-kpoints in file
-            save_f_name = SaveData2File.save_2_file(data=data2save, 
-                                                    save_dir=save_data["fdir"], 
-                                                    file_name=save_data["fname"],
-                                                    file_name_suffix=f'{save_data["fname_suffix"]}.dat', 
-                                                    header_txt=header_msg, comments_symbol='#',
-                                                    print_log=bool(print_log))
+            save_f_name = _SaveData2File._save_2_file(data=data2save, 
+                                                      save_dir=save_data["fdir"], 
+                                                      file_name=save_data["fname"],
+                                                      file_name_suffix=f'{save_data["fname_suffix"]}.dat', 
+                                                      header_txt=header_msg, comments_symbol='#',
+                                                      print_log=bool(print_log))
             if print_log is not None: 
                 print(f'-- Filepath: {save_f_name}\n- Done')
         return
@@ -206,7 +206,7 @@ class _FormatSpecialKpts:
         special_kpts_poss = [label[0] for label in k_labels]
         return special_kpts_labels, special_kpts_poss
 
-class BandCentersBroadening(_GeneralFunctionsDefs):
+class _BandCentersBroadening(_GeneralFunctionsDefs):
     """
     Find band centers and broadening of the unfolded band structure. 
     The implementation is based on the SCF algorithm of automatic band center 
@@ -275,11 +275,11 @@ class BandCentersBroadening(_GeneralFunctionsDefs):
             self._check_min_sum_dNs_condition(min_sum_dNs_for_a_band, 
                                               threshold_dN_2b_trial_band_center)
         
-    def scfs_band_centers_broadening(self, collect_data_scf:bool=False,
-                                     save_data = {'save2file': False, 
-                                                  'fdir': '.',
-                                                  'fname': 'unfolded_bandcenters',
-                                                  'fname_suffix': ''}):
+    def _scfs_band_centers_broadening(self, collect_data_scf:bool=False,
+                                      save_data = {'save2file': False, 
+                                                   'fdir': '.',
+                                                   'fname': 'unfolded_bandcenters',
+                                                   'fname_suffix': ''}):
         """
         Find the band centers and broadening for a band structure. 
         The implementation is based on the SCF algorithm of automatic band center 
@@ -715,7 +715,7 @@ class BandCentersBroadening(_GeneralFunctionsDefs):
         return True
 
             
-class EffectiveMass(_GeneralFunctionsDefs):
+class _EffectiveMass(_GeneralFunctionsDefs):
     """
     Class for calculating effective mass.
     
