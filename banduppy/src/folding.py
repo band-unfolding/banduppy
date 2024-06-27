@@ -205,9 +205,9 @@ class _KpointsModule:
                 # Search for max-min folding
                 propose_folding_data_[i] = ((start, end),
                     cls._serach_max_min_folding(transformation_matrix, start, end, 
-                                                                       min_num_pts=min_num_pts, 
-                                                                       max_num_pts=max_num_pts,
-                                                                       serach_mode=serach_mode))
+                                                min_num_pts=min_num_pts, 
+                                                max_num_pts=max_num_pts,
+                                                serach_mode=serach_mode))
         return propose_folding_data_
 
         

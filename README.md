@@ -114,7 +114,9 @@ banduppy package:
         2.1 BandStructure()
     3. Properties class
         3.1 collect_bandstr_data_only_in_energy_window()
-        3.1 band_centers_broadening_bandstr()
+        3.2 band_centers_broadening_bandstr()
+        3.3 calculate_effecfive_mass()
+        3.4 fit_functions()
     4. SaveBandStructuredata class
         4.1 save_unfolded_pc_kpts()
         4.2 save_unfolded_bandstucture()
@@ -258,7 +260,20 @@ Band ceneters are determined using the SCF algorithm of automatic band center de
 ```
 #### 5. Determine effective mass (parabolic and non-parabolic) from part of the band structure or band center data
 ```
-    TBA
+    m_star, optimized_parameters, convergence_measure = \
+    unfolded_band_properties.calculate_effecfive_mass(kpath, band_energy,
+                                                      initial_guess_params=None,
+                                                      params_bounds = (-np.inf, np.inf),
+                                                      fit_weights=None, absolute_weights=False,
+                                                      parabolic_dispersion=True,
+                                                      hyperbolic_dispersion_positive=False,
+                                                      hyperbolic_dispersion_negative=False,
+                                                      params_name = ['alpha', 'kshift', 'cbm', 'gamma'])
+    #===================================
+    band_energy_fit = unfolded_band_properties.fit_functions(kpath, optimized_parameters,
+                                                            parabolic_dispersion=True,
+                                                            hyperbolic_dispersion_positive=False,
+                                                            hyperbolic_dispersion_negative=False)
 ```
 #### 6. Determine alloy-scattering potential from part of the band structure or band center data
 This is based on the ... paper.

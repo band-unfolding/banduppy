@@ -1,3 +1,4 @@
+import numpy as np
 from .src import _BandFolding, _BandUnfolding, _GeneralFnsDefs
 from .Utilities import _GeneralFunctionsDefs, _EBSplot, _FoldingDegreePlot, _BandCentersBroadening, _EffectiveMass
 
@@ -551,6 +552,194 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         return self._scfs_band_centers_broadening(collect_data_scf=collect_scf_data,
                                                   save_data=save_data)
     
+    def calculate_effecfive_mass(self, kpath, band_energy, 
+                                 initial_guess_params=None, 
+                                 params_bounds = (-np.inf, np.inf), 
+                                 fit_weights=None, absolute_weights:bool=False,
+                                 parabolic_dispersion:bool=False, 
+                                 hyperbolic_dispersion_positive:bool=False,
+                                 hyperbolic_dispersion_negative:bool=False,
+                                 params_name = ['alpha', 'kshift', 'cbm', 'gamma']):
+        """
+        Calculates effective mass using (hyper) parabolic band dispersion.
+        
+        Parameters
+        ----------
+        kpath : numpy array
+            k on path (A^-1) of unfolded effective band structure/band centers that will
+            be fitted for calculating effective mass.
+        band_energy : numpy array
+            Energy (in eV) of unfolded effective band structure/band centers that will
+            be fitted for calculating effective mass.
+        initial_guess_params : array_like, optional
+            Initial guess for the parameters (length N). If None, then the
+            initial values will all be 1 (if the number of parameters for the
+            function can be determined using introspection, otherwise a
+            ValueError is raised).
+        params_bounds : 2-tuple of array_like or `Bounds`, optional
+            Lower and upper bounds on parameters. Defaults to no bounds.
+            There are two ways to specify the bounds:
+                - Instance of `Bounds` class.
+                - 2-tuple of array_like: Each element of the tuple must be either
+                  an array with the length equal to the number of parameters, or a
+                  scalar (in which case the bound is taken to be the same for all
+                  parameters). Use ``np.inf`` with an appropriate sign to disable
+                  bounds on all or some parameters.
+        fit_weights : None or scalar or M-length sequence or MxM array, optional
+            Determines the uncertainty in ydata. If we define residuals as 
+            r = ydata - f(xdata, *popt), then the interpretation of fit_weights depends on 
+            its number of dimensions:
+            A scalar or 1-D fit_weights should contain values of standard deviations of 
+            errors in ydata. In this case, the optimized function is 
+            chisq = sum((r / fit_weights) ** 2). 
+            A 2-D fit_weights should contain the covariance matrix of errors in ydata. 
+            In this case, the optimized function is 
+            chisq = r.T @ inv(fit_weights) @ r.
+            The default is None. This is equivalent of 1-D fit_weights filled with ones.
+        absolute_weights : bool, optional
+            If True, fit_weights is used in an absolute sense and the estimated parameter 
+            covariance pcov reflects these absolute values.
+            If False, only the relative magnitudes of the fit_weights values matter. 
+            The default is False. 
+        parabolic_dispersion : bool, optional
+            Fit parabolic Kane model of band dispersion. The default is False. 
+            Order: parabolic_dispersion > hyperbolic_dispersion_positive > hyperbolic_dispersion_negative
+        hyperbolic_dispersion_positive : bool, optional
+            Fit hyperbolic model (upward hyperbola) of band dispersion. The default is False.
+        hyperbolic_dispersion_negative : bool, optional
+            Fit hyperbolic model (downward hyperbola) of band dispersion. The default is False.
+        params_name : list of str, optional
+            The name of the parameters. These will be used just to creat text.
+            The defult is ['alpha', 'kshift', 'cbm', 'gamma'].
+            For parabolic dispersion only first three will be used.
+
+        Returns
+        -------
+        m_star : float
+            Calculated effective mass in m_0 unit.
+        popt : array
+            Optimal values for the parameters so that the sum of the squared
+            residuals of ``f(xdata, *popt) - ydata`` is minimized.
+        pcov : 2-D array
+            The estimated approximate covariance of popt. 
+
+        Raises
+        ------
+        ValueError
+            if none of *_dispersion_* option is supplied.
+        ValueError
+            if either `ydata` or `xdata` contain NaNs, or if incompatible options
+            are used.
+        RuntimeError
+            if the least-squares minimization fails.
+        OptimizeWarning
+            if covariance of the parameters can not be estimated.
+             
+        """
+        if (parabolic_dispersion or hyperbolic_dispersion_positive or 
+            hyperbolic_dispersion_negative):
+            pass
+        else:
+            raise ValueError('No dispersion option is supplied for fitting.')
+            
+        _EffectiveMass.__init__(self, print_log=self.print_log_info)
+        text_params_ = ','.join(params_name)
+
+        ## parameters: ['alpha', 'kshift', 'cbm', 'gamma']
+        if initial_guess_params is None: 
+            middle_pos = len(band_energy)//2
+            guess_alpha = (band_energy[middle_pos]-band_energy[0])/(kpath[middle_pos]-kpath[0])**2
+            initial_guess_params = np.array([guess_alpha, kpath[0], 0, 0])
+
+        if len(np.shape(params_bounds)) == 1:
+            # Extra grace to add to define the upper bound of the parameters.
+            # The values are choosen here worked well for some of the test cases.
+            extra_upper_bound = [100, 3*abs(kpath[1]-kpath[0]), 1e-4, 10]
+            params_bounds = ([0, initial_guess_params[1]-1e-2, 0, 0], 
+                             [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
+
+        if parabolic_dispersion:
+            text_params_ = ','.join(params_name[:3])
+            initial_guess_params = initial_guess_params[:3]
+            params_bounds = tuple(xx[:3] for xx in params_bounds)  
+
+        if self.print_log_info is not None:
+            print('-- Effective mass calculator:')
+            if parabolic_dispersion:
+                print('--- Parabolic band dispersion')
+            elif hyperbolic_dispersion_positive:
+                print('--- Hyperbolic band dispersion (upward curvature)')
+            else:
+                print('--- Hyperbolic band dispersion (downward curvature)')
+            
+            if self.print_log_info == 'high':
+                print(f'--- Initial guesses for the parameters: {initial_guess_params}')
+                print(f'--- Upper and lower bounds for the parameters: {params_bounds}')
+            
+        m_star, popt, pcov = self._effective_mass_calculator(kpath, band_energy, 
+                                                             p0=initial_guess_params, bounds=params_bounds,
+                                                             sigma=fit_weights, absolute_sigma=absolute_weights,
+                                                             fit_parabola=parabolic_dispersion,
+                                                             fit_hyperbola_positive=hyperbolic_dispersion_positive,
+                                                             fit_hyperbola_negative=hyperbolic_dispersion_negative)
+        if self.print_log_info is not None:
+            if self.print_log_info in ['medium', 'high']:
+                print(f'--- Optimized parameters {text_params_}: {popt}')
+                print(f'--- One standard deviation errors on the parameters: {np.sqrt(np.diag(pcov))}')
+            print(f'--- Effective mass = {m_star:.4f} m_0')
+        return m_star, popt, pcov
+    
+    def fit_functions(self, kpath, optimized_parameters, 
+                      parabolic_dispersion:bool=False, 
+                      hyperbolic_dispersion_positive:bool=False, 
+                      hyperbolic_dispersion_negative:bool=False):
+        """
+        Fit band dispersion functions using the optimized parameters.
+        
+        Parameters
+        ----------
+        kpath : numpy array
+            k on path (A^-1) of unfolded effective band structure/band centers that will
+            be fitted for calculating effective mass.
+        popt : array
+            Optimized values for the parameters.
+        parabolic_dispersion : bool, optional
+            Fit parabolic Kane model of band dispersion. The default is False. 
+            Order: parabolic_dispersion > hyperbolic_dispersion_positive > hyperbolic_dispersion_negative
+        hyperbolic_dispersion_positive : bool, optional
+            Fit hyperbolic model (upward hyperbola) of band dispersion. The default is False.
+        hyperbolic_dispersion_negative : bool, optional
+            Fit hyperbolic model (downward hyperbola) of band dispersion. The default is False.
+            
+        Returns
+        -------
+        array
+            Band energies for the k-path and optimized parameters.
+
+        Raises
+        ------
+        ValueError
+            if none of *_dispersion_* option is supplied.
+             
+        """
+        if self.print_log_info is not None:
+            print('-- Return band dispersion type in fit functions:')
+            if parabolic_dispersion:
+                print('--- Parabolic band dispersion')
+            elif hyperbolic_dispersion_positive:
+                print('--- Hyperbolic band dispersion (upward curvature)')
+            else:
+                print('--- Hyperbolic band dispersion (downward curvature)')
+
+        if parabolic_dispersion:
+            return _EffectiveMass._fit_parabola(kpath, *optimized_parameters)
+        elif hyperbolic_dispersion_positive:
+             return _EffectiveMass._fit_hyperbola_positive(kpath, *optimized_parameters)
+        elif hyperbolic_dispersion_negative:
+            return _EffectiveMass._fit_hyperbola_negative(kpath, *optimized_parameters)
+        else:
+            raise ValueError('No dispersion option is supplied for fitting.')
+                
 class SaveBandStructuredata:
     """
     Save band structure data class.

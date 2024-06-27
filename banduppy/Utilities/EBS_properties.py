@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.optimize import curve_fit
 from ..BasicFunctions.general_functions import _SaveData2File, _draw_line_length
 
 ### ===========================================================================
@@ -714,34 +715,144 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
                 return False
         return True
 
-            
-class _EffectiveMass(_GeneralFunctionsDefs):
+class _EffectiveMass:
     """
     Class for calculating effective mass.
+    
+    E (1 + gamma*E) = hbar^2 k^2/(2m*)
+    => E (1 + gamma*E) = alpha k^2 
+    => Solving for E yields a quadratic equation when gamma != 0.
+    
+    General equation: 
+        E (1 + gamma*E) = alpha*(k-kshift)^2 + cbm
+         
+    Fit bandstructure along k-path to alpha and gamma. 
+        alpha = hbar^2/(2m*) 
+        gamma = non-parabolicity ==> gamma = 0 for parabolic bands
+    Additional parameters:  
+        kshift = horizontal kpath fit param 
+        cbm = vertical energy fit param, conduction band minima
+        
+    For E in eV and k in A^-1; alpha has unit of eV.A^2 
     
     """
     def __init__(self, print_log='low'):
         """
         Intializing EffectiveMass class. 
-
+        
+        m_e = 9.1093837015e-31 kg
+        habr = 1.054571817e-34 J.s
+        1 ang = 1e-10 m
+        1 eV = 1.602176634e-19 J
+        
+        hbar^2/(2*m_e*alpha_in_eV_angsquare)
+        = (1.054571817e-34**2)/(2*9.1093837015e-31*1.602176634e-19*1e-10**2) 
+        = 3.8099821114859607
+        
         Parameters
         ----------
-
+        
         print_log : [None,'low','medium','high'], optional
             Print information of kpoints folding. Level of printing information. 
             The default is 'low'. If None, nothing is printed.
-
         """
         self.print_output = print_log
+        self.effective_mass_unit_conversion = 3.8099821114859607
 
     @classmethod
-    def _fit_quadratic(cls, XX, YY):
+    def _fit_parabola(cls, k, alpha, kshift, cbm):
+        return alpha * np.power(k - kshift, 2) + cbm
+    
+    @classmethod
+    def _fit_hyperbola_positive(cls, k, alpha, kshift, cbm, gamma):
+        # Positive solution of E quadratic equation
+        return (-1 + np.sqrt(1 + 4*alpha*gamma*np.power(k-kshift,2)))/(2*gamma) + cbm 
+        
+    @classmethod
+    def _fit_hyperbola_negative(cls, k, alpha, kshift, cbm, gamma):
+        # Negative solution of E quadratic equation
+        return (-1 - np.sqrt(1 + 4*alpha*gamma*np.power(k-kshift,2)))/(2*gamma) + cbm 
+        
+    def _effective_mass_calculator(self, kpath, band_energy, p0=None, bounds = (-np.inf, np.inf), 
+                                   sigma=None, absolute_sigma:bool=False, fit_parabola:bool=False, 
+                                   fit_hyperbola_positive:bool=False, fit_hyperbola_negative:bool=False):
         """
-        XX : numpy array
+        kpath : numpy array
             k on path (A^-1) of unfolded effective band structure/band centers that will
             be fitted for calculating effective mass.
-        YY : numpy array
+        band_energy : numpy array
             Energy (in eV) of unfolded effective band structure/band centers that will
             be fitted for calculating effective mass.
+        p0 : array_like, optional
+            Initial guess for the parameters (length N). If None, then the
+            initial values will all be 1 (if the number of parameters for the
+            function can be determined using introspection, otherwise a
+            ValueError is raised).
+        bounds : 2-tuple of array_like or `Bounds`, optional
+            Lower and upper bounds on parameters. Defaults to no bounds.
+            There are two ways to specify the bounds:
+                - Instance of `Bounds` class.
+                - 2-tuple of array_like: Each element of the tuple must be either
+                  an array with the length equal to the number of parameters, or a
+                  scalar (in which case the bound is taken to be the same for all
+                  parameters). Use ``np.inf`` with an appropriate sign to disable
+                  bounds on all or some parameters.
+        sigma : None or scalar or M-length sequence or MxM array, optional
+            Determines the uncertainty in ydata. If we define residuals as 
+            r = ydata - f(xdata, *popt), then the interpretation of sigma depends on 
+            its number of dimensions:
+            A scalar or 1-D sigma should contain values of standard deviations of 
+            errors in ydata. In this case, the optimized function is 
+            chisq = sum((r / sigma) ** 2). 
+            A 2-D sigma should contain the covariance matrix of errors in ydata. 
+            In this case, the optimized function is 
+            chisq = r.T @ inv(sigma) @ r.
+            The default is None. This is equivalent of 1-D sigma filled with ones.
+        absolute_sigma : bool, optional
+            If True, sigma is used in an absolute sense and the estimated parameter 
+            covariance pcov reflects these absolute values.
+            If False, only the relative magnitudes of the sigma values matter. 
+            The default is False. 
+        fit_parabola : bool, optional
+            Fit parabolic Kane model of band dispersion. The default is False. 
+            Order: fit_parabola > fit_hyperbola_positive > fit_hyperbola_negative
+        fit_hyperbola_positive : bool, optional
+            Fit hyperbolic model (upward hyperbola) of band dispersion. The default is False.
+        fit_hyperbola_negative : bool, optional
+            Fit hyperbolic model (downward hyperbola) of band dispersion. The default is False.
+
+        Returns
+        -------
+        m_star : float
+            Calculated effective mass in m_0 unit.
+        popt : array
+            Optimal values for the parameters so that the sum of the squared
+            residuals of ``f(xdata, *popt) - ydata`` is minimized.
+        pcov : 2-D array
+            The estimated approximate covariance of popt. 
+
+        Raises
+        ------
+        ValueError
+            if none of fit_* option is supplied.
+        ValueError
+            if either `ydata` or `xdata` contain NaNs, or if incompatible options
+            are used.
+        RuntimeError
+            if the least-squares minimization fails.
+        OptimizeWarning
+            if covariance of the parameters can not be estimated.
         """
-        pass
+        if fit_parabola:
+            popt, pcov = curve_fit(self._fit_parabola, kpath, band_energy, p0=p0, 
+                                   bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
+        elif fit_hyperbola_positive:
+            popt, pcov = curve_fit(self._fit_hyperbola_positive, kpath, band_energy, p0=p0, 
+                                   bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
+        elif fit_hyperbola_negative:
+            popt, pcov = curve_fit(self._fit_hyperbola_negative, kpath, band_energy, p0=p0, 
+                                   bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
+        else:
+            raise ValueError('No fitting option is supplied for fitting.')
+        m_star = self.effective_mass_unit_conversion/popt[0]
+        return m_star, popt, pcov 

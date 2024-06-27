@@ -129,7 +129,6 @@ class _BandUnfolding(_GeneralFnsDefs):
         self.kpointsSBZ = _BasicFunctionsModule._round_2_tolerance(SBZ_kpts_list)
         self.SBZ_PBZ_kpts_index_map = SBZ_PBZ_kpts_map
         self.print_information = print_info
-
     
     def _gather_generated_ab_calculated_kpts(self, wavefns_file_kpts):
         """
@@ -179,7 +178,50 @@ class _BandUnfolding(_GeneralFnsDefs):
                 for _, vall in val.items(): # kkk: unique PC-kpts indices; vall: list of PC-kpts indices
                     for kk in vall:
                             print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
-    
+                
+    def _generate_kpoints_line(self, irrep_bandstr_instance, pc_kpts_coord, 
+                               transformation_matrix, breakTHRESH = 0.1):
+        """
+        Generates kpoints line (after cartesian coordinate conversion).
+        k_vec = u.b1 + v.b2 + w.b3
+        e.g. (u,v,w)=(1/2, 0, 0) -> k_vec==(kx, ky, kz)
+        [kx ky kz] = [u v w].[[b11 b12 b13], [b21 b22 b23], [b31 b32 b33]]
+
+        Parameters
+        ----------
+        irrep_bandstr_instance : irrep.bandstructure.BandStructure
+            irrep.bandstructure.BandStructure instance.
+        pc_kpts_coord : ndarray of floats
+            PC kpoints list.
+        transformation_matrix : 3X3 matrix
+            Primitive-to-supercell transformation matrix.
+        breakTHRESH : float, optional
+            If the distance between two neighboring k-points in the path is 
+            larger than `break_thresh` break continuity in k-path. Set break_thresh 
+            to a large value if the unfolded kpoints line is continuous.
+            The default is 0.1.
+
+        Returns
+        -------
+        K : numpy 1d array of floats
+            Primitive cell k-points line path for unfolded bandstructure.
+
+        """
+        # Supercell lattice vectors
+        sc_lattice = irrep_bandstr_instance.Lattice
+        # Convert k-points in inverse lattice unit
+        # Note: (A.T^-1)^-1 == T.A^-1
+        RecLattice = 2*np.pi*np.dot(transformation_matrix, np.linalg.pinv(sc_lattice)).T
+        KPcart = np.dot(pc_kpts_coord, RecLattice)
+        #KPcart = np.linalg.solve(np.dot(sc_lattice, np.linalg.pinv(transformation_matrix)), pc_kpts_coord.T).T # without 2*pi
+        
+        # Generate distance array
+        K = np.zeros(KPcart.shape[0])
+        k = np.linalg.norm(KPcart[1:, :] - KPcart[:-1, :], axis=1)
+        k[k > breakTHRESH] = 0.0
+        K[1:] = np.cumsum(k)
+        return K
+        
     def _unfold_bandstructure(self, bandstructure, break_thresh = 0.1):  
         """
         
@@ -187,7 +229,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         Parameters
         ----------
         bandstructure : irrep.bandstructure.BandStructure
-            irrep.bandstructure.BandStructure data.
+            irrep.bandstructure.BandStructure instance.
         break_thresh : float, optional
             If the distance between two neighboring k-points in the path is 
             larger than `break_thresh` break continuity in k-path. Set break_thresh 
@@ -213,17 +255,11 @@ class _BandUnfolding(_GeneralFnsDefs):
         # k-index, k1, k2, k3
         self.unfolded_kpts_dat = np.array([[kk]+list(self.kpointsPBZ_full[kk, :3]) 
                                            for kk in kpPBZ_unfolded])
-        #self.unfolded_kpts_dat = unfolded_kpts_dat_[unfolded_kpts_dat_[:, 0].argsort()] # No need any more
-        self.kpline = bandstructure.KPOINTSline(kpred=self.unfolded_kpts_dat[:,1:], breakTHRESH=break_thresh)
-        # # Converting k-indices to k on path (A^-1)
-        # self.unfolded_kpts_dat[:,0] = self.kpline
-        
+        # Generate k-path in distance unit
+        self.kpline = self._generate_kpoints_line(bandstructure, self.unfolded_kpts_dat[:,1:], 
+                                                  self.transformation_matrix, breakTHRESH=break_thresh)
         # Insert k on path (A^-1) after k-indices
         self.unfolded_kpts_dat = np.insert(self.unfolded_kpts_dat,1, self.kpline, axis=1)
-        
-        # # Add k-path to the energy, weight band structure array
-        # self.unfolded_bandstructure = np.concatenate([np.insert(unf, 0, self.kpline[kk], axis=1) 
-        #                                               for kk, unf in kpPBZ_unfolded.items()], axis=0)
         
         # Add k-indices and k-path to the energy, weight band structure array
         self.unfolded_bandstructure = np.concatenate([np.insert(unf, [0, 0], [kk, self.kpline[kk]], axis=1) 

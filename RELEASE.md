@@ -2,10 +2,11 @@ __Latest release: v0.3.2__
 
 __v0.3.2__
 
+* Bug fix for PC band path cartesian coordinate conversion
 * Improved band structures plotting
 * Implemented plotting band centers at each SCF cycles
 * Implemened save band structure data independently
-* Implemented effective mass and alloy-scattering potential modules
+* Implemented effective mass modules
 * Added version track file
 * Added bibliograpy file (.bib) for referencing
 * Added tips and tricks in README
