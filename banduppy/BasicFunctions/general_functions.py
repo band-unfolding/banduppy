@@ -67,12 +67,12 @@ class _BasicFunctionsModule(object):
             return input_array%1
         
 ## ============================================================================
-class SaveData2File:
+class _SaveData2File:
     def __init__(self):
         pass
     
     @staticmethod
-    def default_save_settings(save_data):
+    def _default_save_settings(save_data):
         tmp_save = {'save2file': False, 'fdir': '.', 'fname': 'test', 'fname_suffix': ''}
         for ll in tmp_save:
             if ll in save_data:
@@ -80,9 +80,9 @@ class SaveData2File:
         return tmp_save
     
     @staticmethod
-    def save_2_file(data=None, save_dir='.', file_name:str='', file_name_suffix:str='', 
-                    header_txt:str='', footer_txt:str='',comments_symbol='! ',
-                    np_data_fmt='%12.8f', print_log:bool=True):
+    def _save_2_file(data=None, save_dir='.', file_name:str='', file_name_suffix:str='', 
+                     header_txt:str='', footer_txt:str='',comments_symbol='! ',
+                     np_data_fmt='%12.8f', print_log:bool=True):
         """
         Save the generated SC kpoints to a file.
 
@@ -129,10 +129,10 @@ class SaveData2File:
         return fname_save_file
     
     @staticmethod
-    def save_sc_kpts_2_file(data=None, save_dir='.', file_name:str='', 
-                            file_name_suffix:str='', file_format:str='vasp',
-                            header_txt:str='', footer_txt:str='',comments_symbol='! ',
-                            print_log:bool=False, print_msg:str='Saving to file...'):
+    def _save_sc_kpts_2_file(data=None, save_dir='.', file_name:str='', 
+                             file_name_suffix:str='', file_format:str='vasp',
+                             header_txt:str='', footer_txt:str='',comments_symbol='! ',
+                             print_log:bool=False, print_msg:str='Saving to file...'):
         """
         Save the generated SC kpoints to a file.
 
@@ -175,8 +175,8 @@ class SaveData2File:
         if print_log: print(f"{'='*_draw_line_length}\n- {print_msg}.")
         
         fname_save_file = \
-        SaveData2File.save_2_file(data=data, save_dir=save_dir, file_name=file_name, 
-                                  file_name_suffix=file_name_suffix, header_txt=header_txt, 
-                                  footer_txt=footer_txt,comments_symbol=comments_symbol)
+        _SaveData2File._save_2_file(data=data, save_dir=save_dir, file_name=file_name, 
+                                    file_name_suffix=file_name_suffix, header_txt=header_txt, 
+                                    footer_txt=footer_txt,comments_symbol=comments_symbol)
         if print_log: print(f'-- Filepath: {fname_save_file}\n- Done')
         return fname_save_file

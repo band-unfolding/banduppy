@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import banduppy
 
-print(f'- Bandup version: {banduppy.__version__}')
+print(f'- BandUPpy version: {banduppy.__version__}')
 print('Note: The lattice parameters for all three Si, Ge and Si-Ge supercells are kept same.')
 
 #%% ----------------------------- Set job -------------------------------------
@@ -50,7 +50,7 @@ fig, ax, CountFig \
                         save_file_name=None, CountFig=None, threshold_weight=0.1,
                         Ef=5.5305, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                         mode="fatband", special_kpoints=special_kpoints_pos_labels1, 
-                        plotSC=False, fatfactor=20, nE=100,smear=0.2, 
+                        plotSC=False, fatfactor=20, nE=100,smear=0.2, show_plot=False,
                         color='red', color_map='viridis', show_legend=False)
 
 _, ax, CountFig \
@@ -58,7 +58,7 @@ _, ax, CountFig \
                         unfolded_bandstructure=unfolded_bandstructure_2, 
                         save_file_name=None, CountFig=None, threshold_weight=0.1,
                         Ef=5.9786, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                        mode="fatband", special_kpoints=None, 
+                        mode="fatband", special_kpoints=None, show_plot=False, 
                         plotSC=False, marker='x', fatfactor=10, nE=100,smear=0.2, 
                         color='black', color_map='viridis', show_legend=False)
 
@@ -67,7 +67,7 @@ _, ax, CountFig \
                         unfolded_bandstructure=unfolded_bandstructure_3, threshold_weight=0.1,
                         save_file_name=None, CountFig=None, 
                         Ef=5.1434, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                        mode="fatband", special_kpoints=None, 
+                        mode="fatband", special_kpoints=None, show_plot=False,
                         plotSC=False, marker='x', fatfactor=10, nE=100,smear=0.2, 
                         color='blue', color_map='viridis', show_legend=False)
 ax.set_title('Si-Ge: Red, pure Si: black, pure Ge: blue', size=18)

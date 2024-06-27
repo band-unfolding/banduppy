@@ -19,7 +19,7 @@ Unfolded band structure - flatband mode (Si0.5Ge0.5) |  Unfolded band structure 
 
 __Developer of BandUPpy :__ 
 
-* [Stepan S. Tsirkin](https://github.com/stepan-tsirkin), University of Zurich, [stepan.tsirkin@uzh.ch](mailto:stepan.tsirkin@uzh.ch)
+* [Stepan S. Tsirkin](https://github.com/stepan-tsirkin)
 
 __BandUPpy Package is Restructured by (maintainer):__
 
@@ -37,9 +37,9 @@ __BandUPpy Contributors:__  [Contributors](https://github.com/band-unfolding/ban
 
 * We sincerely thank each and every contributor for their valuable input and support.
 
-__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch,badalmondal.chembgc@gmail.com) 
+__Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@ehu.eus,badalmondal.chembgc@gmail.com) 
 
-* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in touch with [us](mailto:stepan.tsirkin@uzh.ch,badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
+* If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in touch with [us](mailto:stepan.tsirkin@ehu.eus,badalmondal.chembgc@gmail.com) or open a pull request. We will be happy to support your request ASAP. 
 
 <!-- =========================================================== -->
 
@@ -69,6 +69,10 @@ __Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@uzh.ch,b
     git clone https://github.com/band-unfolding/banduppy.git
     cd banduppy
     pip install .  
+```
+Or, without cloning
+```
+    pip install git+https://github.com/band-unfolding/banduppy.git #@specific_branch
 ```
 
 ### 4. Installation using `setup.py` [deprecated]
@@ -109,9 +113,17 @@ banduppy package:
     2. BandStructure class
         2.1 BandStructure()
     3. Properties class
-        3.1 band_centers_broadening_bandstr()
-    4. Plotting class
-        4.1 plot_ebs()
+        3.1 collect_bandstr_data_only_in_energy_window()
+        3.2 band_centers_broadening_bandstr()
+        3.3 calculate_effecfive_mass()
+        3.4 fit_functions()
+    4. SaveBandStructuredata class
+        4.1 save_unfolded_pc_kpts()
+        4.2 save_unfolded_bandstucture()
+        4.3 save_unfolded_bandcenter()
+    5. Plotting class
+        5.1 plot_ebs()
+        5.2 plot_scf()
 ```
 
 #### 1. Lat's start
@@ -223,18 +235,19 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                                 'fname': 'bandstructure_unfolded',
                                                 'fname_suffix': ''})
 ```
-#### 5. Determine band centers and band width
-```
-# This uses SCF algorithm of automatic band center determination from 
-# PRB 89, 041407(R) (2014) paper.
-# -------------------- Initiate Properties method -----------------------------
+#### 4. Determine band centers and band width
+Band ceneters are determined using the SCF algorithm of automatic band center determination from [Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk, Phys. Rev. B **89**, 041407(R) (2014)](http://doi.org/10.1103/PhysRevB.89.041407) paper.
+```.
+    # -------------------- Initiate Properties method -----------------------------
     unfolded_band_properties = banduppy.Properties(print_log='high')
-    min_sum_dNs_for_a_band = 0.05 
-    threshold_dN_2b_trial_band_center = 0.05
-    prec_pos_band_centers = 1e-5 # in eV
-    err_tolerance = 1e-8
-    min_dN = 1e-5  
-    
+    #===================================
+    min_dN = 1e-5 # get rid of small weights bands
+    threshold_dN_2b_trial_band_center = 0.05 # initial guess of the band centers based on the threshold wights.
+    min_sum_dNs_for_a_band = 0.05 # Cut off criteria for minimum weights that a band center should have.
+    #===================================
+    err_tolerance = 1e-8 # The tolerance to group the bands set per unique kpoints value.
+    prec_pos_band_centers = 1e-5 # in eV # Precision when compared band centers from previous and current SCF
+    #===================================
     unfolded_bandstructure_properties, all_scf_data = \
         unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
                                                                  min_dN_pre_screening=min_dN,
@@ -242,11 +255,37 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                                                  threshold_dN_2b_trial_band_center,
                                                                  min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
                                                                  precision_pos_band_centers=prec_pos_band_centers,
-                                                                 err_tolerance_compare_kpts=err_tolerance,
+                                                                 err_tolerance_compare_kpts_val=err_tolerance,
                                                                  collect_scf_data=False)
 ```
-#### 4. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
-##### --------------------- Plot band structure ---------------------------------
+#### 5. Determine effective mass (parabolic and non-parabolic) from part of the band structure or band center data
+```
+    m_star, optimized_parameters, convergence_measure = \
+    unfolded_band_properties.calculate_effecfive_mass(kpath, band_energy,
+                                                      initial_guess_params=None,
+                                                      params_bounds = (-np.inf, np.inf),
+                                                      fit_weights=None, absolute_weights=False,
+                                                      parabolic_dispersion=True,
+                                                      hyperbolic_dispersion_positive=False,
+                                                      hyperbolic_dispersion_negative=False,
+                                                      params_name = ['alpha', 'kshift', 'cbm', 'gamma'])
+    #===================================
+    band_energy_fit = unfolded_band_properties.fit_functions(kpath, optimized_parameters,
+                                                            parabolic_dispersion=True,
+                                                            hyperbolic_dispersion_positive=False,
+                                                            hyperbolic_dispersion_negative=False)
+```
+#### 6. Determine alloy-scattering potential from part of the band structure or band center data
+This is based on the ... paper.
+```
+    TBA
+```
+#### 7. Save unfolded band structure and band center data
+One can save the generated data within the function call for unfolding and band ceneter determination routines as shown above. [recommened]
+
+__However,__ you may want save the generated data (from the above function calls) after some post processing, for e.g., you want to save part of the data only. __In such cases,__ you can use functions from `SaveBandStructuredata` class to save those data. Note that the data format should be compatible with the required data format for each functions.
+
+#### 8. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
 ```
     # Fermi energy
     Efermi = 5.9740
@@ -258,6 +297,7 @@ __Option 2:__ If this part is used independently from the above instances re-ini
     save_file_name = 'unfolded_bandstructure.png'
 ```
 __Option 1:__ Continue with previous instance.
+##### --------------------- Plot band structure ---------------------------------
 ```
     fig, ax, CountFig \
     = band_unfold.plot_ebs(save_figure_dir=save_to_dir, save_file_name=save_file_name, CountFig=None, 
@@ -277,7 +317,10 @@ __Option 2:__ Using BandUPpy Plotting module.
     kpline = np.loadtxt(f'{save_to_dir}/kpoints_unfolded.dat')[:,1]
     with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
         special_kpoints_pos_labels = pickle.load(handle)
-        
+```
+##### --------------------- Plot band structure ----------------------------------
+```
+    
     fig, ax, CountFig \
     = plot_unfold.plot_ebs(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_, 
                            save_file_name=save_file_name, CountFig=None, 
@@ -287,23 +330,7 @@ __Option 2:__ Using BandUPpy Plotting module.
                            threshold_weight=0.01, show_legend=True, 
                            color='gray', color_map='viridis')
 ```
-##### ----------------- Plot the band centers -----------------------------------
-```
-    # --------------------- Initiate Plotting method ----------------------------
-    plot_unfold = banduppy.Plotting(save_figure_dir=save_to_dir)
-
-    # --------------------- Plot band centers and band width --------------------
-    fig, ax, CountFig \
-        = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
-                               unfolded_bandstructure=unfolded_bandstructure_properties, 
-                               save_file_name=save_file_name, CountFig=None, 
-                               Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                               mode="band_centers", special_kpoints=special_kpoints_pos_labels, 
-                               marker='x', smear=0.2, plot_colormap_bandcenter=True,
-                               color='black', color_map='viridis')
-```
-
-##### ------------ Plot and overlay multiple band structures --------------------
+##### --------- Plot and overlay multiple band structures ------------
 ```
     fig, ax, CountFig \
     = plot_unfold.plot_ebs(kpath_in_angs=kpline1, 
@@ -312,50 +339,84 @@ __Option 2:__ Using BandUPpy Plotting module.
                             Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                             mode="fatband", special_kpoints=special_kpoints_pos_labels1, 
                             plotSC=True, fatfactor=20, nE=100, smear=0.2,
-                            color='red', color_map='viridis')
+                            color='red', color_map='viridis', show_plot=False)
     
     fig, ax, CountFig \
     = plot_unfold.plot_ebs(ax=ax, kpath_in_angs=kpline1, 
-                            unfolded_bandstructure=unfolded_bandstructure_properties, 
+                            unfolded_bandstructure=unfolded_bandstructure_2, 
                             save_file_name=save_file_name, CountFig=None, 
                             Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                            mode="band_centers", special_kpoints=None, 
-                            marker='x', smear=0.2,
-                            color='black', color_map='viridis')
+                            mode="fatband", special_kpoints=None, marker='x',
+                            smear=0.2, color='black', color_map='viridis')
 ```
+
+##### ----------------- Plot the band centers -----------------------------------
+```
+    fig, ax, CountFig \
+        = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
+                               unfolded_bandstructure=unfolded_bandstructure_properties, 
+                               save_file_name=save_file_name, CountFig=None, threshold_weight=min_dN,
+                               Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
+                               mode="band_centers", special_kpoints=special_kpoints_pos_labels, 
+                               marker='x', smear=0.2, plot_colormap_bandcenter=True,
+                               color='black', color_map='viridis')
+```
+##### -------------- Plot the band centers SCF cycles ---------------------
+```
+    plot_unfold.plot_scf(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_,
+                         al_scf_data=all_scf_data, plot_max_scf_steps=3, save_file_name=save_file_name,
+                         Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, threshold_weight=min_dN,
+                         special_kpoints=special_kpoints_pos_labels, plot_sc_unfold=True, marker='o', 
+                         fatfactor=20, smear=0.05, color=None, color_map='viridis', show_legend=False, 
+                         plot_colormap_bandcenter=True, show_colorbar=True, colorbar_label=None, 
+                         vmin=None, vmax=None, dpi=72)
+```
+<!-- =========================================================== -->
+
+<!-- =========================================================== -->
+## Tips and tricks:
+
+__Problem:__ I am getting `RuntimeError` in one of my calculations using VASP. How can I resolve this?
+
+`RuntimeError: *** error - computed ncnt=18134 != input nplane=18133`
+
+**Answer**: VASP does not write which plane waves it uses to the `WAVECAR` file. Therefore, when `banduppy` (specifically `IrRep`) reads the band structure, it tries to mimic `VASP`'s selection and ordering of plane waves that fall within the cut-off sphere. Occasionally, due to numerical errors, one code might consider a plane wave within the sphere while the other does not. This discrepancy can result in an extra vector, as seen in the above case. To address this, use a small correction coefficient (`_correct_Ecut0`) value. This slightly adjusts the `Ecut` to either exclude or include plane waves near the boundary of the cut-off sphere. In the example case, use small negative correction to exclude plane waves near the boundary of the cut-off sphere. Use small positive correction when `computed ncnt < input nplane`.
+
+`bands = banduppy.BandStructure(code="vasp", spinor=spinorbit, fPOS = "POSCAR", fWAV = "WAVECAR", _correct_Ecut0=-1e-7)`
+
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
 ## Citations and references:
 
-If you use `BandUPpy` in your work, you should:
+If you use `BandUPpy` in your work, please:
 
-  * **State EXPLICITLY that you've used the BandUP code** 
-    (or a modified version of it, if this is the case).
-  * **Read and cite the following papers** (and the appropriate
-    references therein):
+  * **State EXPLICITLY that you have used the BandUP code** (or a modified version of it, if this is the case), for instance, adding a sentence like: 
+
+         "The unfolding has been performed using the BandUP(py) code"
+
+  * **Read and cite the following papers** (and the appropriate references therein):
     
->> Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk,
-   [Phys. Rev. B **89**, 041407(R) (2014)](http://dx.doi.org/10.1103/PhysRevB.89.041407)  
->> Paulo V. C. Medeiros, Stepan S. Tsirkin, Sven Stafström, and Jonas Björk,
-   [Phys. Rev. B **91**, 041116(R) (2015)](http://dx.doi.org/10.1103/PhysRevB.91.041116)
+>> 1. Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk,
+   [Phys. Rev. B **89**, 041407(R) (2014)](http://doi.org/10.1103/PhysRevB.89.041407)  
+>> 2. Paulo V. C. Medeiros, Stepan S. Tsirkin, Sven Stafström, and Jonas Björk,
+   [Phys. Rev. B **91**, 041116(R) (2015)](http://doi.org/10.1103/PhysRevB.91.041116)  
+>> 3. Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin,
+   "IrRep: Symmetry eigenvalues and irreducible representations of ab initio band structures", [Comput. Phys. Commun. **272**, 108226 (2022)](https://doi.org/10.1016/j.cpc.2021.108226)
 
+__Bibliography file:__ Here is the [bibliography (.bib) file](REFERENCES.md) for your convenience.
 
-If you use `BandUPpy`,  please also cite
-
->> Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin 
-   "IrRep: symmetry eigenvalues and irreducible representations of ab initio band structures", [arXiv:2009.01764](https://arxiv.org/abs/2009.01764)
-
-An appropriate way of acknowledging the use of BandUP in your
-publications would be, for instance, adding a sentence like: 
-
-         "The unfolding has been performed using the BandUP code"
-
-followed by the citation to our papers.
-
-### Refer to for further details
+## Further details
 ##### <http://www.ifm.liu.se/theomod/compphys/band-unfolding>
 ##### <https://github.com/band-unfolding/bandup>
+
+<!-- =========================================================== -->
+
+<!-- =========================================================== -->
+## Version release
+__Latest release: v0.3.2__
+
+Chekout out [version release history here](RELEASE.md) for the full list of updates and upgrades.
 
 <!-- =========================================================== -->
 
@@ -378,8 +439,7 @@ along with BandUP.  If not, see <http://www.gnu.org/licenses/>.
 
 <!-- =========================================================== -->
 ## Upcoming (TBD)
-1. Effective mass implementation
-2. Scattering potential implementation
-3. Orbital contribution projection implementation
+1. Orbital contribution projection implementation
+2. Improve band center determination algorithm
 <!-- =========================================================== -->
 

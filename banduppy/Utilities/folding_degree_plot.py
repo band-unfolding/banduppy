@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from ..BasicFunctions.general_plot_functions import GeneratePlots
+from ..BasicFunctions.general_plot_functions import _GeneratePlots
 
 ### ===========================================================================
 
-class FoldingDegreePlot(GeneratePlots):
+class _FoldingDegreePlot(_GeneratePlots):
     """
     Plotting number of kpoints in k-path vs degree of folding.
 
@@ -23,11 +23,11 @@ class FoldingDegreePlot(GeneratePlots):
             Directory where to save the figure. The default is current directory.
 
         """
-        GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
+        _GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
         self.proposed_folding_results_ = fold_results_dictionary.copy()
             
-    def plot_folding(self, save_file_name=None, CountFig=None, yaxis_label:str='Folding degree (%)',
-                     xaxis_label:str='number of kpoints', line_color='k'):
+    def _plot_folding(self, save_file_name=None, CountFig=None, yaxis_label:str='Folding degree (%)',
+                      xaxis_label:str='number of kpoints', line_color='k'):
         
         print('- Plotting folding degree...')
         for keys, vals in self.proposed_folding_results_.items():
@@ -45,6 +45,6 @@ class FoldingDegreePlot(GeneratePlots):
         if save_file_name is None:
             plt.show()
         else:
-            CountFig = self.save_figure(save_file_name, CountFig=CountFig)
+            CountFig = self._save_figure(save_file_name, CountFig=CountFig)
             plt.close()
         return fig, ax, CountFig

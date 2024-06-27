@@ -1,6 +1,6 @@
 import numpy as np
-from ..BasicFunctions.general_functions import SaveData2File, _BasicFunctionsModule, _draw_line_length
-from .folding_properties import FindProperties
+from ..BasicFunctions.general_functions import _SaveData2File, _BasicFunctionsModule, _draw_line_length
+from .folding_properties import _FindProperties
 from .. import __version__
     
 try:
@@ -205,9 +205,9 @@ class _KpointsModule:
                 # Search for max-min folding
                 propose_folding_data_[i] = ((start, end),
                     cls._serach_max_min_folding(transformation_matrix, start, end, 
-                                                                       min_num_pts=min_num_pts, 
-                                                                       max_num_pts=max_num_pts,
-                                                                       serach_mode=serach_mode))
+                                                min_num_pts=min_num_pts, 
+                                                max_num_pts=max_num_pts,
+                                                serach_mode=serach_mode))
         return propose_folding_data_
 
         
@@ -496,7 +496,7 @@ class _KpointsModule:
         return save_contents_data
 
 ## ============================================================================ 
-class BandFolding(_KpointsModule, FindProperties):
+class _BandFolding(_KpointsModule, _FindProperties):
     """
     Band folding from primitive to supercell.
 
@@ -518,8 +518,8 @@ class BandFolding(_KpointsModule, FindProperties):
         self.transformation_matrix = _BasicFunctionsModule._check_transformation_matrix(np.array(supercell)) 
         self.print_information = print_info
                    
-    def propose_best_least_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
-                                   serach_mode:str='brute_force'):
+    def _propose_best_least_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
+                                    serach_mode:str='brute_force'):
         """
         Calculates SC Kpoints from PC kpoints and returns percent of folding.
         Maximum and Minimum degree of folding are reported.
@@ -551,10 +551,10 @@ class BandFolding(_KpointsModule, FindProperties):
                                              max_num_pts=max_num_pts,
                                              serach_mode=serach_mode)
     
-    def generate_SC_K_from_pc_k_path(self, pathPBZ=None, nk=11, labels=None, kpts_weights=None, 
-                                     save_all_kpts:bool=False, save_sc_kpts:bool=False, 
-                                     save_dir='.', file_name:str='', 
-                                     file_name_suffix:str='', file_format:str='vasp'):
+    def _generate_SC_K_from_pc_k_path(self, pathPBZ=None, nk=11, labels=None, kpts_weights=None, 
+                                      save_all_kpts:bool=False, save_sc_kpts:bool=False, 
+                                      save_dir='.', file_name:str='', 
+                                      file_name_suffix:str='', file_format:str='vasp'):
         """
         Generate supercell kpoints from reference primitive BZ k-path.
 
@@ -621,18 +621,18 @@ class BandFolding(_KpointsModule, FindProperties):
             footer_msg_path = self._generate_foot_text(pathPBZ, labels=labels, nk_list=nk)
  
         # Return SC kpoints from PC k-path k-points        
-        return self.generate_K_from_k(kpointsPBZ=PBZ_kpts, kpts_weights=kpts_weights, 
+        return self._generate_K_from_k(kpointsPBZ=PBZ_kpts, kpts_weights=kpts_weights, 
                                       save_all_kpts=save_all_kpts,
                                       save_sc_kpts=save_sc_kpts, save_dir=save_dir, 
                                       file_name=file_name, file_name_suffix=file_name_suffix, 
                                       file_format=file_format, footer_msg=footer_msg_path,
                                       special_kpoints_pos_labels=special_kpoints_pos_labels) 
             
-    def generate_K_from_k(self, kpointsPBZ=None, kpts_weights=None,
-                          save_all_kpts:bool=False, save_sc_kpts:bool=False, 
-                          save_dir='.', file_name:str='', 
-                          file_name_suffix:str='', file_format:str='vasp', footer_msg=None,
-                          special_kpoints_pos_labels=None):
+    def _generate_K_from_k(self, kpointsPBZ=None, kpts_weights=None,
+                           save_all_kpts:bool=False, save_sc_kpts:bool=False, 
+                           save_dir='.', file_name:str='', 
+                           file_name_suffix:str='', file_format:str='vasp', footer_msg=None,
+                           special_kpoints_pos_labels=None):
         """
         Generate supercell kpoints from reference primitive kpoints.
 
@@ -707,14 +707,14 @@ class BandFolding(_KpointsModule, FindProperties):
             save_contents_data = self. _generate_save_contents(footer_text=footer_msg, 
                                                                save_all_kpts=save_all_kpts)
             for data_key, data_items in save_contents_data.items():
-                SaveData2File.save_sc_kpts_2_file(data=data_items[1],
-                                                  save_dir=save_dir, file_name=file_name,
-                                                  file_name_suffix=f'{file_name_suffix}_{data_key}', 
-                                                  file_format=file_format,
-                                                  header_txt=data_items[0], 
-                                                  footer_txt=data_items[2],
-                                                  print_log=bool(self.print_information),
-                                                  print_msg=data_items[3])
+                _SaveData2File._save_sc_kpts_2_file(data=data_items[1],
+                                                    save_dir=save_dir, file_name=file_name,
+                                                    file_name_suffix=f'{file_name_suffix}_{data_key}', 
+                                                    file_format=file_format,
+                                                    header_txt=data_items[0], 
+                                                    footer_txt=data_items[2],
+                                                    print_log=bool(self.print_information),
+                                                    print_msg=data_items[3])
         
         return self.PBZ_kpts_list_org, self.PBZ_kpts_list, self.SBZ_kpts_list, \
                 self.SBZ_PBZ_kpts_mapping, self.special_kpoints_pos_labels
