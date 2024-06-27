@@ -66,7 +66,6 @@ fig, ax, CountFig \
                         unfolded_bandstructure=unfolded_bandstructure_, 
                         save_file_name=None, CountFig=None, threshold_weight=min_dN,
                         Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                        threshold_weight=min_dN,
                         mode="fatband", special_kpoints=special_kpoints_pos_labels, 
                         plotSC=False, fatfactor=10, nE=100,smear=0.2, show_plot=False,
                         color='k', color_map='viridis', show_legend=False)
