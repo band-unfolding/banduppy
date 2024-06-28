@@ -414,7 +414,7 @@ __Bibliography file:__ Here is the [bibliography (.bib) file](REFERENCES.md) for
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.3.2__
+__Latest release: v0.3.3__
 
 Chekout out [version release history here](RELEASE.md) for the full list of updates and upgrades.
 

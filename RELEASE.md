@@ -1,14 +1,19 @@
-__Latest release: v0.3.2__
+__Latest release: v0.3.3__
+
+__v0.3.3__
+
+* Bug fix unfolding kpline in A^-1
+* 
 
 __v0.3.2__
 
-* Bug fix for PC band path cartesian coordinate conversion
+* Bug fix for PC band path Cartesian coordinate conversion
 * Improved band structures plotting
 * Implemented plotting band centers at each SCF cycles
 * Implemened save band structure data independently
 * Implemented effective mass modules
 * Added version track file
-* Added bibliograpy file (.bib) for referencing
+* Added bibliography file (.bib) for referencing
 * Added tips and tricks in README
 * Documentation improved
 
