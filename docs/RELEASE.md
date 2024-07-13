@@ -3,7 +3,7 @@ __Latest release: v0.3.3__
 __v0.3.3__
 
 * Bug fix unfolding kpline in A^-1
-* 
+* Updated install requirements. Bug found in irrep-1.9.0 and 1.9.1.
 
 __v0.3.2__
 

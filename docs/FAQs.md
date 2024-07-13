@@ -1,7 +1,7 @@
 # Frequently Asked Questions
 
-## ===============================================================================
-__Problem:__ I am getting `RuntimeError` in one of my calculations using VASP. How can I resolve this?
+## ============================================================
+__Question:__ I am getting `RuntimeError` in one of my calculations using VASP. How can I resolve this?
 
 `RuntimeError: *** error - computed ncnt=18134 != input nplane=18133`
 
@@ -9,7 +9,24 @@ __Problem:__ I am getting `RuntimeError` in one of my calculations using VASP. H
 
 `bands = banduppy.BandStructure(code="vasp", spinor=spinorbit, fPOS = "POSCAR", fWAV = "WAVECAR", _correct_Ecut0=-1e-7)`
 
-## ===============================================================================
+## ============================================================
+
+## ============================================================
+__Question:__ BandUP code needed both the primitive unit cell and supercell POSCAR files. But in Banduppy it seems  only POSCAR_SC is needed. What do I need to modify if I want to do calculations with a different primitiveunit cell and where does it come? 
+
+__Answer:__ In a broader sense, for unfolding, we need to know the relationship between the supercell and the reference primitive unit cells on which we want to project your supercell eigenstates. Mathematically, they are related by a matrix transformation: A = M.a. Here, the primitive cell lattice vectors (a_i) (i = 1, 2, 3) form the building unit for the supercell vectors ( A_i), and the two sets of basis vectors are related by the transformation matrix M.
+
+Now, we can provide the primitive unit cell POSCAR (for a) and supercell POSCAR (for A), and software internally calculates the relation between them (M). => BandUP
+Alternatively, we can provide the supercell POSCAR (A) and the transformation matrix (M) as inputs, and software internally calculates the reference primitive cell (a). => BandUPpy
+
+The information required is essentially the same for BandUP and BandUPpy, only alternative ways.
+
+Regarding the necessary modifications for different reference primitive unit cell calculations: you need to adjust the 'super_cell_size' parameter in for example the run_banduppy_vasp.py, which is the primitive-to-supercell transformation matrix.
+## ============================================================
+
+If you are not satisfied with the answers, cannot find an answer to your question, or have new suggestions, please feel free to reach out to us. We are committed to providing the best experience for our users and greatly value your feedback.
+
+
 __Have fun with BandUPpy!__
 
 __Best wishes,__  
