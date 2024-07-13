@@ -207,12 +207,14 @@ class _BandUnfolding(_GeneralFnsDefs):
             Primitive cell k-points line path for unfolded bandstructure.
 
         """
-        # Supercell lattice vectors
-        sc_lattice = irrep_bandstr_instance.Lattice
-        # Convert k-points in inverse lattice unit
-        # Note: (A.T^-1)^-1 == T.A^-1
-        RecLattice = 2*np.pi*np.dot(transformation_matrix, np.linalg.pinv(sc_lattice)).T
-        KPcart = np.dot(pc_kpts_coord, RecLattice)
+        # Supercell lattice vectors in real space
+        real_lattice_sc = irrep_bandstr_instance.Lattice
+        # Reciprocal lattice super cell
+        reciprocal_lattice_sc = 2*np.pi*np.linalg.pinv(real_lattice_sc).T
+        # Reciprocal lattice primitive cell
+        reciprocal_lattice_pc = transformation_matrix.T @ reciprocal_lattice_sc
+        # Convert k-points to inverse angstrom unit
+        KPcart = np.dot(pc_kpts_coord, reciprocal_lattice_pc)
         #KPcart = np.linalg.solve(np.dot(sc_lattice, np.linalg.pinv(transformation_matrix)), pc_kpts_coord.T).T # without 2*pi
         
         # Generate distance array
