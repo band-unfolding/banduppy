@@ -163,7 +163,7 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.3.3__
+__Latest release: v0.3.4__
 
 Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
 

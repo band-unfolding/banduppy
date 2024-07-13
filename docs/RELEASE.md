@@ -1,4 +1,8 @@
-__Latest release: v0.3.3__
+__Latest release: v0.3.4__
+
+__v0.3.4__
+
+* 
 
 __v0.3.3__
 
