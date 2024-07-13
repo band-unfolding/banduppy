@@ -18,8 +18,9 @@ Alternatively, we can provide the supercell POSCAR (A) and the transformation ma
 The information required is essentially the same for BandUP and BandUPpy, only alternative ways.
 
 Regarding the necessary modifications for different reference primitive unit cell calculations: you need to adjust the `super_cell_size` parameter in for example the `run_banduppy_vasp.py`, which is the primitive-to-supercell transformation matrix.
-## ============================================================
 
+
+##
 __If you are not satisfied with the answers, cannot find an answer to your question, or have new suggestions, please feel free to reach out to us. We are committed to providing the best experience for our users and greatly value your feedback.__
 
 

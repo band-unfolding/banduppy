@@ -1,6 +1,5 @@
 # Package Documentation
 
-## =========================================================================
 ## Let's start ...
 #### ---------------------------- Import modules ---------------------------------
 ```
@@ -250,7 +249,9 @@ __Option 2:__ Using BandUPpy Plotting module.
 
 
 
-## =========================================================================
+##
+__If you have new suggestions, please feel free to reach out to us. We are committed to providing the best experience for our users and greatly value your feedback.__
+
 __Have fun with BandUPpy!__
 
 __Best wishes,__  
