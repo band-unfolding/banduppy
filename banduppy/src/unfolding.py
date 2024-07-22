@@ -1,9 +1,5 @@
 import numpy as np
 from ..BasicFunctions.general_functions import _SaveData2File, _BasicFunctionsModule, _draw_line_length
-try:
-    from irrep.__aux import is_round
-except ImportError:
-    from irrep.utility import is_round
 
 ### ===========================================================================
 class _GeneralFnsDefs:
@@ -160,7 +156,7 @@ class _BandUnfolding(_GeneralFnsDefs):
             found = False
             for KP in wavefns_file_kpts:
                 # Check if K exists in wavefunction file K-list
-                if is_round(KP.K - self.kpointsSBZ[key, :3], prec = 1e-6):
+                if KP.k_close_mod1(self.kpointsSBZ[key, :3], prec=1e-6):
                     self.kpSBZcalc[key] = {}
                     for vall in val.values(): # Loop over PC-kpoints
                         for kk in vall:
@@ -178,51 +174,6 @@ class _BandUnfolding(_GeneralFnsDefs):
                 for _, vall in val.items(): # kkk: unique PC-kpts indices; vall: list of PC-kpts indices
                     for kk in vall:
                             print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
-                
-    def _generate_kpoints_line(self, irrep_bandstr_instance, pc_kpts_coord, 
-                               transformation_matrix, breakTHRESH = 0.1):
-        """
-        Generates kpoints line (after cartesian coordinate conversion).
-        k_vec = u.b1 + v.b2 + w.b3
-        e.g. (u,v,w)=(1/2, 0, 0) -> k_vec==(kx, ky, kz)
-        [kx ky kz] = [u v w].[[b11 b12 b13], [b21 b22 b23], [b31 b32 b33]]
-
-        Parameters
-        ----------
-        irrep_bandstr_instance : irrep.bandstructure.BandStructure
-            irrep.bandstructure.BandStructure instance.
-        pc_kpts_coord : ndarray of floats
-            PC kpoints list.
-        transformation_matrix : 3X3 matrix
-            Primitive-to-supercell transformation matrix.
-        breakTHRESH : float, optional
-            If the distance between two neighboring k-points in the path is 
-            larger than `break_thresh` break continuity in k-path. Set break_thresh 
-            to a large value if the unfolded kpoints line is continuous.
-            The default is 0.1.
-
-        Returns
-        -------
-        K : numpy 1d array of floats
-            Primitive cell k-points line path for unfolded bandstructure.
-
-        """
-        # Supercell lattice vectors in real space
-        real_lattice_sc = irrep_bandstr_instance.Lattice
-        # Reciprocal lattice super cell
-        reciprocal_lattice_sc = 2*np.pi*np.linalg.pinv(real_lattice_sc).T
-        # Reciprocal lattice primitive cell
-        reciprocal_lattice_pc = transformation_matrix.T @ reciprocal_lattice_sc
-        # Convert k-points to inverse angstrom unit
-        KPcart = np.dot(pc_kpts_coord, reciprocal_lattice_pc)
-        #KPcart = np.linalg.solve(np.dot(sc_lattice, np.linalg.pinv(transformation_matrix)), pc_kpts_coord.T).T # without 2*pi
-        
-        # Generate distance array
-        K = np.zeros(KPcart.shape[0])
-        k = np.linalg.norm(KPcart[1:, :] - KPcart[:-1, :], axis=1)
-        k[k > breakTHRESH] = 0.0
-        K[1:] = np.cumsum(k)
-        return K
         
     def _unfold_bandstructure(self, bandstructure, break_thresh = 0.1):  
         """
@@ -258,8 +209,9 @@ class _BandUnfolding(_GeneralFnsDefs):
         self.unfolded_kpts_dat = np.array([[kk]+list(self.kpointsPBZ_full[kk, :3]) 
                                            for kk in kpPBZ_unfolded])
         # Generate k-path in distance unit
-        self.kpline = self._generate_kpoints_line(bandstructure, self.unfolded_kpts_dat[:,1:], 
-                                                  self.transformation_matrix, breakTHRESH=break_thresh)
+        self.kpline = bandstructure.KPOINTSline(kpred=self.unfolded_kpts_dat[:,1:], 
+                                                supercell=self.transformation_matrix,
+                                                breakTHRESH=break_thresh)
         # Insert k on path (A^-1) after k-indices
         self.unfolded_kpts_dat = np.insert(self.unfolded_kpts_dat,1, self.kpline, axis=1)
         
