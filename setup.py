@@ -14,7 +14,7 @@ setuptools.setup(
      description="BandUPpy: Python interface of the BandUP code",
      long_description=long_description,
      long_description_content_type="text/markdown",
-     install_requires=['numpy', 'scipy>= 1.0', 'matplotlib' ,'irrep>=1.9.3'],
+     install_requires=['numpy', 'scipy>= 1.0', 'matplotlib' ,'irrep>=1.9.3', 'irreptables>=1.1.0'],
      url="https://github.com/band-unfolding/banduppy",
      packages=setuptools.find_packages(),
      classifiers=[
