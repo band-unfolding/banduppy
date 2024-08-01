@@ -52,7 +52,7 @@ __Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@ehu.eus,
     3. numpy
     4. pickle
     5. scipy>=1.0
-    6. irrep>=1.6.2
+    6. irrep>=1.9.3
     7. matplotlib
 ```
 

@@ -302,7 +302,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                  special_kpoints:dict=None, plotSC:bool=True, marker='o', fatfactor=20, 
                  nE:int=100, smear:float=0.05, color='gray', color_map='viridis', 
                  show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None, 
-                 vmin=None, vmax=None, show_plot:bool=True,**kwargs_savefig):
+                 vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         
         """
         Scatter/density plot of the band structure.
@@ -370,6 +370,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
 
@@ -394,7 +396,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                           fatfactor=fatfactor, nE=nE, smear=smear, color=color, color_map=color_map,
                           show_legend=show_legend, show_colorbar=show_colorbar,
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                          show_plot=show_plot, **kwargs_savefig)
+                          show_plot=show_plot, savefig=savefig, **kwargs_savefig)
     
 class Properties(_BandCentersBroadening, _EffectiveMass):
     """
@@ -867,7 +869,7 @@ class Plotting(_EBSplot):
                  color='gray', color_map='viridis', show_legend:bool=True,
                  plot_colormap_bandcenter:bool=True, show_colorbar:bool=False,
                  colorbar_label:str=None, vmin=None, vmax=None, 
-                 show_plot:bool=True,**kwargs_savefig):
+                 show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
@@ -940,6 +942,8 @@ class Plotting(_EBSplot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
 
@@ -968,7 +972,7 @@ class Plotting(_EBSplot):
                           plot_colormap_bandcenter=plot_colormap_bandcenter,
                           show_legend=show_legend, show_colorbar=show_colorbar,
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                          show_plot=show_plot, **kwargs_savefig)
+                          show_plot=show_plot, savefig=savefig, **kwargs_savefig)
     
     def plot_scf(self, kpath_in_angs, unfolded_bandstructure, al_scf_data, 
                  plot_max_scf_steps:int=None, save_file_name=None, 
@@ -979,7 +983,8 @@ class Plotting(_EBSplot):
                  smear:float=0.05, color='gray', color_map='viridis', 
                  show_legend:bool=True, plot_colormap_bandcenter:bool=True, 
                  show_colorbar:bool=True, colorbar_label:str=None, 
-                 vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+                 vmin=None, vmax=None, show_plot:bool=True,
+                 savefig:bool=True, **kwargs_savefig):
         """
         Band centers all scf steps plot.
 
@@ -1052,6 +1057,8 @@ class Plotting(_EBSplot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
         
@@ -1076,6 +1083,6 @@ class Plotting(_EBSplot):
                              color_map=color_map, plot_colormap_bandcenter=plot_colormap_bandcenter,
                              show_legend=show_legend, show_colorbar=show_colorbar,
                              colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                             show_plot=show_plot, **kwargs_savefig)
+                             show_plot=show_plot, savefig=savefig, **kwargs_savefig)
         
 

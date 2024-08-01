@@ -65,7 +65,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
               plotSC:bool=True, marker='o', fatfactor=20, nE:int=100, smear:float=0.05,  
               color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
               show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None,
-              vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+              vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
@@ -132,6 +132,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
         
@@ -212,8 +214,9 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         if save_file_name is None:
             if show_plot: plt.show()
         else:
-            CountFig = self._save_figure(save_file_name, fig=self.fig, CountFig=CountFig, **kwargs_savefig)
-            plt.close()
+            CountFig = self._save_figure(save_file_name, fig=self.fig,
+                                         savefig=savefig, show_plot=show_plot,
+                                         CountFig=CountFig, **kwargs_savefig)
         return self.fig, ax, CountFig
     
     @classmethod
@@ -384,7 +387,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                   plot_sc_unfold:bool=True, marker='o', fatfactor=20, smear:float=0.05,  
                   color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
                   show_legend:bool=True, show_colorbar:bool=True, colorbar_label:str=None,
-                  vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+                  vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
         Band centers all scf steps plot.
 
@@ -452,6 +455,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
         
@@ -535,5 +540,6 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             if save_file_name is None:
                 if show_plot: plt.show()
             else:
-                _ = self._save_figure(save_file_name_, fig=fig, CountFig=None, **kwargs_savefig)
-                plt.close()
+                _ = self._save_figure(save_file_name_, fig=fig,
+                                      savefig=savefig, show_plot=show_plot,
+                                      CountFig=None, **kwargs_savefig)
