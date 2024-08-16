@@ -109,7 +109,7 @@ banduppy package:
         1.2 generate_SC_Kpts_from_pc_kpts()
         1.3 generate_SC_Kpts_from_pc_k_path()
         1.3 Unfold()
-        1.4 plot_ebs() [Note: Similar in Plotting class but can not plot band centers]
+        1.4 plot_ebs() [Note: Similar to Plotting class but can not plot band centers]
     2. BandStructure class
         2.1 BandStructure()
     3. Properties class

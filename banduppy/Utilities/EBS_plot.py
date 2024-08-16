@@ -21,7 +21,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         unfolded_bandstructure : ndarray, optional
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor.] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
             The default is None.
         save_figure_dir : str/path, optional
             Directory where to save the figure. The default is current directory.
@@ -33,7 +33,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         unfolded_bandstructure : ndarray
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         efermi : float
             Default Fermi energy. Set to 0.0.
 
@@ -51,13 +51,11 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         
         if unfolded_bandstructure is None:
             try:
-                plt_result = self.unfolded_bandstructure.copy() 
+                self.plt_result = self.unfolded_bandstructure.copy() 
             except:
                 raise ValueError('No bandstructure data file is found')
         else:
-            plt_result = unfolded_bandstructure.copy() 
-            
-        self.plot_result = _GeneralFunctionsDefs._reformat_columns_full_bandstr_data(plt_result)
+            self.plt_result = unfolded_bandstructure.copy() 
     
     def _plot(self, fig=None, ax=None, save_file_name=None, CountFig=None, Ef=None, Emin=None, 
               Emax=None,  pad_energy_scale:float=0.5, threshold_weight:float=None,  
@@ -160,8 +158,12 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             
         if yaxis_label is None: yaxis_label=''
         
-        if mode != "band_centers" and len(self.plot_result[0]) > 3: 
-            self.plot_result = self.plot_result[:, 1:]
+        is_data_4_band_ceneter = True if mode == "band_centers" else False
+        self.plot_result = _GeneralFunctionsDefs._reformat_columns_full_bandstr_data(self.plt_result, 
+                                                                                     is_band_center_data=is_data_4_band_ceneter)   
+        
+        if len(self.plot_result[0]) == 3:
+            self.plot_result = np.insert(self.plot_result, 0, np.nan, axis=1) 
         
         if Ef == 'auto' or Ef is None:  Ef = self.efermi
             
@@ -170,6 +172,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                                                              Ef, Emin=Emin, Emax=Emax,  
                                                              pad_energy_scale=pad_energy_scale, 
                                                              threshold_weight=threshold_weight)
+        result = result[:, 1:]
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
             ax.axhline(y=0, color='k', ls='--', lw=1)

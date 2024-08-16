@@ -386,7 +386,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Figure count.
 
         """
-        
+        if mode == 'band_centers':
+            raise AttributeError('Plot using band_cenetrs mode is not allowed within Unfolding() class. Use Plotting() class instead.')
         _EBSplot.__init__(self, save_figure_dir=save_figure_dir)
 
         return self._plot(fig=fig, ax=ax, save_file_name=save_file_name, CountFig=CountFig,  
@@ -417,17 +418,19 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         if print_log is not None: print_log = print_log.lower()
         self.print_log_info = print_log
 
-    def collect_bandstr_data_only_in_energy_window(self, unfolded_bandstructure, Ef:float=None, 
-                                                    Emin:float=None, Emax:float=None,  
-                                                    pad_energy_scale:float=0.5, 
-                                                    min_dN_screen:float=0.0, 
-                                                    save_data = {'save2file': False, 
-                                                                 'fdir': '.',
-                                                                 'fname': 'unfolded_bandcenters_window',
-                                                                 'fname_suffix': ''}):
+    def collect_bandstr_data_only_in_energy_window(self, unfolded_bandstructure, Ef:float=None,
+                                                   Emin:float=None, Emax:float=None,
+                                                   pad_energy_scale:float=0.5,
+                                                   is_band_center_data:bool=False,
+                                                   bandstr_is_spinor:bool=False,
+                                                   min_dN_screen:float=0.0,
+                                                   save_data = {'save2file': False, 
+                                                                'fdir': '.',
+                                                                'fname': 'unfolded_bandstructure_window',
+                                                                'fname_suffix': ''}):
         """
         Collect data within the condition and range specified. 
-        Note: Returns only 1st 4 columns. Removes the spinor data part for 
+        Note: Returns only 1st 4 (5 for band centers) columns. Removes the spinor data part for 
         spinor activated effective band structure data.
 
         Parameters
@@ -440,11 +443,16 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             Minimum in energy. The default is None.
         Emax : float, optional
             Maximum in energy. The default is None.
-        pad_energy_scale: float, optional
+        pad_energy_scale : float, optional
             Add padding of pad_energy_scale to minimum and maximum energy if Emin
             and Emax are None. The default is 0.5.
+        is_band_center_data : bool, optional
+            Is the data for unfolded band center? The default is False. 
+        bandstr_is_spinor : bool, optional
+            If the bands in wave function files are non-degenerate (spinor). 
+            The default is False.
         min_dN_screen : float, optional
-            The band centers with band weights lower than the threshhold weights 
+            The bands with band weights lower than the threshhold weights 
             are discarded. The default is 0.
         save_data : dictionary, optional
             save2file :: Save data to file or not? 
@@ -454,25 +462,36 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
                 Name of the file.
             fname_suffix :: str
                 Suffix to add to the file name.
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandcenters_window', 'fname_suffix': ''}.
+            The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandstructure_window', 'fname_suffix': ''}.
             
          Returns
          -------
-         unfolded_bandcenters_window : ndarray
+         Emin : float
+             Minimum in energy.
+         Emax : float
+             Maximum in energy
+         unfolded_bandstructure_window_ : ndarray
              Unfolded effective band structure/band center data within the range. 
 
          """
          
-        unfolded_bandcenters_window = \
+        Emin, Emax, unfolded_bandstructure_window_ = \
         _GeneralFunctionsDefs._get_bandstr_data_only_in_energy_kpts_window(unfolded_bandstructure, Ef=Ef, 
                                                                            Emin=Emin, Emax=Emax,  
-                                                                           pad_energy_scale=pad_energy_scale, 
+                                                                           pad_energy_scale=pad_energy_scale,
+                                                                           is_band_center_data=is_band_center_data,
                                                                            min_dN_screen=min_dN_screen)
-        
-        _GeneralFunctionsDefs._save_band_centers(data2save=unfolded_bandcenters_window, 
-                                                 print_log=self.print_log_info,
-                                                 save_data_f_prop=save_data)
-        return unfolded_bandcenters_window
+        if is_band_center_data:
+            _GeneralFunctionsDefs._save_band_centers(data2save=unfolded_bandstructure_window_, 
+                                                     print_log=self.print_log_info,
+                                                     save_data_f_prop=save_data)
+        else:
+            if save_data['save2file']:
+                _GeneralFnsDefs._save_Post_unfolded_bandstucture(unfolded_bandstructure_window_, save_data['fdir'], 
+                                                                 save_data['fname'], save_data['fname_suffix'], 
+                                                                 print_information=self.print_log_info, 
+                                                                 is_spinor=bandstr_is_spinor)
+        return Emin, Emax, unfolded_bandstructure_window_
     
     def band_centers_broadening_bandstr(self, unfolded_bandstructure, 
                                         min_dN_pre_screening:float=1e-4,
@@ -493,29 +512,29 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         unfolded_bandstructure : numpy array
             Unfolded effective band structure. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor]
-       min_dN_pre_screening : float, optional
-           Discard the bands which has weights below min_dN_pre_screening to start with. 
-           This pre-screening step helps to minimize the data that will processed
-           now on. The default is 1e-4. [* critical parameter]
-       threshold_dN_2b_trial_band_center : float, optional
-           Initial guess of the band centers based on the threshold wights. 
-           The default is 0.05. [* critical parameter]
-       min_sum_dNs_for_a_band : float, optional
-           Cut off criteria for minimum weights that a band center should have. 
-           The band centers with lower weights than min_sum_dNs_for_a_band will be
-           discarded during SCF refinements. If min_sum_dNs_for_a_band  
-           is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
-           will be reset to threshold_dN_2b_trial_band_center value.
-           The default is 0.05. [* critical parameter]
-       precision_pos_band_centers : float, optional
-           Precision when compared band centers from previous and current SCF
-           iteration. SCF is considered converged if this precision is reached.
-           The default is 1e-5. [not critical parameter]
-       err_tolerance_compare_kpts_val : float, optional
-           The tolerance to group the bands set per unique kpoints. This
-           determines if two flotting point numbers are the same or not. This is not 
-           a critical parameter for band center determination algorithm.
-           The default is 1e-8. [not critical parameter]
+        min_dN_pre_screening : float, optional
+            Discard the bands which has weights below min_dN_pre_screening to start with. 
+            This pre-screening step helps to minimize the data that will processed
+            now on. The default is 1e-4. [* critical parameter]
+        threshold_dN_2b_trial_band_center : float, optional
+            Initial guess of the band centers based on the threshold wights. 
+            The default is 0.05. [* critical parameter]
+        min_sum_dNs_for_a_band : float, optional
+            Cut off criteria for minimum weights that a band center should have. 
+            The band centers with lower weights than min_sum_dNs_for_a_band will be
+            discarded during SCF refinements. If min_sum_dNs_for_a_band  
+            is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
+            will be reset to threshold_dN_2b_trial_band_center value.
+            The default is 0.05. [* critical parameter]
+        precision_pos_band_centers : float, optional
+            Precision when compared band centers from previous and current SCF
+            iteration. SCF is considered converged if this precision is reached.
+            The default is 1e-5. [not critical parameter]
+        err_tolerance_compare_kpts_val : float, optional
+            The tolerance to group the bands set per unique kpoints. This
+            determines if two flotting point numbers are the same or not. This is not 
+            a critical parameter for band center determination algorithm.
+            The default is 1e-8. [not critical parameter]
         collect_scf_data : bool, optional
             Whether to save the dtails of band centers in each SCF cycles.
             The default is False.
@@ -534,7 +553,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         list of array
             Each array contains the final details of band centers in a particular
             kpoint. The list contains band center details for each kpoints.
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN]
         dictionary of dictionary of array or None
             Each array contains the final details of band centers in a particular
             kpoint. The dictionary then contains the details for each SCF cycles with
@@ -618,12 +637,15 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         Returns
         -------
         m_star : float
-            Calculated effective mass in m_0 unit.
+            Calculated effective mass and error in m_0 unit.
         popt : array
             Optimal values for the parameters so that the sum of the squared
             residuals of ``f(xdata, *popt) - ydata`` is minimized.
         pcov : 2-D array
             The estimated approximate covariance of popt. 
+        params_errors : 1-D array
+            One standard deviation error in parameters.
+            perr = np.sqrt(np.diag(pcov))
 
         Raises
         ------
@@ -678,18 +700,21 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
                 print(f'--- Initial guesses for the parameters: {initial_guess_params}')
                 print(f'--- Upper and lower bounds for the parameters: {params_bounds}')
             
-        m_star, popt, pcov = self._effective_mass_calculator(kpath, band_energy, 
-                                                             p0=initial_guess_params, bounds=params_bounds,
-                                                             sigma=fit_weights, absolute_sigma=absolute_weights,
-                                                             fit_parabola=parabolic_dispersion,
-                                                             fit_hyperbola_positive=hyperbolic_dispersion_positive,
-                                                             fit_hyperbola_negative=hyperbolic_dispersion_negative)
+        m_star, popt, pcov, params_errors = self._effective_mass_calculator(kpath, band_energy, 
+                                                                            p0=initial_guess_params, bounds=params_bounds,
+                                                                            sigma=fit_weights, absolute_sigma=absolute_weights,
+                                                                            fit_parabola=parabolic_dispersion,
+                                                                            fit_hyperbola_positive=hyperbolic_dispersion_positive,
+                                                                            fit_hyperbola_negative=hyperbolic_dispersion_negative)
         if self.print_log_info is not None:
             if self.print_log_info in ['medium', 'high']:
                 print(f'--- Optimized parameters {text_params_}: {popt}')
-                print(f'--- One standard deviation errors on the parameters: {np.sqrt(np.diag(pcov))}')
-            print(f'--- Effective mass = {m_star:.4f} m_0')
-        return m_star, popt, pcov
+                print(f'--- One standard deviation errors on the parameters: {params_errors}')
+            print_text_ = f'--- Effective mass = {m_star[0]:.4f} +/- {m_star[1]:.4f} m_0'
+            if hyperbolic_dispersion_positive or hyperbolic_dispersion_negative:
+                print_text_ += f'; nonparabolicity parameter = {popt[3]:.2f} +/- {params_errors[3]:.2f} ev^-1'
+            print(print_text_)
+        return m_star, popt, pcov, params_errors
     
     def fit_functions(self, kpath, optimized_parameters, 
                       parabolic_dispersion:bool=False, 
@@ -823,7 +848,7 @@ class SaveBandStructuredata:
         ----------
         unfolded_bandceneter : numpy ndarray
             Band cenetrs data.
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+            Format: [kpoint index, kpoint coordinate, Band center, Band width, Sum of dN]
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         file_name : str, optional
@@ -880,7 +905,7 @@ class Plotting(_EBSplot):
         unfolded_bandstructure : ndarray
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         fig : matplotlib.pyplot figure instance, optional
             Figure instance to plot on. The default is None.
         ax : matplotlib.pyplot axis, optional
