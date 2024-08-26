@@ -124,6 +124,7 @@ banduppy package:
     5. Plotting class
         5.1 plot_ebs()
         5.2 plot_scf()
+        5.3 save_plot_figure()
 ```
 
 <!-- =========================================================== -->

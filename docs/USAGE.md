@@ -246,7 +246,7 @@ __Option 2:__ Using BandUPpy Plotting module.
                          vmin=None, vmax=None, dpi=72)
 ```
 <!-- =========================================================== -->
-
+__Note__: One can save the generated figure within the function call `plot_ebs()` and `plot_scf()`. `save_plot_figure()` function can also be used to save a figure instance independently.
 
 
 ##

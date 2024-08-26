@@ -60,8 +60,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
     def _plot(self, fig=None, ax=None, save_file_name=None, CountFig=None, Ef=None, Emin=None, 
               Emax=None,  pad_energy_scale:float=0.5, threshold_weight:float=None,  
               mode:str="fatband", yaxis_label:str='E (eV)', special_kpoints:dict=None, 
-              plotSC:bool=True, marker='o', fatfactor=20, nE:int=100, smear:float=0.05,  
-              color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
+              plotSC:bool=True, marker='o', fatfactor=20, nE:int=100,
+              smear:float=0.05, color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
               show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None,
               vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
@@ -101,8 +101,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         plotSC : bool, optional
             Plot supercell bandstructure. The default is True.
         marker : matplotlib.pyplot markerMarkerStyle, optional
-            The marker style. Marker can be either an instance of the class or 
-            the text shorthand for a particular marker. 
+            The marker style. Marker can be either an instance of
+            the class or the text shorthand for a particular marker.
             The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
@@ -190,6 +190,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         elif mode == 'band_centers':
             ax, return_plot = self._plot_band_centers(result, ax, color=color, color_map=color_map,
                                                       plot_colormap=plot_colormap_bandcenter,
+                                                      err_bar_fmt=marker,
                                                       min_weight=vmin, max_weight=vmax)
         elif mode == 'only_for_all_scf': # This mode is hidden. Used for all_scf plots later.
             pass # This plots the skeleton of the plots without raising error.

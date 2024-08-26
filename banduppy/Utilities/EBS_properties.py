@@ -70,7 +70,7 @@ class _GeneralFunctionsDefs:
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
             YYY = full_data[:, 2] - Ef 
-            print(f"-- Efermi was set to {Ef} eV")
+            print(f"-- Efermi was set to {Ef:.4f} eV")
 
         if Emin is None: Emin = YYY.min() - pad_energy_scale
         if Emax is None: Emax = YYY.max() + pad_energy_scale
@@ -778,6 +778,20 @@ class _EffectiveMass:
         self.effective_mass_unit_conversion = 3.8099821114859607
 
     @classmethod
+    def _fit_parabola_short(cls, k, alpha):
+        return alpha * k * k
+
+    @classmethod
+    def _fit_hyperbola_positive_short(cls, k, alpha, gamma):
+        # Positive solution of E quadratic equation
+        return (-1 + np.sqrt(1 + 4*alpha*gamma*k*k))/(2*gamma)
+
+    @classmethod
+    def _fit_hyperbola_negative_short(cls, k, alpha, gamma):
+        # Negative solution of E quadratic equation
+        return (-1 - np.sqrt(1 + 4*alpha*gamma*k*k))/(2*gamma)
+
+    @classmethod
     def _fit_parabola(cls, k, alpha, kshift, cbm):
         return alpha * np.power(k - kshift, 2) + cbm
     
@@ -791,8 +805,9 @@ class _EffectiveMass:
         # Negative solution of E quadratic equation
         return (-1 - np.sqrt(1 + 4*alpha*gamma*np.power(k-kshift,2)))/(2*gamma) + cbm 
         
-    def _effective_mass_calculator(self, kpath, band_energy, p0=None, bounds = (-np.inf, np.inf), 
-                                   sigma=None, absolute_sigma:bool=False, fit_parabola:bool=False, 
+    def _effective_mass_calculator(self, kpath, band_energy, ignore_kshift_cbm_fit:bool=True,
+                                   p0=None, bounds = (-np.inf, np.inf), sigma=None,
+                                   absolute_sigma:bool=False, fit_parabola:bool=False,
                                    fit_hyperbola_positive:bool=False, fit_hyperbola_negative:bool=False):
         """
         kpath : numpy array
@@ -801,6 +816,8 @@ class _EffectiveMass:
         band_energy : numpy array
             Energy (in eV) of unfolded effective band structure/band centers that will
             be fitted for calculating effective mass.
+        ignore_kshift_cbm_fit : bool, optional
+            Ignore fitting kshift and cbm parameters during fitting. The default is True.
         p0 : array_like, optional
             Initial guess for the parameters (length N). If None, then the
             initial values will all be 1 (if the number of parameters for the
@@ -865,13 +882,16 @@ class _EffectiveMass:
             if covariance of the parameters can not be estimated.
         """
         if fit_parabola:
-            popt, pcov = curve_fit(self._fit_parabola, kpath, band_energy, p0=p0, 
+            _fit_fn_call = self._fit_parabola_short if ignore_kshift_cbm_fit else self._fit_parabola
+            popt, pcov = curve_fit(_fit_fn_call, kpath, band_energy, p0=p0,
                                    bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
         elif fit_hyperbola_positive:
-            popt, pcov = curve_fit(self._fit_hyperbola_positive, kpath, band_energy, p0=p0, 
+            _fit_fn_call = self._fit_hyperbola_positive_short if ignore_kshift_cbm_fit else self._fit_hyperbola_positive
+            popt, pcov = curve_fit(_fit_fn_call, kpath, band_energy, p0=p0,
                                    bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
         elif fit_hyperbola_negative:
-            popt, pcov = curve_fit(self._fit_hyperbola_negative, kpath, band_energy, p0=p0, 
+            _fit_fn_call = self._fit_hyperbola_negative_short if ignore_kshift_cbm_fit else self._fit_hyperbola_negative
+            popt, pcov = curve_fit(_fit_fn_call, kpath, band_energy, p0=p0,
                                    bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
         else:
             raise ValueError('No fitting option is supplied for fitting.')

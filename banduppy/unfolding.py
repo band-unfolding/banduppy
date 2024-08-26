@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from .src import _BandFolding, _BandUnfolding, _GeneralFnsDefs
 from .Utilities import _GeneralFunctionsDefs, _EBSplot, _FoldingDegreePlot, _BandCentersBroadening, _EffectiveMass
 
@@ -343,8 +344,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         plotSC : bool, optional
             Plot supercell bandstructure. The default is True.
         marker : matplotlib.pyplot markerMarkerStyle, optional
-            The marker style. Marker can be either an instance of the class or 
-            the text shorthand for a particular marker. 
+            The marker style for fatband plot. Marker can be either an instance of
+            the class or the text shorthand for a particular marker.
             The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
@@ -575,6 +576,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
     
     def calculate_effecfive_mass(self, kpath, band_energy, 
                                  initial_guess_params=None, 
+                                 ignore_kshift_cbm_fit:bool=True,
                                  params_bounds = (-np.inf, np.inf), 
                                  fit_weights=None, absolute_weights:bool=False,
                                  parabolic_dispersion:bool=False, 
@@ -592,6 +594,8 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         band_energy : numpy array
             Energy (in eV) of unfolded effective band structure/band centers that will
             be fitted for calculating effective mass.
+        ignore_kshift_cbm_fit : bool, optional
+            Ignore fitting kshift and cbm parameters during fitting. The default is True.
         initial_guess_params : array_like, optional
             Initial guess for the parameters (length N). If None, then the
             initial values will all be 1 (if the number of parameters for the
@@ -660,6 +664,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             if covariance of the parameters can not be estimated.
              
         """
+        space_gap = 55 # add white space for text line formatting
         if (parabolic_dispersion or hyperbolic_dispersion_positive or 
             hyperbolic_dispersion_negative):
             pass
@@ -674,33 +679,45 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             middle_pos = len(band_energy)//2
             guess_alpha = (band_energy[middle_pos]-band_energy[0])/(kpath[middle_pos]-kpath[0])**2
             initial_guess_params = np.array([guess_alpha, kpath[0], 0, 0])
+            
+        if ignore_kshift_cbm_fit:
+            params_name =  ['alpha', 'gamma']
+            initial_guess_params = np.array([initial_guess_params[0], initial_guess_params[-1]])
 
         if len(np.shape(params_bounds)) == 1:
             # Extra grace to add to define the upper bound of the parameters.
             # The values are choosen here worked well for some of the test cases.
-            extra_upper_bound = [100, 3*abs(kpath[1]-kpath[0]), 1e-4, 10]
-            params_bounds = ([0, initial_guess_params[1]-1e-2, 0, 0], 
-                             [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
+            if ignore_kshift_cbm_fit:
+                extra_upper_bound = [100, 10]
+                params_bounds = ([0, 0], 
+                                 [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
+            else:   
+                extra_upper_bound = [100, 3*abs(kpath[1]-kpath[0]), 1e-4, 10]
+                params_bounds = ([0, initial_guess_params[1]-1e-2, 0, 0], 
+                                 [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
 
         if parabolic_dispersion:
-            text_params_ = ','.join(params_name[:3])
-            initial_guess_params = initial_guess_params[:3]
-            params_bounds = tuple(xx[:3] for xx in params_bounds)  
+            params_name = params_name[:-1]
+            initial_guess_params = initial_guess_params[:-1]
+            params_bounds = tuple(xx[:-1] for xx in params_bounds)
 
         if self.print_log_info is not None:
-            print('-- Effective mass calculator:')
+            log_txt_ = f'-- Effective mass calculator::\n{"--- Band dispersion":<{space_gap}}: '
             if parabolic_dispersion:
-                print('--- Parabolic band dispersion')
+                log_txt_ += 'Parabolic'
             elif hyperbolic_dispersion_positive:
-                print('--- Hyperbolic band dispersion (upward curvature)')
+                log_txt_ += 'Hyperbolic (upward curvature)'
             else:
-                print('--- Hyperbolic band dispersion (downward curvature)')
+                log_txt_ += 'Hyperbolic (downward curvature)'
+            print(log_txt_)
             
             if self.print_log_info == 'high':
-                print(f'--- Initial guesses for the parameters: {initial_guess_params}')
-                print(f'--- Upper and lower bounds for the parameters: {params_bounds}')
+                print(f'{"--- Parameters":<{space_gap}}: {params_name}')
+                print(f'{"--- Initial guesses for the parameters":<{space_gap}}: {initial_guess_params}')
+                print(f'{"--- Upper and lower bounds for the parameters":<{space_gap}}: {params_bounds}')
             
         m_star, popt, pcov, params_errors = self._effective_mass_calculator(kpath, band_energy, 
+                                                                            ignore_kshift_cbm_fit=ignore_kshift_cbm_fit,
                                                                             p0=initial_guess_params, bounds=params_bounds,
                                                                             sigma=fit_weights, absolute_sigma=absolute_weights,
                                                                             fit_parabola=parabolic_dispersion,
@@ -708,12 +725,12 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
                                                                             fit_hyperbola_negative=hyperbolic_dispersion_negative)
         if self.print_log_info is not None:
             if self.print_log_info in ['medium', 'high']:
-                print(f'--- Optimized parameters {text_params_}: {popt}')
-                print(f'--- One standard deviation errors on the parameters: {params_errors}')
-            print_text_ = f'--- Effective mass = {m_star[0]:.4f} +/- {m_star[1]:.4f} m_0'
-            if hyperbolic_dispersion_positive or hyperbolic_dispersion_negative:
-                print_text_ += f'; nonparabolicity parameter = {popt[3]:.2f} +/- {params_errors[3]:.2f} ev^-1'
-            print(print_text_)
+                print(f"{'--- Optimized parameters':<{space_gap}}: {popt}")
+                print(f"{'--- One standard deviation errors on the parameters':<{space_gap}}: {params_errors}")
+            print_text_ = f"{'--- Results':<{space_gap}}: effective mass (m*) = {m_star[0]:.4f} +/- {m_star[1]:.4f} m_0"
+            if (not parabolic_dispersion) and (hyperbolic_dispersion_positive or hyperbolic_dispersion_negative):
+                print_text_ += f'\n{" ":<{space_gap}}: nonparabolicity parameter (gamma) = {popt[-1]:.2f} +/- {params_errors[-1]:.2f} ev^-1'
+            print(print_text_,'\n')
         return m_star, popt, pcov, params_errors
     
     def fit_functions(self, kpath, optimized_parameters, 
@@ -750,19 +767,27 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
              
         """
         if self.print_log_info is not None:
-            print('-- Return band dispersion type in fit functions:')
+            space_gap = 55
+            log_txt_ = f'{"-- Band dispersion type in fit functions":<{space_gap}}: '
             if parabolic_dispersion:
-                print('--- Parabolic band dispersion')
+                log_txt_ += 'Parabolic'
             elif hyperbolic_dispersion_positive:
-                print('--- Hyperbolic band dispersion (upward curvature)')
+                log_txt_ += 'Hyperbolic (upward curvature)'
             else:
-                print('--- Hyperbolic band dispersion (downward curvature)')
+                log_txt_ += 'Hyperbolic (downward curvature)'
+            print(log_txt_, '\n')
 
         if parabolic_dispersion:
+            if len(optimized_parameters) == 1:
+                return _EffectiveMass._fit_parabola_short(kpath, *optimized_parameters)
             return _EffectiveMass._fit_parabola(kpath, *optimized_parameters)
         elif hyperbolic_dispersion_positive:
-             return _EffectiveMass._fit_hyperbola_positive(kpath, *optimized_parameters)
+            if len(optimized_parameters) == 2:
+                return _EffectiveMass._fit_hyperbola_positive_short(kpath, *optimized_parameters)
+            return _EffectiveMass._fit_hyperbola_positive(kpath, *optimized_parameters)
         elif hyperbolic_dispersion_negative:
+            if len(optimized_parameters) == 2:
+                return _EffectiveMass._fit_hyperbola_negative_short(kpath, *optimized_parameters)
             return _EffectiveMass._fit_hyperbola_negative(kpath, *optimized_parameters)
         else:
             raise ValueError('No dispersion option is supplied for fitting.')
@@ -890,7 +915,7 @@ class Plotting(_EBSplot):
                  Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
                  threshold_weight:float=None, mode:str="fatband", 
                  yaxis_label:str='E (eV)', special_kpoints:dict=None, plotSC:bool=True,  
-                 marker='o', fatfactor=20, nE:int=100, smear:float=0.05, 
+                 marker='o', fatfactor=20, nE:int=100, smear:float=0.05,
                  color='gray', color_map='viridis', show_legend:bool=True,
                  plot_colormap_bandcenter:bool=True, show_colorbar:bool=False,
                  colorbar_label:str=None, vmin=None, vmax=None, 
@@ -1109,5 +1134,45 @@ class Plotting(_EBSplot):
                              show_legend=show_legend, show_colorbar=show_colorbar,
                              colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
                              show_plot=show_plot, savefig=savefig, **kwargs_savefig)
+
+    def save_plot_figure(self, fig_name, fig=None, savefig:bool=True, show_plot:bool=True,
+                         CountFig=None, **kwargs_savefig):
+        """
+        Saving generated plot/figure.
+
+        Parameters
+        ----------
+        fig_name : str, optional
+            Name of the figure file. If None, figure will be not saved.
+            The default is None.
+        fig : matplotlib.pyplot figure instance, optional
+            Figure instance to plot on. The default is None.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        CountFig: int, optional
+            Figure count. The default is None.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
+
+        Returns
+        -------
+        CountFig: int or None
+            Figure count.
+        """
+        if not savefig:
+            if show_plot: plt.show()
+            return CountFig
+
+        if fig is not None:
+            fig.savefig(f'{self.save_figure_directory}/{fig_name}',
+                        bbox_inches='tight', **kwargs_savefig)
+        else:
+            plt.savefig(f'{self.save_figure_directory}/{fig_name}',
+                        bbox_inches='tight', **kwargs_savefig)
+        if CountFig is not None: CountFig += 1
+        plt.close()
+        return CountFig
         
 
