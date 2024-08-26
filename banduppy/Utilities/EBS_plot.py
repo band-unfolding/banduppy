@@ -21,7 +21,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         unfolded_bandstructure : ndarray, optional
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor.] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
             The default is None.
         save_figure_dir : str/path, optional
             Directory where to save the figure. The default is current directory.
@@ -33,7 +33,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         unfolded_bandstructure : ndarray
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         efermi : float
             Default Fermi energy. Set to 0.0.
 
@@ -51,21 +51,19 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         
         if unfolded_bandstructure is None:
             try:
-                plt_result = self.unfolded_bandstructure.copy() 
+                self.plt_result = self.unfolded_bandstructure.copy() 
             except:
                 raise ValueError('No bandstructure data file is found')
         else:
-            plt_result = unfolded_bandstructure.copy() 
-            
-        self.plot_result = _GeneralFunctionsDefs._reformat_columns_full_bandstr_data(plt_result)
+            self.plt_result = unfolded_bandstructure.copy() 
     
     def _plot(self, fig=None, ax=None, save_file_name=None, CountFig=None, Ef=None, Emin=None, 
               Emax=None,  pad_energy_scale:float=0.5, threshold_weight:float=None,  
               mode:str="fatband", yaxis_label:str='E (eV)', special_kpoints:dict=None, 
-              plotSC:bool=True, marker='o', fatfactor=20, nE:int=100, smear:float=0.05,  
-              color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
+              plotSC:bool=True, marker='o', fatfactor=20, nE:int=100,
+              smear:float=0.05, color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
               show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None,
-              vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+              vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
@@ -103,8 +101,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         plotSC : bool, optional
             Plot supercell bandstructure. The default is True.
         marker : matplotlib.pyplot markerMarkerStyle, optional
-            The marker style. Marker can be either an instance of the class or 
-            the text shorthand for a particular marker. 
+            The marker style. Marker can be either an instance of
+            the class or the text shorthand for a particular marker.
             The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
@@ -132,6 +130,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
         
@@ -158,8 +158,12 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             
         if yaxis_label is None: yaxis_label=''
         
-        if mode != "band_centers" and len(self.plot_result[0]) > 3: 
-            self.plot_result = self.plot_result[:, 1:]
+        is_data_4_band_ceneter = True if mode == "band_centers" else False
+        self.plot_result = _GeneralFunctionsDefs._reformat_columns_full_bandstr_data(self.plt_result, 
+                                                                                     is_band_center_data=is_data_4_band_ceneter)   
+        
+        if len(self.plot_result[0]) == 3:
+            self.plot_result = np.insert(self.plot_result, 0, np.nan, axis=1) 
         
         if Ef == 'auto' or Ef is None:  Ef = self.efermi
             
@@ -168,6 +172,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                                                              Ef, Emin=Emin, Emax=Emax,  
                                                              pad_energy_scale=pad_energy_scale, 
                                                              threshold_weight=threshold_weight)
+        result = result[:, 1:]
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
             ax.axhline(y=0, color='k', ls='--', lw=1)
@@ -185,6 +190,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         elif mode == 'band_centers':
             ax, return_plot = self._plot_band_centers(result, ax, color=color, color_map=color_map,
                                                       plot_colormap=plot_colormap_bandcenter,
+                                                      err_bar_fmt=marker,
                                                       min_weight=vmin, max_weight=vmax)
         elif mode == 'only_for_all_scf': # This mode is hidden. Used for all_scf plots later.
             pass # This plots the skeleton of the plots without raising error.
@@ -212,8 +218,9 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         if save_file_name is None:
             if show_plot: plt.show()
         else:
-            CountFig = self._save_figure(save_file_name, fig=self.fig, CountFig=CountFig, **kwargs_savefig)
-            plt.close()
+            CountFig = self._save_figure(save_file_name, fig=self.fig,
+                                         savefig=savefig, show_plot=show_plot,
+                                         CountFig=CountFig, **kwargs_savefig)
         return self.fig, ax, CountFig
     
     @classmethod
@@ -384,7 +391,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                   plot_sc_unfold:bool=True, marker='o', fatfactor=20, smear:float=0.05,  
                   color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
                   show_legend:bool=True, show_colorbar:bool=True, colorbar_label:str=None,
-                  vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+                  vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
         Band centers all scf steps plot.
 
@@ -452,6 +459,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
         
@@ -535,5 +544,6 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             if save_file_name is None:
                 if show_plot: plt.show()
             else:
-                _ = self._save_figure(save_file_name_, fig=fig, CountFig=None, **kwargs_savefig)
-                plt.close()
+                _ = self._save_figure(save_file_name_, fig=fig,
+                                      savefig=savefig, show_plot=show_plot,
+                                      CountFig=None, **kwargs_savefig)

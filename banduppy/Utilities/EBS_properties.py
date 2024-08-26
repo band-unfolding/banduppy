@@ -5,28 +5,30 @@ from ..BasicFunctions.general_functions import _SaveData2File, _draw_line_length
 ### ===========================================================================
 class _GeneralFunctionsDefs:
     @staticmethod
-    def _reformat_columns_full_bandstr_data(full_data):
+    def _reformat_columns_full_bandstr_data(full_data, is_band_center_data:bool=False):
         """
-        Gather first 4 columns of data. Discard S_x,y,z data in spinor.
+        Gather first 4 (5 for band centers) columns of data. Discard S_x,y,z data in spinor.
 
         Parameters
         ----------
-        kpath_in_angs : array, optional
-            k on path (in A^-1) coordinate. The default is None.
         full_data : ndarray
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor.] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        is_band_center_data : bool, optional
+            Is the data for unfolded band center? The default is False.
         
         Returns
         -------
         ndarray
             Unfolded effective band structure/band center data within the range. 
             Format: [k index, k on path (A^-1), energy, weight] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
 
         """
-        return full_data[:, :4] # column upto weight/Sum of dN
+        if is_band_center_data:
+            return full_data[:, :5] # column upto Sum of dN
+        return full_data[:, :4] # column upto weight
         
     @classmethod
     def _get_data_in_energy_window(cls, full_data, Ef, Emin=None, Emax=None,  
@@ -39,6 +41,8 @@ class _GeneralFunctionsDefs:
         ----------
         full_data : ndarray, optional
             Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy, weight] or
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         Ef : float
             Fermi energy. Set to 0.0 if None or 'auto'.
         Emin : float, optional
@@ -65,15 +69,15 @@ class _GeneralFunctionsDefs:
         if Ef == 'auto' or Ef is None:  Ef = 0.0
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
-            YYY = full_data[:, 1] - Ef 
-            print(f"-- Efermi was set to {Ef} eV")
+            YYY = full_data[:, 2] - Ef 
+            print(f"-- Efermi was set to {Ef:.4f} eV")
 
         if Emin is None: Emin = YYY.min() - pad_energy_scale
         if Emax is None: Emax = YYY.max() + pad_energy_scale
         
         pos_right_energy_window = (YYY >= Emin) * (YYY <= Emax)
         result = full_data[pos_right_energy_window]
-        result[:, 1] = YYY[pos_right_energy_window]
+        result[:, 2] = YYY[pos_right_energy_window]
 
         # Set weights to 0 which are below threshold_weight
         if threshold_weight is not None: 
@@ -85,10 +89,11 @@ class _GeneralFunctionsDefs:
     def _get_bandstr_data_only_in_energy_kpts_window(cls, complete_data, Ef:float=None, 
                                                      Emin:float=None, Emax:float=None,  
                                                      pad_energy_scale:float=0.5, 
+                                                     is_band_center_data:bool=False,
                                                      min_dN_screen:float=0.0):
         """
         Collect data within the condition and range specified. 
-        Note: Returns only 1st 4 columns. Removes the spinor data part for 
+        Note: Returns only 1st 4 (5 for band centers) columns. Removes the spinor data part for 
         spinor activated effective band structure data.
 
         Parameters
@@ -104,25 +109,32 @@ class _GeneralFunctionsDefs:
         pad_energy_scale: float, optional
             Add padding of pad_energy_scale to minimum and maximum energy if Emin
             and Emax are None. The default is 0.5.
+        is_band_center_data : bool, optional
+            Is the data for unfolded band center? The default is False.
         min_dN_screen : float, optional
             The band centers with band weights lower than the threshhold weights 
             are discarded. The default is 0.
             
          Returns
          -------
+         Emin : float
+             Minimum in energy.
+         Emax : float
+             Maximum in energy
          ndarray
              Unfolded effective band structure/band center data within the range. 
 
          """
         
         # Returns only 1st 4 columns. Removes the spinor data part.
-        complete_data_ = cls._reformat_columns_full_bandstr_data(complete_data)
+        complete_data_ = cls._reformat_columns_full_bandstr_data(complete_data, 
+                                                                 is_band_center_data=is_band_center_data)
         # Collect data within energy window
         Emin, Emax, complete_data_ = \
             cls._get_data_in_energy_window(complete_data_, Ef, Emin=Emin, Emax=Emax,  
                                            pad_energy_scale=pad_energy_scale)
         # Pre-screen band structure data to minimize unnecessary small weights bands
-        return complete_data_[complete_data_[:, -1] >= min_dN_screen]
+        return Emin, Emax, complete_data_[complete_data_[:, -1] >= min_dN_screen]
     
     @classmethod
     def _save_band_centers(cls, data2save, print_log='low', 
@@ -131,7 +143,7 @@ class _GeneralFunctionsDefs:
                                                'fname_suffix': ''}):
         """
         Save unfolded band centers data.
-        Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+        Format: [kpoint index, kpoint coordinate, Band center, Band width, Sum of dN]
 
         Parameters
         ----------
@@ -160,7 +172,7 @@ class _GeneralFunctionsDefs:
             if print_log is not None: 
                 print(f"{'='*_draw_line_length}\n- Saving unfolded band centers to file...")
             header_msg  = " Unfolded band centers data\n"
-            header_msg += " k on path (A^-1), Band center energy, Band width, Sum of dN\n"
+            header_msg += "k-index, k on path (A^-1), Band center energy, Band width, Sum of dN\n"
             # Save the sc-kpoints in file
             save_f_name = _SaveData2File._save_2_file(data=data2save, 
                                                       save_dir=save_data["fdir"], 
@@ -263,7 +275,8 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         # Returns only 1st 4 columns. Removes the spinor data part.
         # Pre-screen band structure data to minimize unnecessary small weights bands
         self.unfolded_bandstructure_ = \
-            self._pre_screen_bandstr_data(_GeneralFunctionsDefs._reformat_columns_full_bandstr_data(unfolded_bandstructure), 
+            self._pre_screen_bandstr_data(_GeneralFunctionsDefs._reformat_columns_full_bandstr_data(unfolded_bandstructure, 
+                                                                                                    is_band_center_data=True), 
                                           min_dN_pre_screening)
         
         # Setting parameters
@@ -309,7 +322,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         return_grouped_unfolded_bandstructure_datails : 2d array
             Each array contains the final details of band centers at each
             kpoint. 
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN]
         gather_scf_data_ : dictionary of dictionary of array or None
             Each array contains the final details of band centers in a particular
             kpoint. The dictionary then contains the details for each SCF cycles with
@@ -320,7 +333,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
 
         """
         print(f"{'-'*72}\n- Finding band center and broadening for band structure...")
-        self.unfolded_bandstructure_ = self._eliminate_duplicate_kpts_list(self.unfolded_bandstructure_)
+        # self.unfolded_bandstructure_ = self._eliminate_duplicate_kpts_list(self.unfolded_bandstructure_)
         grouped_unfolded_bandstructure = self._group_unique_kpts_data(self.unfolded_bandstructure_,
                                                                       err_tolerance=self.err_tolerance)
         gather_scf_data_ = {} if collect_data_scf else None
@@ -362,7 +375,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
             Index of the kpoint.
         guess_band_details : 2d numpy array
             Band center details at the particular kpoint.
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN]
         all_data_ : dict or None
             Dictionary containing the band center details of all SCF cycles. 
             Return None if collect_data_scf is False.
@@ -408,7 +421,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
                                                                         dNs_for_current_kpt)
                 guess_band_details = guess_band_details[guess_band_details[:, -1] >= 
                                                         self.min_sum_dNs_for_each_band]
-                guess_band_details = np.insert(guess_band_details, 0, kpoints_cord[1], axis=1)
+                guess_band_details = np.insert(guess_band_details, [0, 0], kpoints_cord[:2], axis=1)
                 n_guesses_bc_end = len(guess_band_details)
                 if self.print_output == 'high':
                     print('-- Positions of the band centers converged:')
@@ -420,7 +433,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
                 guess_band_centers = refined_band_centers
                 
             if collect_data_scf: all_data_[count] = guess_band_details[:, -3:]
-        # guess_band_details = (#kpoint coordinate #Band center #Band width #Sum of dN)
+        # guess_band_details = (#kpoint index #kpoint coordinate #Band center #Band width #Sum of dN)
         return k_index_, guess_band_details, all_data_
     
     @staticmethod
@@ -522,7 +535,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
     @classmethod
     def _group_unique_kpts_data(cls, unfolded_bandstructure, err_tolerance:float=1e-8):
         """
-        Group bands at each unique k-points.
+        Group bands by k-point indices.
 
         Parameters
         ----------
@@ -541,9 +554,9 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
 
         """
         # Get unique kpoints coordinate
-        unique_kpts_coords = np.unique(unfolded_bandstructure[:, 1])
+        unique_kpts_coords = np.unique(unfolded_bandstructure[:, 0])
         # Group the rows based on unique values in the specified column
-        return [unfolded_bandstructure[abs(unfolded_bandstructure[:, 1] - val) < err_tolerance] 
+        return [unfolded_bandstructure[abs(unfolded_bandstructure[:, 0] - val) < err_tolerance] 
                 for val in unique_kpts_coords]
     
     @classmethod
@@ -733,7 +746,12 @@ class _EffectiveMass:
         kshift = horizontal kpath fit param 
         cbm = vertical energy fit param, conduction band minima
         
-    For E in eV and k in A^-1; alpha has unit of eV.A^2 
+    o For E in eV and k in A^-1; alpha has unit of eV.A^2 and gamma has unit of eV^-1.
+    
+    STD in alpha --> STD in m*:
+        std(m*) ~= |d_m*/d_alpha|.std(alpha)
+                 = hbar^2/(2*m_e*alpha_in_eV_angsquare) * (1/alpha^2) * std(alpha)
+                 = effective_mass_unit_conversion * (1/alpha^2) * std(alpha)
     
     """
     def __init__(self, print_log='low'):
@@ -741,11 +759,11 @@ class _EffectiveMass:
         Intializing EffectiveMass class. 
         
         m_e = 9.1093837015e-31 kg
-        habr = 1.054571817e-34 J.s
+        hbar = 1.054571817e-34 J.s
         1 ang = 1e-10 m
         1 eV = 1.602176634e-19 J
         
-        hbar^2/(2*m_e*alpha_in_eV_angsquare)
+        effective_mass_unit_conversion = hbar^2/(2*m_e*alpha_in_eV_angsquare)
         = (1.054571817e-34**2)/(2*9.1093837015e-31*1.602176634e-19*1e-10**2) 
         = 3.8099821114859607
         
@@ -758,6 +776,20 @@ class _EffectiveMass:
         """
         self.print_output = print_log
         self.effective_mass_unit_conversion = 3.8099821114859607
+
+    @classmethod
+    def _fit_parabola_short(cls, k, alpha):
+        return alpha * k * k
+
+    @classmethod
+    def _fit_hyperbola_positive_short(cls, k, alpha, gamma):
+        # Positive solution of E quadratic equation
+        return (-1 + np.sqrt(1 + 4*alpha*gamma*k*k))/(2*gamma)
+
+    @classmethod
+    def _fit_hyperbola_negative_short(cls, k, alpha, gamma):
+        # Negative solution of E quadratic equation
+        return (-1 - np.sqrt(1 + 4*alpha*gamma*k*k))/(2*gamma)
 
     @classmethod
     def _fit_parabola(cls, k, alpha, kshift, cbm):
@@ -773,8 +805,9 @@ class _EffectiveMass:
         # Negative solution of E quadratic equation
         return (-1 - np.sqrt(1 + 4*alpha*gamma*np.power(k-kshift,2)))/(2*gamma) + cbm 
         
-    def _effective_mass_calculator(self, kpath, band_energy, p0=None, bounds = (-np.inf, np.inf), 
-                                   sigma=None, absolute_sigma:bool=False, fit_parabola:bool=False, 
+    def _effective_mass_calculator(self, kpath, band_energy, ignore_kshift_cbm_fit:bool=True,
+                                   p0=None, bounds = (-np.inf, np.inf), sigma=None,
+                                   absolute_sigma:bool=False, fit_parabola:bool=False,
                                    fit_hyperbola_positive:bool=False, fit_hyperbola_negative:bool=False):
         """
         kpath : numpy array
@@ -783,6 +816,8 @@ class _EffectiveMass:
         band_energy : numpy array
             Energy (in eV) of unfolded effective band structure/band centers that will
             be fitted for calculating effective mass.
+        ignore_kshift_cbm_fit : bool, optional
+            Ignore fitting kshift and cbm parameters during fitting. The default is True.
         p0 : array_like, optional
             Initial guess for the parameters (length N). If None, then the
             initial values will all be 1 (if the number of parameters for the
@@ -824,12 +859,15 @@ class _EffectiveMass:
         Returns
         -------
         m_star : float
-            Calculated effective mass in m_0 unit.
+            Calculated effective mass and error in m_0 unit.
         popt : array
             Optimal values for the parameters so that the sum of the squared
             residuals of ``f(xdata, *popt) - ydata`` is minimized.
         pcov : 2-D array
             The estimated approximate covariance of popt. 
+        params_errors : 1-D array
+            One standard deviation error in parameters.
+            perr = np.sqrt(np.diag(pcov))
 
         Raises
         ------
@@ -844,15 +882,21 @@ class _EffectiveMass:
             if covariance of the parameters can not be estimated.
         """
         if fit_parabola:
-            popt, pcov = curve_fit(self._fit_parabola, kpath, band_energy, p0=p0, 
+            _fit_fn_call = self._fit_parabola_short if ignore_kshift_cbm_fit else self._fit_parabola
+            popt, pcov = curve_fit(_fit_fn_call, kpath, band_energy, p0=p0,
                                    bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
         elif fit_hyperbola_positive:
-            popt, pcov = curve_fit(self._fit_hyperbola_positive, kpath, band_energy, p0=p0, 
+            _fit_fn_call = self._fit_hyperbola_positive_short if ignore_kshift_cbm_fit else self._fit_hyperbola_positive
+            popt, pcov = curve_fit(_fit_fn_call, kpath, band_energy, p0=p0,
                                    bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
         elif fit_hyperbola_negative:
-            popt, pcov = curve_fit(self._fit_hyperbola_negative, kpath, band_energy, p0=p0, 
+            _fit_fn_call = self._fit_hyperbola_negative_short if ignore_kshift_cbm_fit else self._fit_hyperbola_negative
+            popt, pcov = curve_fit(_fit_fn_call, kpath, band_energy, p0=p0,
                                    bounds=bounds, sigma=sigma, absolute_sigma=absolute_sigma)
         else:
             raise ValueError('No fitting option is supplied for fitting.')
+            
+        params_errors = np.sqrt(np.diag(pcov))
         m_star = self.effective_mass_unit_conversion/popt[0]
-        return m_star, popt, pcov 
+        m_star_error = self.effective_mass_unit_conversion*params_errors[0]/popt[0]/popt[0]
+        return (m_star, m_star_error), popt, pcov, params_errors

@@ -52,7 +52,7 @@ __Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@ehu.eus,
     3. numpy
     4. pickle
     5. scipy>=1.0
-    6. irrep>=1.6.2
+    6. irrep>=1.9.3
     7. matplotlib
 ```
 
@@ -109,7 +109,7 @@ banduppy package:
         1.2 generate_SC_Kpts_from_pc_kpts()
         1.3 generate_SC_Kpts_from_pc_k_path()
         1.3 Unfold()
-        1.4 plot_ebs() [Note: Similar in Plotting class but can not plot band centers]
+        1.4 plot_ebs() [Note: Similar to Plotting class but can not plot band centers]
     2. BandStructure class
         2.1 BandStructure()
     3. Properties class
@@ -124,6 +124,7 @@ banduppy package:
     5. Plotting class
         5.1 plot_ebs()
         5.2 plot_scf()
+        5.3 save_plot_figure()
 ```
 
 <!-- =========================================================== -->
@@ -163,7 +164,7 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.3.3__
+__Latest release: v0.3.4__
 
 Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
 

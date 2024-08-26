@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from .src import _BandFolding, _BandUnfolding, _GeneralFnsDefs
 from .Utilities import _GeneralFunctionsDefs, _EBSplot, _FoldingDegreePlot, _BandCentersBroadening, _EffectiveMass
 
@@ -302,7 +303,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                  special_kpoints:dict=None, plotSC:bool=True, marker='o', fatfactor=20, 
                  nE:int=100, smear:float=0.05, color='gray', color_map='viridis', 
                  show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None, 
-                 vmin=None, vmax=None, show_plot:bool=True,**kwargs_savefig):
+                 vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         
         """
         Scatter/density plot of the band structure.
@@ -343,8 +344,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         plotSC : bool, optional
             Plot supercell bandstructure. The default is True.
         marker : matplotlib.pyplot markerMarkerStyle, optional
-            The marker style. Marker can be either an instance of the class or 
-            the text shorthand for a particular marker. 
+            The marker style for fatband plot. Marker can be either an instance of
+            the class or the text shorthand for a particular marker.
             The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
@@ -370,6 +371,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
 
@@ -384,7 +387,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Figure count.
 
         """
-        
+        if mode == 'band_centers':
+            raise AttributeError('Plot using band_cenetrs mode is not allowed within Unfolding() class. Use Plotting() class instead.')
         _EBSplot.__init__(self, save_figure_dir=save_figure_dir)
 
         return self._plot(fig=fig, ax=ax, save_file_name=save_file_name, CountFig=CountFig,  
@@ -394,7 +398,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                           fatfactor=fatfactor, nE=nE, smear=smear, color=color, color_map=color_map,
                           show_legend=show_legend, show_colorbar=show_colorbar,
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                          show_plot=show_plot, **kwargs_savefig)
+                          show_plot=show_plot, savefig=savefig, **kwargs_savefig)
     
 class Properties(_BandCentersBroadening, _EffectiveMass):
     """
@@ -415,17 +419,19 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         if print_log is not None: print_log = print_log.lower()
         self.print_log_info = print_log
 
-    def collect_bandstr_data_only_in_energy_window(self, unfolded_bandstructure, Ef:float=None, 
-                                                    Emin:float=None, Emax:float=None,  
-                                                    pad_energy_scale:float=0.5, 
-                                                    min_dN_screen:float=0.0, 
-                                                    save_data = {'save2file': False, 
-                                                                 'fdir': '.',
-                                                                 'fname': 'unfolded_bandcenters_window',
-                                                                 'fname_suffix': ''}):
+    def collect_bandstr_data_only_in_energy_window(self, unfolded_bandstructure, Ef:float=None,
+                                                   Emin:float=None, Emax:float=None,
+                                                   pad_energy_scale:float=0.5,
+                                                   is_band_center_data:bool=False,
+                                                   bandstr_is_spinor:bool=False,
+                                                   min_dN_screen:float=0.0,
+                                                   save_data = {'save2file': False, 
+                                                                'fdir': '.',
+                                                                'fname': 'unfolded_bandstructure_window',
+                                                                'fname_suffix': ''}):
         """
         Collect data within the condition and range specified. 
-        Note: Returns only 1st 4 columns. Removes the spinor data part for 
+        Note: Returns only 1st 4 (5 for band centers) columns. Removes the spinor data part for 
         spinor activated effective band structure data.
 
         Parameters
@@ -438,11 +444,16 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             Minimum in energy. The default is None.
         Emax : float, optional
             Maximum in energy. The default is None.
-        pad_energy_scale: float, optional
+        pad_energy_scale : float, optional
             Add padding of pad_energy_scale to minimum and maximum energy if Emin
             and Emax are None. The default is 0.5.
+        is_band_center_data : bool, optional
+            Is the data for unfolded band center? The default is False. 
+        bandstr_is_spinor : bool, optional
+            If the bands in wave function files are non-degenerate (spinor). 
+            The default is False.
         min_dN_screen : float, optional
-            The band centers with band weights lower than the threshhold weights 
+            The bands with band weights lower than the threshhold weights 
             are discarded. The default is 0.
         save_data : dictionary, optional
             save2file :: Save data to file or not? 
@@ -452,25 +463,36 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
                 Name of the file.
             fname_suffix :: str
                 Suffix to add to the file name.
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandcenters_window', 'fname_suffix': ''}.
+            The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandstructure_window', 'fname_suffix': ''}.
             
          Returns
          -------
-         unfolded_bandcenters_window : ndarray
+         Emin : float
+             Minimum in energy.
+         Emax : float
+             Maximum in energy
+         unfolded_bandstructure_window_ : ndarray
              Unfolded effective band structure/band center data within the range. 
 
          """
          
-        unfolded_bandcenters_window = \
+        Emin, Emax, unfolded_bandstructure_window_ = \
         _GeneralFunctionsDefs._get_bandstr_data_only_in_energy_kpts_window(unfolded_bandstructure, Ef=Ef, 
                                                                            Emin=Emin, Emax=Emax,  
-                                                                           pad_energy_scale=pad_energy_scale, 
+                                                                           pad_energy_scale=pad_energy_scale,
+                                                                           is_band_center_data=is_band_center_data,
                                                                            min_dN_screen=min_dN_screen)
-        
-        _GeneralFunctionsDefs._save_band_centers(data2save=unfolded_bandcenters_window, 
-                                                 print_log=self.print_log_info,
-                                                 save_data_f_prop=save_data)
-        return unfolded_bandcenters_window
+        if is_band_center_data:
+            _GeneralFunctionsDefs._save_band_centers(data2save=unfolded_bandstructure_window_, 
+                                                     print_log=self.print_log_info,
+                                                     save_data_f_prop=save_data)
+        else:
+            if save_data['save2file']:
+                _GeneralFnsDefs._save_Post_unfolded_bandstucture(unfolded_bandstructure_window_, save_data['fdir'], 
+                                                                 save_data['fname'], save_data['fname_suffix'], 
+                                                                 print_information=self.print_log_info, 
+                                                                 is_spinor=bandstr_is_spinor)
+        return Emin, Emax, unfolded_bandstructure_window_
     
     def band_centers_broadening_bandstr(self, unfolded_bandstructure, 
                                         min_dN_pre_screening:float=1e-4,
@@ -491,29 +513,29 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         unfolded_bandstructure : numpy array
             Unfolded effective band structure. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor]
-       min_dN_pre_screening : float, optional
-           Discard the bands which has weights below min_dN_pre_screening to start with. 
-           This pre-screening step helps to minimize the data that will processed
-           now on. The default is 1e-4. [* critical parameter]
-       threshold_dN_2b_trial_band_center : float, optional
-           Initial guess of the band centers based on the threshold wights. 
-           The default is 0.05. [* critical parameter]
-       min_sum_dNs_for_a_band : float, optional
-           Cut off criteria for minimum weights that a band center should have. 
-           The band centers with lower weights than min_sum_dNs_for_a_band will be
-           discarded during SCF refinements. If min_sum_dNs_for_a_band  
-           is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
-           will be reset to threshold_dN_2b_trial_band_center value.
-           The default is 0.05. [* critical parameter]
-       precision_pos_band_centers : float, optional
-           Precision when compared band centers from previous and current SCF
-           iteration. SCF is considered converged if this precision is reached.
-           The default is 1e-5. [not critical parameter]
-       err_tolerance_compare_kpts_val : float, optional
-           The tolerance to group the bands set per unique kpoints. This
-           determines if two flotting point numbers are the same or not. This is not 
-           a critical parameter for band center determination algorithm.
-           The default is 1e-8. [not critical parameter]
+        min_dN_pre_screening : float, optional
+            Discard the bands which has weights below min_dN_pre_screening to start with. 
+            This pre-screening step helps to minimize the data that will processed
+            now on. The default is 1e-4. [* critical parameter]
+        threshold_dN_2b_trial_band_center : float, optional
+            Initial guess of the band centers based on the threshold wights. 
+            The default is 0.05. [* critical parameter]
+        min_sum_dNs_for_a_band : float, optional
+            Cut off criteria for minimum weights that a band center should have. 
+            The band centers with lower weights than min_sum_dNs_for_a_band will be
+            discarded during SCF refinements. If min_sum_dNs_for_a_band  
+            is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
+            will be reset to threshold_dN_2b_trial_band_center value.
+            The default is 0.05. [* critical parameter]
+        precision_pos_band_centers : float, optional
+            Precision when compared band centers from previous and current SCF
+            iteration. SCF is considered converged if this precision is reached.
+            The default is 1e-5. [not critical parameter]
+        err_tolerance_compare_kpts_val : float, optional
+            The tolerance to group the bands set per unique kpoints. This
+            determines if two flotting point numbers are the same or not. This is not 
+            a critical parameter for band center determination algorithm.
+            The default is 1e-8. [not critical parameter]
         collect_scf_data : bool, optional
             Whether to save the dtails of band centers in each SCF cycles.
             The default is False.
@@ -532,7 +554,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         list of array
             Each array contains the final details of band centers in a particular
             kpoint. The list contains band center details for each kpoints.
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN]
         dictionary of dictionary of array or None
             Each array contains the final details of band centers in a particular
             kpoint. The dictionary then contains the details for each SCF cycles with
@@ -554,6 +576,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
     
     def calculate_effecfive_mass(self, kpath, band_energy, 
                                  initial_guess_params=None, 
+                                 ignore_kshift_cbm_fit:bool=True,
                                  params_bounds = (-np.inf, np.inf), 
                                  fit_weights=None, absolute_weights:bool=False,
                                  parabolic_dispersion:bool=False, 
@@ -571,6 +594,8 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         band_energy : numpy array
             Energy (in eV) of unfolded effective band structure/band centers that will
             be fitted for calculating effective mass.
+        ignore_kshift_cbm_fit : bool, optional
+            Ignore fitting kshift and cbm parameters during fitting. The default is True.
         initial_guess_params : array_like, optional
             Initial guess for the parameters (length N). If None, then the
             initial values will all be 1 (if the number of parameters for the
@@ -616,12 +641,15 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         Returns
         -------
         m_star : float
-            Calculated effective mass in m_0 unit.
+            Calculated effective mass and error in m_0 unit.
         popt : array
             Optimal values for the parameters so that the sum of the squared
             residuals of ``f(xdata, *popt) - ydata`` is minimized.
         pcov : 2-D array
             The estimated approximate covariance of popt. 
+        params_errors : 1-D array
+            One standard deviation error in parameters.
+            perr = np.sqrt(np.diag(pcov))
 
         Raises
         ------
@@ -636,6 +664,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             if covariance of the parameters can not be estimated.
              
         """
+        space_gap = 55 # add white space for text line formatting
         if (parabolic_dispersion or hyperbolic_dispersion_positive or 
             hyperbolic_dispersion_negative):
             pass
@@ -650,44 +679,59 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             middle_pos = len(band_energy)//2
             guess_alpha = (band_energy[middle_pos]-band_energy[0])/(kpath[middle_pos]-kpath[0])**2
             initial_guess_params = np.array([guess_alpha, kpath[0], 0, 0])
+            
+        if ignore_kshift_cbm_fit:
+            params_name =  ['alpha', 'gamma']
+            initial_guess_params = np.array([initial_guess_params[0], initial_guess_params[-1]])
 
         if len(np.shape(params_bounds)) == 1:
             # Extra grace to add to define the upper bound of the parameters.
             # The values are choosen here worked well for some of the test cases.
-            extra_upper_bound = [100, 3*abs(kpath[1]-kpath[0]), 1e-4, 10]
-            params_bounds = ([0, initial_guess_params[1]-1e-2, 0, 0], 
-                             [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
+            if ignore_kshift_cbm_fit:
+                extra_upper_bound = [100, 10]
+                params_bounds = ([0, 0], 
+                                 [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
+            else:   
+                extra_upper_bound = [100, 3*abs(kpath[1]-kpath[0]), 1e-4, 10]
+                params_bounds = ([0, initial_guess_params[1]-1e-2, 0, 0], 
+                                 [gg+extra_upper_bound[iii] for iii, gg in enumerate(initial_guess_params)])
 
         if parabolic_dispersion:
-            text_params_ = ','.join(params_name[:3])
-            initial_guess_params = initial_guess_params[:3]
-            params_bounds = tuple(xx[:3] for xx in params_bounds)  
+            params_name = params_name[:-1]
+            initial_guess_params = initial_guess_params[:-1]
+            params_bounds = tuple(xx[:-1] for xx in params_bounds)
 
         if self.print_log_info is not None:
-            print('-- Effective mass calculator:')
+            log_txt_ = f'-- Effective mass calculator::\n{"--- Band dispersion":<{space_gap}}: '
             if parabolic_dispersion:
-                print('--- Parabolic band dispersion')
+                log_txt_ += 'Parabolic'
             elif hyperbolic_dispersion_positive:
-                print('--- Hyperbolic band dispersion (upward curvature)')
+                log_txt_ += 'Hyperbolic (upward curvature)'
             else:
-                print('--- Hyperbolic band dispersion (downward curvature)')
+                log_txt_ += 'Hyperbolic (downward curvature)'
+            print(log_txt_)
             
             if self.print_log_info == 'high':
-                print(f'--- Initial guesses for the parameters: {initial_guess_params}')
-                print(f'--- Upper and lower bounds for the parameters: {params_bounds}')
+                print(f'{"--- Parameters":<{space_gap}}: {params_name}')
+                print(f'{"--- Initial guesses for the parameters":<{space_gap}}: {initial_guess_params}')
+                print(f'{"--- Upper and lower bounds for the parameters":<{space_gap}}: {params_bounds}')
             
-        m_star, popt, pcov = self._effective_mass_calculator(kpath, band_energy, 
-                                                             p0=initial_guess_params, bounds=params_bounds,
-                                                             sigma=fit_weights, absolute_sigma=absolute_weights,
-                                                             fit_parabola=parabolic_dispersion,
-                                                             fit_hyperbola_positive=hyperbolic_dispersion_positive,
-                                                             fit_hyperbola_negative=hyperbolic_dispersion_negative)
+        m_star, popt, pcov, params_errors = self._effective_mass_calculator(kpath, band_energy, 
+                                                                            ignore_kshift_cbm_fit=ignore_kshift_cbm_fit,
+                                                                            p0=initial_guess_params, bounds=params_bounds,
+                                                                            sigma=fit_weights, absolute_sigma=absolute_weights,
+                                                                            fit_parabola=parabolic_dispersion,
+                                                                            fit_hyperbola_positive=hyperbolic_dispersion_positive,
+                                                                            fit_hyperbola_negative=hyperbolic_dispersion_negative)
         if self.print_log_info is not None:
             if self.print_log_info in ['medium', 'high']:
-                print(f'--- Optimized parameters {text_params_}: {popt}')
-                print(f'--- One standard deviation errors on the parameters: {np.sqrt(np.diag(pcov))}')
-            print(f'--- Effective mass = {m_star:.4f} m_0')
-        return m_star, popt, pcov
+                print(f"{'--- Optimized parameters':<{space_gap}}: {popt}")
+                print(f"{'--- One standard deviation errors on the parameters':<{space_gap}}: {params_errors}")
+            print_text_ = f"{'--- Results':<{space_gap}}: effective mass (m*) = {m_star[0]:.4f} +/- {m_star[1]:.4f} m_0"
+            if (not parabolic_dispersion) and (hyperbolic_dispersion_positive or hyperbolic_dispersion_negative):
+                print_text_ += f'\n{" ":<{space_gap}}: nonparabolicity parameter (gamma) = {popt[-1]:.2f} +/- {params_errors[-1]:.2f} ev^-1'
+            print(print_text_,'\n')
+        return m_star, popt, pcov, params_errors
     
     def fit_functions(self, kpath, optimized_parameters, 
                       parabolic_dispersion:bool=False, 
@@ -723,19 +767,27 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
              
         """
         if self.print_log_info is not None:
-            print('-- Return band dispersion type in fit functions:')
+            space_gap = 55
+            log_txt_ = f'{"-- Band dispersion type in fit functions":<{space_gap}}: '
             if parabolic_dispersion:
-                print('--- Parabolic band dispersion')
+                log_txt_ += 'Parabolic'
             elif hyperbolic_dispersion_positive:
-                print('--- Hyperbolic band dispersion (upward curvature)')
+                log_txt_ += 'Hyperbolic (upward curvature)'
             else:
-                print('--- Hyperbolic band dispersion (downward curvature)')
+                log_txt_ += 'Hyperbolic (downward curvature)'
+            print(log_txt_, '\n')
 
         if parabolic_dispersion:
+            if len(optimized_parameters) == 1:
+                return _EffectiveMass._fit_parabola_short(kpath, *optimized_parameters)
             return _EffectiveMass._fit_parabola(kpath, *optimized_parameters)
         elif hyperbolic_dispersion_positive:
-             return _EffectiveMass._fit_hyperbola_positive(kpath, *optimized_parameters)
+            if len(optimized_parameters) == 2:
+                return _EffectiveMass._fit_hyperbola_positive_short(kpath, *optimized_parameters)
+            return _EffectiveMass._fit_hyperbola_positive(kpath, *optimized_parameters)
         elif hyperbolic_dispersion_negative:
+            if len(optimized_parameters) == 2:
+                return _EffectiveMass._fit_hyperbola_negative_short(kpath, *optimized_parameters)
             return _EffectiveMass._fit_hyperbola_negative(kpath, *optimized_parameters)
         else:
             raise ValueError('No dispersion option is supplied for fitting.')
@@ -821,7 +873,7 @@ class SaveBandStructuredata:
         ----------
         unfolded_bandceneter : numpy ndarray
             Band cenetrs data.
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN]
+            Format: [kpoint index, kpoint coordinate, Band center, Band width, Sum of dN]
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         file_name : str, optional
@@ -863,11 +915,11 @@ class Plotting(_EBSplot):
                  Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
                  threshold_weight:float=None, mode:str="fatband", 
                  yaxis_label:str='E (eV)', special_kpoints:dict=None, plotSC:bool=True,  
-                 marker='o', fatfactor=20, nE:int=100, smear:float=0.05, 
+                 marker='o', fatfactor=20, nE:int=100, smear:float=0.05,
                  color='gray', color_map='viridis', show_legend:bool=True,
                  plot_colormap_bandcenter:bool=True, show_colorbar:bool=False,
                  colorbar_label:str=None, vmin=None, vmax=None, 
-                 show_plot:bool=True,**kwargs_savefig):
+                 show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
@@ -878,7 +930,7 @@ class Plotting(_EBSplot):
         unfolded_bandstructure : ndarray
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor] or
-            Format: [kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         fig : matplotlib.pyplot figure instance, optional
             Figure instance to plot on. The default is None.
         ax : matplotlib.pyplot axis, optional
@@ -940,6 +992,8 @@ class Plotting(_EBSplot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
 
@@ -968,7 +1022,7 @@ class Plotting(_EBSplot):
                           plot_colormap_bandcenter=plot_colormap_bandcenter,
                           show_legend=show_legend, show_colorbar=show_colorbar,
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                          show_plot=show_plot, **kwargs_savefig)
+                          show_plot=show_plot, savefig=savefig, **kwargs_savefig)
     
     def plot_scf(self, kpath_in_angs, unfolded_bandstructure, al_scf_data, 
                  plot_max_scf_steps:int=None, save_file_name=None, 
@@ -979,7 +1033,8 @@ class Plotting(_EBSplot):
                  smear:float=0.05, color='gray', color_map='viridis', 
                  show_legend:bool=True, plot_colormap_bandcenter:bool=True, 
                  show_colorbar:bool=True, colorbar_label:str=None, 
-                 vmin=None, vmax=None, show_plot:bool=True, **kwargs_savefig):
+                 vmin=None, vmax=None, show_plot:bool=True,
+                 savefig:bool=True, **kwargs_savefig):
         """
         Band centers all scf steps plot.
 
@@ -1052,6 +1107,8 @@ class Plotting(_EBSplot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
             The matplotlib keywords for savefig function.
         
@@ -1076,6 +1133,46 @@ class Plotting(_EBSplot):
                              color_map=color_map, plot_colormap_bandcenter=plot_colormap_bandcenter,
                              show_legend=show_legend, show_colorbar=show_colorbar,
                              colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                             show_plot=show_plot, **kwargs_savefig)
+                             show_plot=show_plot, savefig=savefig, **kwargs_savefig)
+
+    def save_plot_figure(self, fig_name, fig=None, savefig:bool=True, show_plot:bool=True,
+                         CountFig=None, **kwargs_savefig):
+        """
+        Saving generated plot/figure.
+
+        Parameters
+        ----------
+        fig_name : str, optional
+            Name of the figure file. If None, figure will be not saved.
+            The default is None.
+        fig : matplotlib.pyplot figure instance, optional
+            Figure instance to plot on. The default is None.
+        savefig : bool, optional
+            To save the plot. Ignored when save_file_name is None. The default is True.
+        show_plot : bool, optional
+            To show the plot when not saved. The default is True.
+        CountFig: int, optional
+            Figure count. The default is None.
+        **kwargs_savefig : dict
+            The matplotlib keywords for savefig function.
+
+        Returns
+        -------
+        CountFig: int or None
+            Figure count.
+        """
+        if not savefig:
+            if show_plot: plt.show()
+            return CountFig
+
+        if fig is not None:
+            fig.savefig(f'{self.save_figure_directory}/{fig_name}',
+                        bbox_inches='tight', **kwargs_savefig)
+        else:
+            plt.savefig(f'{self.save_figure_directory}/{fig_name}',
+                        bbox_inches='tight', **kwargs_savefig)
+        if CountFig is not None: CountFig += 1
+        plt.close()
+        return CountFig
         
 
