@@ -143,7 +143,7 @@ If you use `BandUPpy` in your work, please:
 
   * **State EXPLICITLY that you have used the BandUP code** (or a modified version of it, if this is the case), for instance, adding a sentence like: 
 
-         "The unfolding has been performed using the BandUP(py) code"
+         "The unfolding is performed using the BandUP(py) code"
 
   * **Read and cite the following papers** (and the appropriate references therein):
     
