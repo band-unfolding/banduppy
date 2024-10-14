@@ -374,7 +374,7 @@ class _KpointsModule:
         header_msg['SC'] += f"\n{len(self.SBZ_kpts_list)}\nreciprocal"
         
         header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{__version__} package"
-        header_msg['SpecialKpoints']  += "Kpoints index: Kpoints lebel"
+        header_msg['SpecialKpoints']  += "\nKpoints index: Kpoints label"
                 
         # Generate header text for PC kpoints, SC-PC kpoints mapping, and special kpoints  
         if save_all_kpts:
@@ -383,7 +383,7 @@ class _KpointsModule:
             header_msg['PC'] += f"\n{len(self.PBZ_kpts_list_org)}\nreciprocal"
             
             header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{__version__} package"
-            header_msg['SCPC_map'] += "K-k relation: (K index: K -> k index unique: k unique -> k index: k)"
+            header_msg['SCPC_map'] += "\nK-k relation: (K index: K -> k index unique: k unique -> k index: k)"
             
         return header_msg
     
@@ -652,12 +652,12 @@ class _BandFolding(_KpointsModule, _FindProperties):
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp'], optional
+        file_format : ['vasp','qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         footer_msg : str, optional
             String that will be written at the end of the file. The default is PC kpoints list.
         special_kpoints_pos_labels : dictionary, optional

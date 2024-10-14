@@ -94,7 +94,7 @@ class _SaveData2File:
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
         header_txt : str, optional
@@ -144,16 +144,16 @@ class _SaveData2File:
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp'], optional
+        file_format : ['vasp', 'qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         header_txt : str, optional
             String that will be written at the beginning of the file. The default is None.
         footer_txt : str, optional
-            String that will be written at the end of the file.. The default is None.
+            String that will be written at the end of the file. The default is None.
         comments_symbol : str, optional
             String that will be prepended to the header and footer strings, 
             to mark them as comments. The default is ‘!‘. 
@@ -171,6 +171,12 @@ class _SaveData2File:
         if file_format == 'vasp':
             file_name = 'KPOINTS'
             comments_symbol = ''
+        elif file_format in ['qe', 'espresso', 'quantum_espresso']:
+            file_name = 'KPOINTS'
+            comments_symbol = ''
+            tmp_header = header_txt.split('\n')
+            if tmp_header[-1] == 'reciprocal':
+                header_txt = f'!{tmp_header[0]}\nK_POINTS crystal\n{tmp_header[1]}'          
             
         if print_log: print(f"{'='*_draw_line_length}\n- {print_msg}.")
         

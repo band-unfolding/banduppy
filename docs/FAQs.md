@@ -19,6 +19,20 @@ The information required is essentially the same for BandUP and BandUPpy, only a
 
 Regarding the necessary modifications for different reference primitive unit cell calculations: you need to adjust the `super_cell_size` parameter in for example the `run_banduppy_vasp.py`, which is the primitive-to-supercell transformation matrix.
 
+__Question:__ How can I write the label Gamma (Greek letter) instead of G in the plots?
+
+__Answer:__ You have to use the list.
+
+`special_k_points = ["L","G","X","U","K",r'$\Gamma$'] #instead of "LGXUKG"`
+
+__Question:__ How one can remove the text with 'supercell and unfolded' that is displayed over the bands in the figure?
+
+__Answer:__ To turn off the legends, you can use 'show_legend=False' in banduppy.Plotting.plot_ebs() function.
+
+__Question:__ How can change the color of the gray supercell points to a different color or lighter shade?
+
+ __Answer:__ Unfortunately, at the moment, the supercell points color can not be changed from banduppy.Plotting.plot_ebs().
+
 
 ##
 __If you are not satisfied with the answers, cannot find an answer to your question, or have new suggestions, please feel free to reach out to us. We are committed to providing the best experience for our users and greatly value your feedback.__

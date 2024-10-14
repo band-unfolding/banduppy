@@ -2,8 +2,9 @@ __Latest release: v0.3.4__
 
 __v0.3.4__
 
+* Added Quantum Espresso tutorial
 * Improving collect_bandstr_data_only_in_energy_window() functionality 
-* Upgraded return of band_ceneter_determination function
+* Upgraded return of band_ceneter_determination() function
 * Added effective mass error estimation from fitting error
 
 __v0.3.3__
