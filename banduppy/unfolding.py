@@ -131,12 +131,12 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp'], optional
+        file_format : ['vasp', 'qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
 
         Returns
         -------
@@ -182,12 +182,12 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp'], optional
+        file_format : ['vasp', 'qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         footer_msg : str, optional
             String that will be written at the end of the file. The default is PC kpoints list.
         special_kpoints_pos_labels : dictionary, optional

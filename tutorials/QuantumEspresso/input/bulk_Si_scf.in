@@ -1,0 +1,41 @@
+! SYSTEM = Bulk Silicon - Self Consistent calculation
+! Get the converged charge density for non-SCF calculation
+! in the next step
+
+&control
+    title = 'Silicon Supercell SCF',
+    calculation = 'scf',
+    restart_mode = 'from_scratch',
+    prefix = 'bulk_Si',       ! Output files will have this prefix
+    pseudo_dir = './',   ! Directory where pseudopotentials are stored
+    disk_io = 'low'
+    wf_collect = .TRUE.,
+/
+&system
+    !smearing = 'marzari-vanderbilt',
+    occupations = 'tetrahedra',
+    lspinorb = .false.,
+    noncolin = .false.,
+    ibrav = 1,
+    A = 5.43,
+    nat = 8,
+    ntyp = 1,
+    ecutwfc = 35,
+    ecutrho = 350,
+    nbnd = 48
+/
+&electrons
+    conv_thr = 1.0D-6,   ! Convergence threshold
+    mixing_beta = 0.7,   ! Mixing factor for electron density
+/
+ATOMIC_SPECIES
+  Si  28.0855  Si.pbe-rrkj.UPF ! Silicon pseudopotential
+ATOMIC_POSITIONS alat
+  Si  0.000000000   0.000000000   0.000000000
+  Si  0.000000000   0.500000000   0.500000000
+  Si  0.500000000   0.500000000   0.000000000
+  Si  0.500000000   0.000000000   0.500000000
+  Si  0.750000000   0.250000000   0.750000000
+  Si  0.250000000   0.250000000   0.250000000
+  Si  0.250000000   0.750000000   0.750000000
+  Si  0.750000000   0.750000000   0.250000000
