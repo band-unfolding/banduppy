@@ -190,6 +190,8 @@ along with BandUP.  If not, see <http://www.gnu.org/licenses/>.
 <!-- =========================================================== -->
 ## Upcoming (TBD)
 1. Orbital contribution projection implementation
-2. Improve band center determination algorithm
+2. Improve band center determination algorithm (done)
+3. Add alloy scattering potential calculation module
+4. Add band unfolding for zero-weight k-points method - mbj, hybrid functional
 <!-- =========================================================== -->
 
