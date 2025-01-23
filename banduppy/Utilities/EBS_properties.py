@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.spatial import distance
 from ..BasicFunctions.general_functions import _SaveData2File, _draw_line_length
 
 ### ===========================================================================
@@ -13,7 +14,7 @@ class _GeneralFunctionsDefs:
         ----------
         full_data : ndarray
             Unfolded effective band structure/band center data. 
-            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor.] or
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor.] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         is_band_center_data : bool, optional
             Is the data for unfolded band center? The default is False.
@@ -22,7 +23,7 @@ class _GeneralFunctionsDefs:
         -------
         ndarray
             Unfolded effective band structure/band center data within the range. 
-            Format: [k index, k on path (A^-1), energy, weight] or
+            Format: [k index, k on path (A^-1), energy (eV), weight] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
 
         """
@@ -41,7 +42,7 @@ class _GeneralFunctionsDefs:
         ----------
         full_data : ndarray, optional
             Unfolded effective band structure/band center data. 
-            Format: [k index, k on path (A^-1), energy, weight] or
+            Format: [k index, k on path (A^-1), energy (eV), weight] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         Ef : float
             Fermi energy. Set to 0.0 if None or 'auto'.
@@ -143,7 +144,7 @@ class _GeneralFunctionsDefs:
                                                'fname_suffix': ''}):
         """
         Save unfolded band centers data.
-        Format: [kpoint index, kpoint coordinate, Band center, Band width, Sum of dN]
+        Format: [k index, k on path (A^-1), Band center (eV), Band width (eV), Sum of dN]
 
         Parameters
         ----------
@@ -172,7 +173,7 @@ class _GeneralFunctionsDefs:
             if print_log is not None: 
                 print(f"{'='*_draw_line_length}\n- Saving unfolded band centers to file...")
             header_msg  = " Unfolded band centers data\n"
-            header_msg += "k-index, k on path (A^-1), Band center energy, Band width, Sum of dN\n"
+            header_msg += "k-index, k on path (A^-1), Band center energy (eV), Band width (eV), Sum of dN\n"
             # Save the sc-kpoints in file
             save_f_name = _SaveData2File._save_2_file(data=data2save, 
                                                       save_dir=save_data["fdir"], 
@@ -222,17 +223,24 @@ class _FormatSpecialKpts:
 class _BandCentersBroadening(_GeneralFunctionsDefs):
     """
     Find band centers and broadening of the unfolded band structure. 
+    
     The implementation is based on the SCF algorithm of automatic band center 
-    determination from PRB 89, 041407(R) (2014) paper.
+    determination from the following references:
+    1. Medeiros et al, PRB 89, 041407(R) (2014) 
+    2. Mondal et al,
+    
     Original implementation: 
         https://github.com/band-unfolding/bandup/utils/post_unfolding/
         locate_band_centers_and_estimate_broadening/find_band_centers_and_broadenings.py
 
     """
-    def __init__(self, unfolded_bandstructure, min_dN_pre_screening:float=1e-4,
-                 threshold_dN_2b_trial_band_center:float=0.05,
-                 min_sum_dNs_for_a_band:float=0.05, 
-                 precision_pos_band_centers:float=1e-5,
+    def __init__(self, unfolded_bandstructure, 
+                 algorithm_version:str='Mondal2025',
+                 sigma:float=1,
+                 min_sum_dNs_for_a_band:float=0.1,
+                 min_dN_pre_screening:float=1e-2,
+                 threshold_dN_2b_trial_band_center:float=None,
+                 precision_scf_band_centers:float=1e-5,
                  err_tolerance_compare_kpts_val:float=1e-8,
                  print_log='low'):
         """
@@ -243,30 +251,49 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         ----------
         unfolded_bandstructure : numpy array
             Unfolded effective band structure. 
-            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor]
-        min_dN_pre_screening : float, optional
-            Discard the bands which has weights below min_dN_pre_screening to start with. 
-            This pre-screening step helps to minimize the data that will processed
-            now on. The default is 1e-4. [* critical parameter]
-        threshold_dN_2b_trial_band_center : float, optional
-            Initial guess of the band centers based on the threshold wights. 
-            The default is 0.05. [* critical parameter]
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if is_spinor]
+        algorithm_version : str, optional
+            Algorithm to determine band centers and broadening. 
+            Options are: 'Medeiros2014','Mondal2025'
+            The default is 'Mondal2025'.
+            Note: 
+            1. Medeiros2014 algorithm uses dN as weights during band center determination.
+            o average_bandcenter = average(energies, weights=dN)
+            2. Mondal2025 version additionally uses distance weights (Gaussian decay 
+            around average reference band center).
+            o distace_2_ref = average(energies, weights=dN)
+            o weights_distance = exp(-(distace_2_ref**2)/(2*sigma**2))
+            o average_bandcenter = average(energies, weights=dN*weights_distance) 
+        sigma : float, optional
+            Standard deviation of Gaussian decay for the weights during average band center
+            determination. The decay is based on energy axis. The default is 1.
+            Note: This parameter is used in 'Mondal2025' algorithm_version. 
+            o distace_2_ref = average(energies, weights=dN)
+            o weights_distance = exp(-(distace_2_ref**2)/(2*sigma**2))
+            o average_bandcenter = average(energies, weights=dN*weights_distance)
         min_sum_dNs_for_a_band : float, optional
             Cut off criteria for minimum weights that a band center should have. 
             The band centers with lower weights than min_sum_dNs_for_a_band will be
             discarded during SCF refinements. If min_sum_dNs_for_a_band  
             is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
             will be reset to threshold_dN_2b_trial_band_center value.
-            The default is 0.05. [* critical parameter]
-        precision_pos_band_centers : float, optional
+            The default is 1e-1. 
+        min_dN_pre_screening : float, optional
+            Discard the bands which has weights below min_dN_pre_screening to start with. 
+            This pre-screening step helps to minimize the data that will processed
+            now on. The default is 1e-2. 
+        threshold_dN_2b_trial_band_center : float, optional
+            Initial guess of the band centers based on the threshold wights. If None,
+            all the band centers are used as the initial guess. The default is None. 
+        precision_scf_band_centers : float, optional
             Precision when compared band centers from previous and current SCF
             iteration. SCF is considered converged if this precision is reached.
-            The default is 1e-5. [not critical parameter]
+            The default is 1e-5.
         err_tolerance_compare_kpts_val : float, optional
             The tolerance to group the bands set per unique kpoints. This
             determines if two flotting point numbers are the same or not. This is not 
             a critical parameter for band center determination algorithm.
-            The default is 1e-8. [not critical parameter]
+            The default is 1e-8. 
         print_log : [None,'low','medium','high'], optional
             Print information of kpoints folding. Level of printing information. 
             The default is 'low'. If None, nothing is printed.
@@ -280,7 +307,9 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
                                           min_dN_pre_screening)
         
         # Setting parameters
-        self.prec_pos_band_centers = precision_pos_band_centers
+        self.use_algorithm = algorithm_version
+        self.sigma = sigma
+        self.prec_scf_band_centers = precision_scf_band_centers
         self.err_tolerance = err_tolerance_compare_kpts_val
         self.print_output = print_log
         
@@ -296,8 +325,12 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
                                                    'fname_suffix': ''}):
         """
         Find the band centers and broadening for a band structure. 
+        
         The implementation is based on the SCF algorithm of automatic band center 
-        determination from PRB 89, 041407(R) (2014) paper.
+        determination from the following references:
+        1. Medeiros et al, PRB 89, 041407(R) (2014) 
+        2. Mondal et al,
+        
         Original implementation: 
             https://github.com/band-unfolding/bandup/utils/post_unfolding/
             locate_band_centers_and_estimate_broadening/find_band_centers_and_broadenings.py
@@ -364,7 +397,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         ----------
         unfolded_bandstructure_current_kpt : 2d numpy array
             Unfolded effective band structure. 
-            Format: [k index, k on path (A^-1), energy, weight]
+            Format: [k index, k on path (A^-1), energy (eV), weight]
         collect_data_scf : bool, optional
             Whether to save the dtails of band centers in each SCF cycles. 
             The default is False.
@@ -390,49 +423,48 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         all_data_ = {} if collect_data_scf else None
         
         # Collect dNs and energies in array
-        dNs_for_current_kpt = unfolded_bandstructure_current_kpt[:, -1]
-        energies_for_current_kpt = unfolded_bandstructure_current_kpt[:, 2]
-        min_energy, max_energy = min(energies_for_current_kpt), max(energies_for_current_kpt)
-        
+        self.dNs_for_current_kpt = unfolded_bandstructure_current_kpt[:, -1].copy()
+        self.energies_for_current_kpt = unfolded_bandstructure_current_kpt[:, 2].copy()
+        self._min_energy, self._max_energy = min(self.energies_for_current_kpt), max(self.energies_for_current_kpt)
+
         # Initialize gussed band centers
         ## Apply threshold dN for trial band center
-        guess_band_centers = energies_for_current_kpt[dNs_for_current_kpt >= 
-                                                      self.threshold_dN_trial_band_center]
+        if self.threshold_dN_trial_band_center is None:
+            guess_band_centers = self.energies_for_current_kpt.copy()
+        else:
+            guess_band_centers = self.energies_for_current_kpt[self.dNs_for_current_kpt >=
+                                                               self.threshold_dN_trial_band_center]
         n_guesses_bc_start = len(guess_band_centers)
 
         # Run self-consistence loop
-        count = 0
+        self.scf_loop_count = 0
         converged = False
         while(not converged):
-            count += 1
-            if self.print_output == 'high': print(f'-- SCF cycle: {count}')
-            guess_band_details = self._calculate_guess_band_details(guess_band_centers, 
-                                                                    min_energy, max_energy,
-                                                                    energies_for_current_kpt, 
-                                                                    dNs_for_current_kpt)
-            refined_band_centers = self._refine_band_centers(guess_band_details,  
-                                                             self.min_sum_dNs_for_each_band)
+            self.scf_loop_count += 1
+            if self.print_output == 'high': print(f'-- SCF cycle: {self.scf_loop_count}')
+            guess_band_details = self._calculate_guess_band_details(guess_band_centers)
+            if len(guess_band_details) < 1:
+                print('Warning: No band center found at this k-point.')
+                break
+            refined_band_centers = self._refine_band_centers(guess_band_details)
             converged = self._check_convergence(guess_band_centers, refined_band_centers, 
-                                                self.prec_pos_band_centers)
+                                                self.prec_scf_band_centers)
             if converged:
-                guess_band_details = self._calculate_guess_band_details(refined_band_centers, 
-                                                                        min_energy, max_energy,
-                                                                        energies_for_current_kpt, 
-                                                                        dNs_for_current_kpt)
+                guess_band_details = self._calculate_guess_band_details(refined_band_centers)
                 guess_band_details = guess_band_details[guess_band_details[:, -1] >= 
                                                         self.min_sum_dNs_for_each_band]
                 guess_band_details = np.insert(guess_band_details, [0, 0], kpoints_cord[:2], axis=1)
                 n_guesses_bc_end = len(guess_band_details)
                 if self.print_output == 'high':
                     print('-- Positions of the band centers converged:')
-                    print(f'\t--- Precision reached: {1000.0 * self.prec_pos_band_centers} meV')
-                    print(f'\t--- Total SCF steps: {count}')
+                    print(f'\t--- Precision reached: {1000.0 * self.prec_scf_band_centers} meV')
+                    print(f'\t--- Total SCF steps: {self.scf_loop_count}')
                     print(f'\t--- Start number of band centers: {n_guesses_bc_start}')
                     print(f'\t--- Final number of band centers: {n_guesses_bc_end}')
             else:
                 guess_band_centers = refined_band_centers
                 
-            if collect_data_scf: all_data_[count] = guess_band_details[:, -3:]
+            if collect_data_scf: all_data_[self.scf_loop_count] = guess_band_details[:, -3:]
         # guess_band_details = (#kpoint index #kpoint coordinate #Band center #Band width #Sum of dN)
         return k_index_, guess_band_details, all_data_
     
@@ -452,7 +484,8 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
             The band centers with lower weights than min_sum_dNs_for_a_band will be
             discarded during SCF refinements.
         threshold_dN_2b_trial_band_center : float
-            Initial guess of the band centers based on the threshold wights.
+            Initial guess of the band centers based on the threshold wights. If None,
+            do nothing.
 
         Returns
         -------
@@ -464,10 +497,11 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
             Initial guess of the band centers based on the threshold wights.
 
         """
-        threshold_dN_2b_trial_band_center = abs(threshold_dN_2b_trial_band_center)
-        if(abs(min_sum_dNs_for_a_band) < threshold_dN_2b_trial_band_center):
-            min_sum_dNs_for_a_band = threshold_dN_2b_trial_band_center
-            print('- WARNING: Resetting min_sum_dNs_for_a_band because it is smaller than threshold_dN_2b_trial_band_center.')
+        if threshold_dN_2b_trial_band_center is not None:
+            threshold_dN_2b_trial_band_center = abs(threshold_dN_2b_trial_band_center)
+            if(abs(min_sum_dNs_for_a_band) < threshold_dN_2b_trial_band_center):
+                min_sum_dNs_for_a_band = threshold_dN_2b_trial_band_center
+                print('- WARNING: Resetting min_sum_dNs_for_a_band because it is smaller than threshold_dN_2b_trial_band_center.')
         return min_sum_dNs_for_a_band, threshold_dN_2b_trial_band_center
     
     @classmethod
@@ -480,7 +514,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         ----------
         unfolded_bandstructure : 2d numpy array
             Unfolded effective band structure before removing small weights centers. 
-            Format: [k index, k on path (A^-1), energy, weight]
+            Format: [k index, k on path (A^-1), energy (eV), weight]
         min_dN : float
             Discard the bands which has weights below min_dN_pre_screening. This
             pre-screening step helps to minimize the data that will processed
@@ -490,7 +524,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         -------
         2d numpy array
             Unfolded effective band structure after removing small weights centers. 
-            Format: [k index, k on path (A^-1), energy, weight]
+            Format: [k index, k on path (A^-1), energy (eV), weight]
 
         """
         # Pre-screening: get rid of very small weights
@@ -541,7 +575,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         ----------
         unfolded_bandstructure : 2d numpy array
             Unfolded effective band structure. 
-            Format: [k index, k on path (A^-1), energy, weight]
+            Format: [k index, k on path (A^-1), energy (eV), weight]
         err_tolerance : float, optional
             The tolerance to group the bands set per unique kpoints. 
             The default is 1e-8.
@@ -550,7 +584,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         -------
         list
             List of unfolded effective band structure group by kpoints.
-            Format: [k index, k on path (A^-1), energy, weight]
+            Format: [k index, k on path (A^-1), energy (eV), weight]
 
         """
         # Get unique kpoints coordinate
@@ -558,28 +592,88 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         # Group the rows based on unique values in the specified column
         return [unfolded_bandstructure[abs(unfolded_bandstructure[:, 0] - val) < err_tolerance] 
                 for val in unique_kpts_coords]
-    
-    @classmethod
-    def _weighted_avg_and_std(cls, values, weights):
+
+    def _weighted_avg_and_std(self, values_, weights_):
         """
-        Calculate average and variance of list of values. 
+        Calculate wighted average and variance of list of values. For 'Mondal2025'
+        algorithm the weights combines dNs and inverse_distnce.
 
         Parameters
         ----------
-        values : 1d array or list
+        values_ : 1d array or list
             Values to average.
-        weights : 1d array or list
+        weights_ : 1d array or list
             Values to use as weights in averaging.
 
         Returns
         -------
-        tuple (float, float)
-            (average value, std deviation).
+        tuple (float, float, float)
+            (average value, std deviation, total weight).
 
         """
-        average = np.average(values, weights=weights)
-        variance = np.average((values-average)**2, weights=weights) 
-        return (average, np.sqrt(variance))
+        values_ = np.array(values_)
+        weights_t = np.array(weights_).copy()
+        if self.use_algorithm == 'Mondal2025':
+            # Additionally apply distance weighted mean
+            
+            # # Version-1 implementation without refining the reference band center
+            # #******************************************************************
+            # ref_center_ = np.average(values_, weights=weights_t)
+            # energy_distance = distance.cdist(values_[:, np.newaxis], [[ref_center_]]).flatten()
+            # #==================================================================
+            # # ------------ inverse distance decay ---------
+            # # Note: Not quite worked out
+            # #inverse_distance = 1/energy_distance
+            # #distance_weights = inverse_distance / np.sum(inverse_distance[np.isfinite(inverse_distance)]) #normalize
+            # # --------- exponential decay ------------
+            # # Note: Too sensitive to the choice of decay coefficient
+            # #distance_weights = np.exp((-1)*self.sigma*energy_distance)
+            # # ------------- Gaussian decay -----------
+            # distance_weights = np.exp(-(energy_distance*energy_distance)/(2*self.sigma*self.sigma))
+            # #==================================================================
+            # weights_t *= distance_weights
+            # #******************************************************************
+            
+            # Version-2 implementation includs refining the reference band center
+            ref_center_ = np.average(values_, weights=weights_t)
+            ## refine the reference band center
+            while True:
+                ## Energy distance from reference point
+                energy_distance = distance.cdist(values_[:, np.newaxis], [[ref_center_]]).flatten()
+                ## Gaussian decay 
+                distance_weights = np.exp(-(energy_distance*energy_distance)/(2*self.sigma*self.sigma))
+                ## Refined band ceneter
+                ref_center_new = np.average(values_, weights=weights_t*distance_weights)
+                ## Check SCF
+                if abs(ref_center_new - ref_center_) < self.prec_scf_band_centers:
+                    weights_t *= distance_weights
+                    break
+                else:
+                    ref_center_ = ref_center_new
+           
+        average = np.average(values_, weights=weights_t)
+        variance = np.average((values_-average)**2, weights=weights_t) 
+        total_weight = np.sum(weights_t)
+        return (average, np.sqrt(variance), total_weight)  
+
+    def _get_band_center_properties(self, bc_centers_, bc_weights_):
+        """
+        Calculates band ceneters properties.
+
+        Parameters
+        ----------
+        bc_centers_ : 1d float array/list
+            List of band ceneters to average.
+        bc_weights_ : 1d array or list
+            Values to use as weights in averaging.
+            
+        Returns
+        -------
+        list (float, float, float)
+            (average band ceneter, band broadening/std deviation, total weight).
+
+        """
+        return self._weighted_avg_and_std(bc_centers_, bc_weights_)
     
     @classmethod
     def _calculate_possible_energy_width(cls, band_centers, min_energy, max_energy):
@@ -607,9 +701,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         XX = np.insert(XX, [0, len(XX)], [min_energy, max_energy+1.0]) 
         return np.stack((XX[:-1], XX[1:]), axis=-1) 
 
-    @classmethod
-    def _calculate_guess_band_details(cls, guess_band_centers, min_energy, max_energy,
-                                      energies_, dNs_):
+    def _calculate_guess_band_details(self, guess_band_centers):
         """
         Calculates band ceneters, band weights, and band width.
 
@@ -617,13 +709,13 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         ----------
         guess_band_centers : float array
             List of guessed/refined band ceneters.
-        min_energy : float
+        self._min_energy : float
             Minimum energy.
-        max_energy : float
+        self._max_energy : float
             Maximum energy.
-        energies_ : float array
+        self.energies_for_current_kpt : float array
             All bands energies at specific kpoint.
-        dNs_ : float array
+        self.dNs_for_current_kpt : float array
             All band weights at specific kpoint.
 
         Returns
@@ -633,30 +725,39 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
             Format: [Band center, Band width, Sum of dN]
 
         """
-        guess_energy_width = cls._calculate_possible_energy_width(guess_band_centers, 
-                                                                  min_energy, max_energy)
+        guess_energy_width = self._calculate_possible_energy_width(guess_band_centers,
+                                                                   self._min_energy, 
+                                                                   self._max_energy)
         guess_band_details = [] 
         for iband in range(len(guess_band_centers)):
             indices_of_enegies_spread_in_band = \
-                np.argwhere((energies_ >= guess_energy_width[iband][0]) & 
-                            (energies_ < guess_energy_width[iband][1])).flatten()       
-            band_weight_ = np.sum(dNs_[indices_of_enegies_spread_in_band])
-            band_centers_, band_width_ = \
-                cls._weighted_avg_and_std(values=energies_[indices_of_enegies_spread_in_band], 
-                                          weights=dNs_[indices_of_enegies_spread_in_band])
-            # Band center, standard width, weight
-            guess_band_details.append([band_centers_, band_width_, band_weight_])
+                np.argwhere((self.energies_for_current_kpt >= guess_energy_width[iband][0]) & 
+                            (self.energies_for_current_kpt < guess_energy_width[iband][1])).flatten()   
+            if len(indices_of_enegies_spread_in_band) > 0:
+                band_centers_, band_width_, band_weight_ = \
+                    self._get_band_center_properties(self.energies_for_current_kpt[indices_of_enegies_spread_in_band], 
+                                                     self.dNs_for_current_kpt[indices_of_enegies_spread_in_band])
+                # Band center, standard width, weight
+                guess_band_details.append([band_centers_, band_width_, band_weight_])
             
         return np.array(guess_band_details)
 
-    @classmethod
-    def _refine_band_centers(cls, guess_band_details, min_sum_dNs_for_a_band):
+    def _refine_band_centers(self, guess_band_details):
         """
         Discard band centers which are too close in energy. Reducing the number 
         of too close energy values.
         
+        The implementation is based on the SCF algorithm of automatic band center 
+        determination from the following references:
+        1. Medeiros et al, PRB 89, 041407(R) (2014) 
+        2. Mondal et al,
+        
+        Original implementation: 
+            https://github.com/band-unfolding/bandup/utils/post_unfolding/
+            locate_band_centers_and_estimate_broadening/find_band_centers_and_broadenings.py
+        
         Discard band centers with
-        band_weight_current_band < min_sum_dNs_for_a_band     or
+        band_weight_current_band < self.min_sum_dNs_for_each_band     or
         abs(band_center_n,current - band_center_(n-l),current) < 2*max[band_n_width, band_n-l_width] 
         for l>=0 scuh that band_center_(n-l),current is an accepted band ceneter.
 
@@ -665,10 +766,13 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         guess_band_details : 2d numpy array
             Band center details at the particular kpoint.
             Format: [Band center, Band width, Sum of dN]
-        min_sum_dNs_for_a_band : float
+        self.min_sum_dNs_for_each_band : float
             Cut off criteria for minimum weights that a band center should have. 
-            The band centers with lower weights than min_sum_dNs_for_a_band will be
+            The band centers with lower weights than self.min_sum_dNs_for_each_band will be
             discarded during SCF refinements.
+        self.use_algorithm : str, optional
+            Algorithm to determine band centers and broadening. 
+            Options are: 'Medeiros2014','Mondal2025'
 
         Returns
         -------
@@ -679,30 +783,70 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
         """
         refined_band_centers = []
         iband_m_1 = -1
+        low_wights_bands_merge_success = True
         for iband in range(len(guess_band_details)):
             # band center, band width, band Bloch weight
             bc_iband, bwidth_iband, bweight_iband = guess_band_details[iband] # current band
-            bc_iband_m_1, bwidth_iband_m_1, bweight_iband_m_1 = guess_band_details[iband_m_1] #  iband_m_1 == current band minus 1
+            if iband_m_1 is not None:
+                bc_iband_m_1, bwidth_iband_m_1, bweight_iband_m_1 = guess_band_details[iband_m_1] #  iband_m_1 == current band minus 1
+            if low_wights_bands_merge_success:
+                tmp_bc_centers, tmp_bc_weights = [bc_iband_m_1], [bweight_iband_m_1]
             #print(iband, bc, bwidth, b_weight, bc_cbm1, bwidth_cbm1, b_weight_cbm1)
             valid_bc = False
-            if(bweight_iband < min_sum_dNs_for_a_band or \
-               abs(bc_iband - bc_iband_m_1) < 2.0 * max([bwidth_iband, bwidth_iband_m_1])): 
-                try:
-                    if(abs(bweight_iband / bweight_iband_m_1) > 1.0):
-                        del refined_band_centers[-1]
-                        valid_bc = True
-                except:
-                    pass
+            bc_diff_iband_ibandm1 = abs(bc_iband - bc_iband_m_1) #abs(band_center_n,current - band_center_(n-l),current)
+            
+            merge_band_centers_cond_bwidth = bc_diff_iband_ibandm1 < 2.0 * max([bwidth_iband, bwidth_iband_m_1])
+            merge_band_centers_cond_bweights = bweight_iband < self.min_sum_dNs_for_each_band
+            
+            if merge_band_centers_cond_bwidth or merge_band_centers_cond_bweights: 
+                if self.use_algorithm == 'Mondal2025':
+                    # If we want to allow overlaps band widths not to merge
+                    # if merge_band_centers_cond_bwidth and not merge_band_centers_cond_bweights: #(bweight_iband > 0.95):
+                    #     valid_bc = True
+                    # else:
+                    tmp_bc_centers.append(bc_iband)
+                    tmp_bc_weights.append(bweight_iband)
+                    
+                    bc_iband_m_1, bwidth_iband_m_1, bweight_iband_m_1 =\
+                        self._get_band_center_properties(tmp_bc_centers,tmp_bc_weights)
+                        
+                    iband_m_1 = None
+                    low_wights_bands_merge_success = False
+    
+                    if merge_band_centers_cond_bweights:
+                        # This condition gives the lower weights a chance to merge and form a band center.
+                        tmp_bc_iband_m_1, tmp_bwidth_iband_m_1, tmp_bweight_iband_m_1 =\
+                            self._get_band_center_properties(tmp_bc_centers[1:],tmp_bc_weights[1:])
+                        if (tmp_bweight_iband_m_1 > self.min_sum_dNs_for_each_band): 
+                            bc_iband_m_1, bwidth_iband_m_1, bweight_iband_m_1 =\
+                                tmp_bc_iband_m_1, tmp_bwidth_iband_m_1, tmp_bweight_iband_m_1
+                            refined_band_centers.append(bc_iband_m_1)
+                            low_wights_bands_merge_success = True
+                    else:
+                        if len(refined_band_centers) == 0:
+                            refined_band_centers.append(bc_iband_m_1)
+                        else:
+                            refined_band_centers[-1] = bc_iband_m_1
+                else:
+                    try:
+                        # 1. If n-1 band center has lower weight than current one then
+                        # move the band center to the new one.
+                        if(abs(bweight_iband / bweight_iband_m_1) > 1.0):
+                            del refined_band_centers[-1]
+                            valid_bc = True
+                    except:
+                        pass
             else:
                 valid_bc = True
 
             if(valid_bc):
+                low_wights_bands_merge_success = True
                 iband_m_1 = iband
                 refined_band_centers.append(bc_iband)
         return np.array(refined_band_centers)
 
     @staticmethod
-    def _check_convergence(old_band_centers, new_band_centers, prec_pos_band_centers):
+    def _check_convergence(old_band_centers, new_band_centers, prec_scf_band_centers):
         """
         Check if the two band centers are close. If true, then the band ceneter
         is considered converged in SCF.
@@ -713,7 +857,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
             Previous band centers.
         new_band_centers : 1d numpy array
             Refined band centers.
-        prec_pos_band_centers : float
+        prec_scf_band_centers : float
             Precision when compared band centers from previous and latest SCF
             iteration. SCF is considered converged if this precision is reached.
 
@@ -724,7 +868,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
 
         """
         for ii, new_band_center_val in enumerate(new_band_centers):
-            if abs(old_band_centers[ii] - new_band_center_val) > prec_pos_band_centers:
+            if abs(old_band_centers[ii] - new_band_center_val) > prec_scf_band_centers:
                 return False
         return True
 
@@ -858,8 +1002,8 @@ class _EffectiveMass:
 
         Returns
         -------
-        m_star : float
-            Calculated effective mass and error in m_0 unit.
+        m_star : (float, float)
+            Calculated effective mass (m_star[0]) and error (m_star[1]) in m_0 unit.
         popt : array
             Optimal values for the parameters so that the sum of the squared
             residuals of ``f(xdata, *popt) - ydata`` is minimized.

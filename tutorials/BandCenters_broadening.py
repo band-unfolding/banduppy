@@ -24,20 +24,45 @@ print ("- Reading band structure file - done")
 
 #%% ------------------- Determine band centers and band widths ----------------
 #===================================
+#######################
+# For 'Mondal2025', most important parameters to tune for good results are
+# gaussian_decay_sigma, min_dN, min_sum_dNs_for_a_band. However, based on my experience 
+# the default values are already good for huge number of systems I have tested.
+#######################
+# Algorithm to determine band centers and broadening. 
+# Options are: 'Medeiros2014','Mondal2025'
+# The default is 'Mondal2025'.
+# Note: 
+# 1. Medeiros2014 algorithm uses dN as weights during band center determination.
+# o average_bandcenter = average(energies, weights=dN)
+# 2. Mondal2025 version additionally uses distance weights (Gaussian decay 
+# around average reference band center).
+# o distace_2_ref = average(energies, weights=dN)
+# o weights_distance = exp(-(distace_2_ref**2)/(2*sigma**2))
+# o average_bandcenter = average(energies, weights=dN*weights_distance) 
+bandcenter_algorithm_ = 'Mondal2025' 
+# Standard deviation of Gaussian decay for the weights during average band center
+# determination. The decay is based on energy axis. The default is 1. The
+# default works well most often.
+# Note: This parameter is used in 'Mondal2025' algorithm_version. 
+# o distace_2_ref = average(energies, weights=dN)
+# o weights_distance = exp(-(distace_2_ref**2)/(2*sigma**2))
+# o average_bandcenter = average(energies, weights=dN*weights_distance)
+gaussian_decay_sigma = 1
 # Discard the bands which has weights below min_dN to start with. 
 # This pre-screening step helps to minimize the data that will processed.
 # This parameter just pre-screen/minimize amount of data that will be passed to
 # band center determination SCF algorithm and independent of min_sum_dNs_for_a_band parameter.
-min_dN = 1e-5 
-# Initial guess of the band centers based on the threshold wights.
-threshold_dN_2b_trial_band_center = 0.05
+min_dN = 1e-2
 # Cut off criteria for minimum weights that a band center should have. 
 # The band centers with lower weights than min_sum_dNs_for_a_band will be
 # discarded during SCF refinements. If min_sum_dNs_for_a_band  
 # is smaller than threshold_dN_2b_trial_band_center, min_sum_dNs_for_a_band
 # will be reset to threshold_dN_2b_trial_band_center value.
-min_sum_dNs_for_a_band = 0.05 
+min_sum_dNs_for_a_band = 0.1 
 #===================================
+# Initial guess of the band centers based on the threshold wights.
+threshold_dN_2b_trial_band_center = None
 # The tolerance to group the bands set per unique kpoints value. This determines if two
 # flotting point numbers are same or not. This is not a critical parameter for 
 # band center determination algorithm.
@@ -46,14 +71,15 @@ err_tolerance = 1e-8
 # iteration. SCF is considered converged if this precision is reached.
 prec_pos_band_centers = 1e-5 # in eV
 #===================================
-
 unfolded_bandstructure_properties, all_scf_data = \
     unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
+                                                             algorithm_version=bandcenter_algorithm_,
+                                                             sigma=gaussian_decay_sigma,
+                                                             min_sum_dNs_for_a_band=min_sum_dNs_for_a_band,
                                                              min_dN_pre_screening=min_dN,
                                                              threshold_dN_2b_trial_band_center=
                                                              threshold_dN_2b_trial_band_center,
-                                                             min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
-                                                             precision_pos_band_centers=prec_pos_band_centers,
+                                                             precision_scf_band_centers=prec_pos_band_centers,
                                                              err_tolerance_compare_kpts_val=err_tolerance,
                                                              collect_scf_data=False)
 #%% ============================== Plottings ==================================

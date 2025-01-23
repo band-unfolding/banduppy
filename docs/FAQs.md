@@ -31,7 +31,11 @@ __Answer:__ To turn off the legends, you can use 'show_legend=False' in banduppy
 
 __Question:__ How can change the color of the gray supercell points to a different color or lighter shade?
 
- __Answer:__ Unfortunately, at the moment, the supercell points color can not be changed from banduppy.Plotting.plot_ebs().
+ __Answer:__ Use 'sc_color' argument. Only available for banduppy version > 0.3.4.
+
+ __Question:__ Can banduppy unfold band structure from non-collinear calculations?
+
+__Answer:__ Yes. Banduppy can be used for both the collinear and non-collinear calculations.
 
 
 ##

@@ -110,33 +110,40 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                                 'fname_suffix': ''})
 ```
 ### 4. Determine band centers and band width
-Band ceneters are determined using the SCF algorithm of automatic band center determination from [Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk, Phys. Rev. B **89**, 041407(R) (2014)](http://doi.org/10.1103/PhysRevB.89.041407) paper.
+Band ceneters are determined using the SCF algorithm of automatic band center determination from the following papers:
+4.1 Medeiros2014: [Paulo V. C. Medeiros, Sven Stafström, and Jonas Björk, Phys. Rev. B **89**, 041407(R) (2014)](http://doi.org/10.1103/PhysRevB.89.041407)
+4.2 Mondal2025: TBA
 ```.
     # -------------------- Initiate Properties method -----------------------------
     unfolded_band_properties = banduppy.Properties(print_log='high')
     #===================================
-    min_dN = 1e-5 # get rid of small weights bands
-    threshold_dN_2b_trial_band_center = 0.05 # initial guess of the band centers based on the threshold wights.
-    min_sum_dNs_for_a_band = 0.05 # Cut off criteria for minimum weights that a band center should have.
+    bandcenter_algorithm_ = 'Mondal2025' # band center algorithm to use
+    gaussian_decay_sigma = 1 # Standard deviation of Gaussian decay in Mondal2025 algo
+    min_sum_dNs_for_a_band = 0.1 # Cut off criteria for minimum weights that a band center should have.
+    min_dN = 1e-2 # get rid of small weights bands
     #===================================
+    threshold_dN_2b_trial_band_center = None # initial guess of the band centers based on the threshold wights.
     err_tolerance = 1e-8 # The tolerance to group the bands set per unique kpoints value.
     prec_pos_band_centers = 1e-5 # in eV # Precision when compared band centers from previous and current SCF
     #===================================
     unfolded_bandstructure_properties, all_scf_data = \
         unfolded_band_properties.band_centers_broadening_bandstr(unfolded_bandstructure_, 
+                                                                 algorithm_version=bandcenter_algorithm_,
+                                                                 sigma=gaussian_decay_sigma,
+                                                                 min_sum_dNs_for_a_band=min_sum_dNs_for_a_band,
                                                                  min_dN_pre_screening=min_dN,
                                                                  threshold_dN_2b_trial_band_center=
                                                                  threshold_dN_2b_trial_band_center,
-                                                                 min_sum_dNs_for_a_band=min_sum_dNs_for_a_band, 
-                                                                 precision_pos_band_centers=prec_pos_band_centers,
+                                                                 precision_scf_band_centers=prec_pos_band_centers,
                                                                  err_tolerance_compare_kpts_val=err_tolerance,
                                                                  collect_scf_data=False)
 ```
 ### 5. Determine effective mass (parabolic and non-parabolic) from part of the band structure or band center data
 ```
-    m_star, optimized_parameters, convergence_measure = \
+    m_star, optimized_parameters, convergence_measure, one_std_error_popt = \
     unfolded_band_properties.calculate_effecfive_mass(kpath, band_energy,
                                                       initial_guess_params=None,
+                                                      ignore_kshift_cbm_fit=True,
                                                       params_bounds = (-np.inf, np.inf),
                                                       fit_weights=None, absolute_weights=False,
                                                       parabolic_dispersion=True,

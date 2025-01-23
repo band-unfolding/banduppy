@@ -1,4 +1,11 @@
-__Latest release: v0.3.4__
+__Latest release: v0.3.5__
+
+__v0.3.5__
+
+* Added VASP tutorial for zero-weight k-points method (mbj, hybrid functional)
+* Improved band center determination algorithm
+* Documentation updated for return arguments from effective_mass_calculator function
+* Added color and marker arguments option for supercell bands in plot_ebs()
 
 __v0.3.4__
 

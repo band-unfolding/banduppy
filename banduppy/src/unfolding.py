@@ -56,7 +56,7 @@ class _GeneralFnsDefs:
         ----------
         unfolded_bandstructure : numpy ndarray
             Unfolded effective band structure.
-            Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor]
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor]
         save_dir : str or path
             Directory path where to save the file.
         file_name : str
@@ -78,7 +78,7 @@ class _GeneralFnsDefs:
         if print_information is not None: 
             print(f"{'='*_draw_line_length}\n- Saving unfolded bandstructure to file...")
         header_msg  = " Unfolded band structure from postprocessed wavefunction file\n"
-        header_msg += " k-index, k on path (A^-1), energy, weight " + \
+        header_msg += " k-index, k on path (A^-1), energy (eV), weight " + \
                         ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
         # Save the unfolded band structure in file
         save_f_name = \
@@ -353,7 +353,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         -------
         numpy ndarray
             Unfolded effective band structure.
-            Format: k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if is_spinor.
+            Format: k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if is_spinor.
         numpy ndarray
             Unfolded effective band structure k-path.
             Format: k on path (A^-1)

@@ -60,8 +60,9 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
     def _plot(self, fig=None, ax=None, save_file_name=None, CountFig=None, Ef=None, Emin=None, 
               Emax=None,  pad_energy_scale:float=0.5, threshold_weight:float=None,  
               mode:str="fatband", yaxis_label:str='E (eV)', special_kpoints:dict=None, 
-              plotSC:bool=True, marker='o', fatfactor=20, nE:int=100,
-              smear:float=0.05, color='gray', color_map='viridis', plot_colormap_bandcenter:bool=True,
+              plotSC:bool=True, marker='o', sc_marker='o', fatfactor=20, nE:int=100,
+              smear:float=0.05, color='gray', sc_color='gray',
+              color_map='viridis', plot_colormap_bandcenter:bool=True,
               show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None,
               vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
         """
@@ -104,6 +105,10 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             The marker style. Marker can be either an instance of
             the class or the text shorthand for a particular marker.
             The default is 'o'.
+        sc_marker : matplotlib.pyplot markerMarkerStyle, optional
+            The marker style for supercell plots. Marker can be either an 
+            instance of the class or the text shorthand for a particular marker. 
+            The default is 'o'.
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
         nE : int, optional
@@ -112,8 +117,9 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         smear : float, optional
             Gaussian smearing. The default is 0.05.
         color : str/color, optional
-            Color of plot of unfolded band structure. The color of supercell
-            band structures is gray. The default is 'gray'.
+            Color of plot of unfolded band structure. The default is 'gray'.
+        sc_color : str/color, optional
+            Color of plot of folded supercell band structure.The default is 'gray'.
         color_map: str/ matplotlib colormap
             Colormap for density plot. The default is viridis.
         plot_colormap_bandcenter : bool, optional
@@ -181,7 +187,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         # Plot as fat band
         if mode == "fatband":
             ax, return_plot = self._plot_fatband(result, ax, marker=marker, fatfactor=fatfactor, 
-                                                 scatter_color=color, show_legend=show_legend,
+                                                 scatter_color=color, sc_scatter_color=sc_color, 
+                                                 sc_marker=sc_marker, show_legend=show_legend,
                                                  plotSC=plotSC)
         elif mode == "density":
             
@@ -225,6 +232,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
     
     @classmethod
     def _plot_fatband(cls, data_4_plot, ax, marker='o', fatfactor=20, scatter_color='gray',
+                      sc_scatter_color='gray', sc_marker='o', 
                       cmap='viridis', legend_label='unfolded', show_legend:bool=True,
                       plotSC:bool=True, legend_pos=1):
         """
@@ -243,8 +251,13 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         fatfactor : int, optional
             Scatter plot marker size. The default is 20.
         scatter_color : str/color, optional
-            Color of plot of unfolded band structure. The color of supercell
-            band structures is gray. The default is 'gray'.
+            Color of plot of unfolded band structure. The default is 'gray'.
+        sc_scatter_color : str/color, optional
+            Color of plot of folded supercell band structure.The default is 'gray'.
+        sc_marker : matplotlib.pyplot markerMarkerStyle, optional
+            The marker style for supercell plots. Marker can be either an 
+            instance of the class or the text shorthand for a particular marker. 
+            The default is 'o'.
         cmap : str/ matplotlib colormap
             Colormap for density plot. The default is 'viridis'.
         legend_label : str, optional
@@ -265,7 +278,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         """
         if plotSC:
             sc = ax.scatter(data_4_plot[:, 0], data_4_plot[:, 1], s=fatfactor, 
-                            color='gray', label="supercell")
+                            color=sc_scatter_color, marker=sc_marker, label="supercell")
         sc = ax.scatter(data_4_plot[:, 0], data_4_plot[:, 1], s=data_4_plot[:, 2]*fatfactor, 
                         marker=marker, color=scatter_color, label=legend_label)
         if show_legend: 
@@ -522,8 +535,9 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                         #print(f'-- Going back to previous SCF step for this kpoint: {scf_step}')
                     else:
                         break
-
-                XX = [self.kpath_in_angs_[which_kp]]*len(al_scf_data[which_kp][scf_step])
+                
+                kp_coordinate = self.kpath_in_angs_[which_kp]
+                XX = [kp_coordinate]*len(al_scf_data[which_kp][scf_step])
                 YY = al_scf_data[which_kp][scf_step][:, 0] - Ef
                 result_tmp = np.column_stack( (XX, YY, al_scf_data[which_kp][scf_step][:, 1:]) )
                 
