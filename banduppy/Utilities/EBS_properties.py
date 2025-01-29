@@ -227,7 +227,7 @@ class _BandCentersBroadening(_GeneralFunctionsDefs):
     The implementation is based on the SCF algorithm of automatic band center 
     determination from the following references:
     1. Medeiros et al, PRB 89, 041407(R) (2014) 
-    2. Mondal et al,
+    2. Mondal et al, TBA
     
     Original implementation: 
         https://github.com/band-unfolding/bandup/utils/post_unfolding/
@@ -1044,3 +1044,123 @@ class _EffectiveMass:
         m_star = self.effective_mass_unit_conversion/popt[0]
         m_star_error = self.effective_mass_unit_conversion*params_errors[0]/popt[0]/popt[0]
         return (m_star, m_star_error), popt, pcov, params_errors
+
+class _alloy_scattering_params:
+    """
+    Class for calculating alloy-disordered scattering potential from band broadening.
+    This calculates the alloy-disordered scattering lifetime
+    using a fitted statistically averaged disorder potential in the matrix element for
+    Fermi's golden rule. This analytical equation is fitted to the band broadening/width
+    from first-principles band structure.
+    
+    o Analytical equation for scattering:
+    1/tau = 2*pi/hbar * U0^2 *x(1-x) * Omega0 * m*^(3/2)/sqrt(2)/pi^2/hbar^3 * 
+            (1+2*gamma*E) * sqrt(E(1+gamma*E)) * (1+2*gamma*E+(4/3)*gamma^2*E^2) / (1+2*gamma*E)^2
+            
+    o From first-principles band structure:
+    Within the extended Ehrenreich and Schwartz theory, the alloy-disorder scattering
+    rate is given by:
+    1/tau = band_broadening / hbar
+            
+    The implementation is based on Reference: 
+        1. Pant et. al., APL, 117, 242105 (2020)
+        2. Mondal et al, TBA 
+    """
+    
+    def __init__(self, m_star, unit_cell_volm, composition,
+                 non_parabolocity_param=0):
+        """
+        
+
+        Parameters
+        ----------
+        m_star : float 
+            Carrier effective mass (in m0 unit). E.g. 0.2
+        unit_cell_volm : float
+            Primitive cell volume (in Angstrom^3).
+        composition : float
+            Alloy mole fraction (0 <= composition <= 1).
+        non_parabolocity_param : float, optional
+            hyperbolicity parameter / non-parabolic parameter, gamma, (eV^-1) 
+            in Kane model for nonparabolic spherical bands:
+            E (1 + gamma*E) = hbar^2 k^2/(2m*)
+            The default is 0.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._m_star = m_star
+        self._omega_0 = unit_cell_volm
+        self._composition = composition
+        self._alpha = non_parabolocity_param
+        # sqrt(2)/pi/hbar^3*eV^2*Angstrom^3*m0^3/2*sqrt(eV)
+        self._alloy_scattering_constant_fact = 0.021401081748922447
+
+    def _Fermi_rule_fit(self, x, U0):
+        """
+        This function calculates the alloy-disordered scattering lifetime
+        using a statistically averaged disorder potential in the matrix element for
+        Fermi's golden rule.
+        
+        hbar*1/tau = 2*pi * U0^2 *x(1-x) * Omega0 * m*^(3/2)/sqrt(2)/pi^2/hbar^3 * 
+                (1+2*gamma*E) * sqrt(E(1+gamma*E)) * (1+2*gamma*E+(4/3)*gamma^2*E^2) / (1+2*gamma*E)^2
+                
+        Reference: 
+            1. Pant et. al., APL, 117, 242105 (2020)
+            2. Mondal et al, TBA 
+
+        Parameters
+        ----------
+        x : 1D array of floats 
+            Band energies (eV) in the scattering lifetime equation.
+        U0 : float
+            Alloy-disordered scattering potential (eV).
+
+        Returns
+        -------
+        one_by_tau : array of floats
+            Alloy disordered scattering lifetime, hbar/tau (eV).
+
+        """
+        #_alloy_scattering_constant_fact = 0.021401081748922447 # sqrt(2)/pi/hbar^3*eV^2*Angstrom^3*m0^3/2*sqrt(eV)
+        two_alpha_epsilon = 2*self._alpha*x
+        I_prime = (1 + two_alpha_epsilon + (two_alpha_epsilon*two_alpha_epsilon/3))/(1+two_alpha_epsilon)
+        one_by_tau = (self._alloy_scattering_constant_fact*U0*U0*
+                      self._composition*(1-self._composition)*self._omega_0*
+                      (self._m_star**(3/2))*np.sqrt(x*(1+self._alpha*x))*I_prime)
+        return one_by_tau
+
+    def _calculate_alloy_scattering_potential(self, band_energy, band_width, 
+                                              intial_guess_u0=1, fitting_bounds_u0=(0,2)):
+        """
+        This function fits the analytical equation for scattering lifetime to the
+        band broadening data obtained from first-principles calculations.
+
+        Parameters
+        ----------
+        band_energy : float array
+            Band energies (eV) to fit for scattering lifetime equation.
+        band_width : float array
+            Band width/broadening (eV) to fit for scattering lifetime equation..
+        intial_guess_u0 : float, optional
+            Intial guess for fitting parameter - scattering potential, U0. The default is 1.
+        fitting_bounds_u0 : tuple, optional
+            Fitting bounds for fitting parameter - scattering potential, U0. The default is (0,2).
+
+        Returns
+        -------
+        popt_U0 : array float
+            Fitted parameter, U0 (eV). Return from scipy.curve_fit.
+        pcov_U0 : 2D array
+            The estimated approximate covariance of popt_U0. Return from scipy.curve_fit..
+        perr_U0 : float
+            One standard deviation errors on the parameters (eV). 
+            perr_U0 = np.sqrt(np.diag(pcov_U0))
+
+        """
+        popt_U0, pcov_U0 = curve_fit(self._Fermi_rule_fit, band_energy, band_width, 
+                                     p0=[intial_guess_u0], bounds=fitting_bounds_u0)
+        perr_U0 = np.sqrt(np.diag(pcov_U0))
+        return popt_U0, pcov_U0, perr_U0

@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from .src import _BandFolding, _BandUnfolding, _GeneralFnsDefs
-from .Utilities import _GeneralFunctionsDefs, _EBSplot, _FoldingDegreePlot, _BandCentersBroadening, _EffectiveMass
+from .Utilities import _GeneralFunctionsDefs, _EBSplot, _FoldingDegreePlot
+from .Utilities import _BandCentersBroadening, _EffectiveMass, _alloy_scattering_params
 
 ### ===========================================================================    
 class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
@@ -406,7 +407,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
                           show_plot=show_plot, savefig=savefig, **kwargs_savefig)
     
-class Properties(_BandCentersBroadening, _EffectiveMass):
+class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_params):
     """
     Calculate properties from unfolded band structure.
 
@@ -424,6 +425,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         """       
         if print_log is not None: print_log = print_log.lower()
         self.print_log_info = print_log
+        self.space_gap = 55 # add white space for text line formatting
 
     def collect_bandstr_data_only_in_energy_window(self, unfolded_bandstructure, Ef:float=None,
                                                    Emin:float=None, Emax:float=None,
@@ -519,7 +521,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
         The implementation is based on the SCF algorithm of automatic band center 
         determination from the following references:
         1. Medeiros et al, PRB 89, 041407(R) (2014) 
-        2. Mondal et al, 
+        2. Mondal et al, TBA
         
         Original implementation: 
             https://github.com/band-unfolding/bandup/utils/post_unfolding/
@@ -707,7 +709,6 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             if covariance of the parameters can not be estimated.
              
         """
-        space_gap = 55 # add white space for text line formatting
         if (parabolic_dispersion or hyperbolic_dispersion_positive or 
             hyperbolic_dispersion_negative):
             pass
@@ -744,7 +745,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             params_bounds = tuple(xx[:-1] for xx in params_bounds)
 
         if self.print_log_info is not None:
-            log_txt_ = f'-- Effective mass calculator::\n{"--- Band dispersion":<{space_gap}}: '
+            log_txt_ = f'-- Effective mass calculator::\n{"--- Band dispersion":<{self.space_gap}}: '
             if parabolic_dispersion:
                 log_txt_ += 'Parabolic'
             elif hyperbolic_dispersion_positive:
@@ -754,9 +755,9 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             print(log_txt_)
             
             if self.print_log_info == 'high':
-                print(f'{"--- Parameters":<{space_gap}}: {params_name}')
-                print(f'{"--- Initial guesses for the parameters":<{space_gap}}: {initial_guess_params}')
-                print(f'{"--- Upper and lower bounds for the parameters":<{space_gap}}: {params_bounds}')
+                print(f'{"--- Parameters":<{self.space_gap}}: {params_name}')
+                print(f'{"--- Initial guesses for the parameters":<{self.space_gap}}: {initial_guess_params}')
+                print(f'{"--- Upper and lower bounds for the parameters":<{self.space_gap}}: {params_bounds}')
             
         m_star, popt, pcov, params_errors = self._effective_mass_calculator(kpath, band_energy, 
                                                                             ignore_kshift_cbm_fit=ignore_kshift_cbm_fit,
@@ -767,18 +768,18 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
                                                                             fit_hyperbola_negative=hyperbolic_dispersion_negative)
         if self.print_log_info is not None:
             if self.print_log_info in ['medium', 'high']:
-                print(f"{'--- Optimized parameters':<{space_gap}}: {popt}")
-                print(f"{'--- One standard deviation errors on the parameters':<{space_gap}}: {params_errors}")
-            print_text_ = f"{'--- Results':<{space_gap}}: effective mass (m*) = {m_star[0]:.4f} +/- {m_star[1]:.4f} m_0"
+                print(f"{'--- Optimized parameters':<{self.space_gap}}: {popt}")
+                print(f"{'--- One standard deviation errors on the parameters':<{self.space_gap}}: {params_errors}")
+            print_text_ = f"{'--- Results':<{self.space_gap}}: effective mass (m*) = {m_star[0]:.4f} +/- {m_star[1]:.4f} m_0"
             if (not parabolic_dispersion) and (hyperbolic_dispersion_positive or hyperbolic_dispersion_negative):
-                print_text_ += f'\n{" ":<{space_gap}}: nonparabolicity parameter (gamma) = {popt[-1]:.2f} +/- {params_errors[-1]:.2f} ev^-1'
+                print_text_ += f'\n{" ":<{self.space_gap}}: nonparabolicity parameter (gamma) = {popt[-1]:.2f} +/- {params_errors[-1]:.2f} ev^-1'
             print(print_text_,'\n')
         return m_star, popt, pcov, params_errors
     
-    def fit_functions(self, kpath, optimized_parameters, 
-                      parabolic_dispersion:bool=False, 
-                      hyperbolic_dispersion_positive:bool=False, 
-                      hyperbolic_dispersion_negative:bool=False):
+    def effective_mass_fit_functions(self, kpath, optimized_parameters, 
+                                     parabolic_dispersion:bool=False,
+                                     hyperbolic_dispersion_positive:bool=False, 
+                                     hyperbolic_dispersion_negative:bool=False):
         """
         Fit band dispersion functions using the optimized parameters.
         
@@ -809,8 +810,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
              
         """
         if self.print_log_info is not None:
-            space_gap = 55
-            log_txt_ = f'{"-- Band dispersion type in fit functions":<{space_gap}}: '
+            log_txt_ = f'{"-- Band dispersion type in fit functions":<{self.space_gap}}: '
             if parabolic_dispersion:
                 log_txt_ += 'Parabolic'
             elif hyperbolic_dispersion_positive:
@@ -833,6 +833,117 @@ class Properties(_BandCentersBroadening, _EffectiveMass):
             return _EffectiveMass._fit_hyperbola_negative(kpath, *optimized_parameters)
         else:
             raise ValueError('No dispersion option is supplied for fitting.')
+            
+    def calculate_alloy_scattering_potential(self, m_star, unit_cell_volm, composition,
+                                             band_energy, band_width,
+                                             intial_guess_u0=1, fitting_bounds_u0=(0,2),
+                                             non_parabolocity_param_m_star=0):
+        """
+        This function calculates the alloy-disordered scattering lifetime
+        using a fitted statistically averaged disorder potential in the matrix element for
+        Fermi's golden rule. This analytical equation is fitted to the band broadening/width
+        from first-principles band structure.
+        
+        o Analytical equation for scattering:
+        1/tau = 2*pi/hbar * U0^2 *x(1-x) * Omega0 * m*^(3/2)/sqrt(2)/pi^2/hbar^3 * 
+                (1+2*gamma*E) * sqrt(E(1+gamma*E)) * (1+2*gamma*E+(4/3)*gamma^2*E^2) / (1+2*gamma*E)^2
+                
+        o From first-principles band structure:
+        Within the extended Ehrenreich and Schwartz theory, the alloy-disorder scattering
+        rate is given by:
+        1/tau = band_broadening / hbar
+                
+        The implementation is based on Reference: 
+            1. Pant et. al., APL, 117, 242105 (2020)
+            2. Mondal et al, TBA 
+
+        Parameters
+        ----------
+        m_star : float 
+            Carrier effective mass (in m0 unit). E.g. 0.2
+        unit_cell_volm : float
+            Primitive cell volume (in Angstrom^3).
+        composition : float
+            Alloy mole fraction (0 <= composition <= 1).
+        band_energy : float array
+            Band energies (eV) to fit for scattering lifetime equation.
+        band_width : float array
+            Band width/broadening (eV) to fit for scattering lifetime equation..
+        intial_guess_u0 : float, optional
+            Intial guess for fitting parameter - scattering potential, U0. The default is 1.
+        fitting_bounds_u0 : tuple, optional
+            Fitting bounds for fitting parameter - scattering potential, U0. The default is (0,2).
+        non_parabolocity_param_m_star : float, optional
+            hyperbolicity parameter / non-parabolic parameter, gamma, (eV^-1) 
+            in Kane model for nonparabolic spherical bands:
+            E (1 + gamma*E) = hbar^2 k^2/(2m*)
+            The default is 0.
+
+        Returns
+        -------
+        Tuple (float, float)
+            Fitted parameter, U0 => (U0 +- U0_std_error) in eV
+            One standard deviation errors on the parameters (eV): 
+            U0_std_error = np.sqrt(np.diag(pcov))
+        pcov : 2D array
+            The estimated approximate covariance of popt.
+
+        """
+        _alloy_scattering_params.__init__(self, m_star, unit_cell_volm, composition,
+                                          non_parabolocity_param=non_parabolocity_param_m_star)
+        popt, pcov, perr =  self._calculate_alloy_scattering_potential(band_energy, band_width,
+                                                                       intial_guess_u0=intial_guess_u0,
+                                                                       fitting_bounds_u0=fitting_bounds_u0)
+        
+        if self.print_log_info is not None:
+            if self.print_log_info in ['medium', 'high']:
+                print(f"{'--- Optimized parameters':<{self.space_gap}}: {popt}")
+                print(f"{'--- One standard deviation errors on the parameters':<{self.space_gap}}: {perr}")
+            print_text_ = f"{'--- Results':<{self.space_gap}}: scattering potential = {popt[0]:.4f} +/- {perr[0]:.4f} eV"
+            print(print_text_,'\n')
+        return (popt[0], perr[0]), pcov
+    
+    def alloy_scattering_lifetime_function(self, energy, m_star, unit_cell_volm, composition,
+                                           scattering_potential, non_parabolocity_param_m_star=0):
+        """
+        This function calculates the alloy-disordered scattering lifetime, 1/tau,
+        using a statistically averaged disorder potential in the matrix element for
+        Fermi's golden rule.         
+        
+        hbar/tau = 2*pi * U0^2 *x(1-x) * Omega0 * m*^(3/2)/sqrt(2)/pi^2/hbar^3 * 
+                (1+2*gamma*E) * sqrt(E(1+gamma*E)) * (1+2*gamma*E+(4/3)*gamma^2*E^2) / (1+2*gamma*E)^2
+                
+        Reference: 
+            1. Pant et. al., APL, 117, 242105 (2020)
+            2. Mondal et al, TBA 
+
+        Parameters
+        ----------            
+        energy : float array
+            Band energies (eV).
+        m_star : float 
+            Carrier effective mass (in m0 unit). E.g. 0.2
+        unit_cell_volm : float
+            Primitive cell volume (in Angstrom^3).
+        composition : float
+            Alloy mole fraction (0 <= composition <= 1).
+        scattering_potential : float
+            Alloy-disordered scattering potential (eV).
+        non_parabolocity_param_m_star : float, optional
+            hyperbolicity parameter / non-parabolic parameter, gamma, (eV^-1) 
+            in Kane model for nonparabolic spherical bands:
+            E (1 + gamma*E) = hbar^2 k^2/(2m*)
+            The default is 0.    
+
+        Returns
+        -------
+        1D array of floats
+            Alloy-disordered scattering lifetime, hbar/tau (eV).
+
+        """
+        _alloy_scattering_params.__init__(self, m_star, unit_cell_volm, composition,
+                                          non_parabolocity_param=non_parabolocity_param_m_star)
+        return self._Fermi_rule_fit(energy, scattering_potential)
                 
 class SaveBandStructuredata:
     """

@@ -151,16 +151,32 @@ Band ceneters are determined using the SCF algorithm of automatic band center de
                                                       hyperbolic_dispersion_negative=False,
                                                       params_name = ['alpha', 'kshift', 'cbm', 'gamma'])
     #===================================
-    band_energy_fit = unfolded_band_properties.fit_functions(kpath, optimized_parameters,
-                                                            parabolic_dispersion=True,
-                                                            hyperbolic_dispersion_positive=False,
-                                                            hyperbolic_dispersion_negative=False)
+    band_energy_fit = unfolded_band_properties.effective_mass_fit_functions(kpath, optimized_parameters,
+                                                                            parabolic_dispersion=True,
+                                                                            hyperbolic_dispersion_positive=False,
+                                                                            hyperbolic_dispersion_negative=False)
 ```
 ### 6. Determine alloy-scattering potential from part of the band structure or band center data
-This is based on the ... paper.
+This is based on the [Pant et. al., APL, 117, 242105 (2020)](http://doi.org/10.1063/5.0027802) paper.
 ```
-    TBA
+    m_star = 0.16 # in m0 unit
+    composition = 0.1
+    unit_cell_volm = 49.00 # in Angstrom^3
+    non_parabolocity_param = 0.6 # eV^-1 <= E(1+non_parabolocity_param*E) = hbar^2 k^2 /2m*
+    hbar_ev_s = 6.582119569509067e-16 # eV.s
+    U0, pconv = unfolded_band_properties.calculate_alloy_scattering_potential(m_star, unit_cell_volm, composition,
+                                                                              band_energy_unfolded_bandstructure,
+                                                                              band_width_unfolded_bandstructure,
+                                                                              intial_guess_u0=1, fitting_bounds_u0=(0,2),
+                                                                              non_parabolocity_param_m_star=non_parabolocity_param)
+    print(f'Al content = {composition:.2f}; U0 = {U0[0]:.2f} +- {U0[1]:.2f} eV')
+
+    fit_x = np.linspace(0, max(band_energy_unfolded_bandstructure),20) # in eV
+    fit_y = unfolded_band_properties.alloy_scattering_lifetime_function(fit_x, m_star, unit_cell_volm, composition, U0[0],
+                                                                        non_parabolocity_param_m_star=non_parabolocity_param) # in eV
 ```
+__Note:__ unfolded_band_properties.alloy_scattering_lifetime_function() returns scattering lifetime in hbar unit, i.e., it returns hbar/tau. To plot 1/tau divide the return from alloy_scattering_lifetime_function() by hbar. hbar should be in eV.s unit. [hbar_ev_s = 6.582119569509067e-16 #eV.s]
+
 ### 7. Save unfolded band structure and band center data
 One can save the generated data within the function call for unfolding and band ceneter determination routines as shown above. [recommened]
 

@@ -116,7 +116,9 @@ banduppy package:
         3.1 collect_bandstr_data_only_in_energy_window()
         3.2 band_centers_broadening_bandstr()
         3.3 calculate_effecfive_mass()
-        3.4 fit_functions()
+        3.4 effective_mass_fit_functions()
+        3.5 calculate_alloy_scattering_potential()
+        3.6 alloy_scattering_lifetime_function()
     4. SaveBandStructuredata class
         4.1 save_unfolded_pc_kpts()
         4.2 save_unfolded_bandstucture()
@@ -141,9 +143,9 @@ You can find a list of common user issues encountered while using this software 
 
 If you use `BandUPpy` in your work, please:
 
-  * **State EXPLICITLY that you have used the BandUP code** (or a modified version of it, if this is the case), for instance, adding a sentence like: 
+  * **State EXPLICITLY that you have used the BandUPpy code** (or a modified version of it, if this is the case), for instance, adding a sentence like: 
 
-         "The unfolding is performed using the BandUP(py) code"
+         "The unfolding is performed using the BandUPpy code"
 
   * **Read and cite the following papers** (and the appropriate references therein):
     
@@ -154,9 +156,23 @@ If you use `BandUPpy` in your work, please:
 >> 3. Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin,
    "IrRep: Symmetry eigenvalues and irreducible representations of ab initio band structures", [Comput. Phys. Commun. **272**, 108226 (2022)](https://doi.org/10.1016/j.cpc.2021.108226)
 
+If you use the `band center determination` or `effective mass` modules/functions from `BandUPpy` in your work, please:
+
+  * **Additionally read and cite the following papers** (and the appropriate references therein):
+    
+>> 4. TBA 
+
+If you use the `alloy scattering` modules/functions from `BandUPpy` in your work, please:
+
+  * **Additionally read and cite the following papers** (and the appropriate references therein):
+
+>> 5. TBA    
+>> 6. Nick Pant, Zihao Deng, and Emmanouil Kioupakis,
+   [Appl. Phy. Lett. **117**, 242105 (2020)](http://doi.org/10.1063/5.0027802)  
+
 __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for your convenience.
 
-## Further details
+## Additional details
 ##### <http://www.ifm.liu.se/theomod/compphys/band-unfolding>
 ##### <https://github.com/band-unfolding/bandup>
 
@@ -190,8 +206,6 @@ along with BandUP.  If not, see <http://www.gnu.org/licenses/>.
 <!-- =========================================================== -->
 ## Upcoming (TBD)
 1. Orbital contribution projection implementation
-2. Improve band center determination algorithm (done)
-3. Add alloy scattering potential calculation module
-4. Add band unfolding for zero-weight k-points method - mbj, hybrid functional
+2. Add band unfolding for zero-weight k-points method - mbj, hybrid functional
 <!-- =========================================================== -->
 
