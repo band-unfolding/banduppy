@@ -7,9 +7,11 @@ stored by ab-initio codes, the routines of [irrep](https://github.com/stepan-tsi
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/Si50Ge50.png)  |  ![](imgs/Si50Ge50_.png) |  ![](imgs/SiGeOverlayBandStructure.png) |  ![](imgs/band_center_width.png)
-:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-Unfolded band structure - flatband mode (Si0.5Ge0.5) |  Unfolded band structure - density mode (Si0.5Ge0.5) | Band structures overlay (Si0.5Ge0.5: Red, pure Si: black, pure Ge: blue) | Band centers and band width (Si0.5Ge0.5)
+![](imgs/Si50Ge50.png)  |  ![](imgs/Si50Ge50_.png) |  ![](imgs/SiGeOverlayBandStructure.png) 
+:-------------------------:|:-------------------------:|:-------------------------:
+Unfolded band structure - flatband mode (Si0.5Ge0.5) |  Unfolded band structure - density mode (Si0.5Ge0.5) | Band structures overlay (Si0.5Ge0.5: Red, pure Si: black, pure Ge: blue) 
+![](imgs/band_center_width.png)  |  ![](imgs/effective_mass_plot_0.png) |  ![](imgs/effective_mass_plot_1.png) 
+Band centers and band width (Si0.5Ge0.5) |  Band centers (Al0.84Ga0.16N) | Fitting good band centers (Al0.84Ga0.16N5)
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -127,6 +129,9 @@ banduppy package:
         5.1 plot_ebs()
         5.2 plot_scf()
         5.3 save_plot_figure()
+    6. HighLevelProperties class
+        3.1 scf_refine_effecfive_mass_calculator()
+        3.2 calculate_effective_masses()
 ```
 
 <!-- =========================================================== -->

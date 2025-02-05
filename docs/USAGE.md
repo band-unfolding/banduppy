@@ -1,13 +1,13 @@
 # Package Documentation
 
 ## Let's start ...
-#### ---------------------------- Import modules ---------------------------------
+#### 0.0. Import modules
 ```
     import numpy as np
     import pickle
     import banduppy
 ```
-#### ------------------------ Define variables ---------------------------------
+#### 0.1. Define variables
 ##### Note: Only the VASP KPOINTS file format is implemented so far.
 ```
     # supercell : 4X4X2 supercell == np.diag([4,4,2]) or
@@ -30,12 +30,12 @@
 ### 1. Estimate the best choice of number of kpoints to use in effective band structure each k-path segments considering maximizing or minimizing folding in the supercell.
 #### __Motivation:__ Maximizing folding helps minimizing computational resource. 
 __Definition:__ $\text{Folding percent} = \frac{\text{no. of unique PC kpoints} \ -\ \text{no. of folded SC Kpoints}}{\text{no. of unique PC kpoints}}\times100$
-#### ------------------ Initiate Unfolding method -----------------------------
+#### 1.1. Initiate Unfolding method
 ```
     band_unfold = banduppy.Unfolding(supercell=super_cell_size,
                                      print_log='high')
 ```
-#### ------------- Propose degree of unfolding --------------------------------
+#### 1.2. Propose degree of unfolding
 ```
     propose_folding_results = \
     band_unfold.propose_maximum_minimum_folding(PC_BZ_path, min_num_pts=10, max_num_pts=50,
@@ -44,7 +44,7 @@ __Definition:__ $\text{Folding percent} = \frac{\text{no. of unique PC kpoints} 
                                                 save_file_name=None)
 ```
 ### 2. Create SC kpoints from PC band path
-#### ------------ Creating SC folded kpoints from PC band path -----------------
+#### 2.1. Creating SC folded kpoints from PC band path
 __Note:__ band_unfold.generate_SC_Kpts_from_pc_kpts() can be used to generate SC Kpoints from PC kpoints list.
 ```
     kpointsPBZ_full, kpointsPBZ_unique, kpointsSBZ, \
@@ -63,13 +63,13 @@ __Note:__ band_unfold.generate_SC_Kpts_from_pc_kpts() can be used to generate SC
 ```
     read_dir = '<path where the vasp output files are>'
 ```
-#### ------------------------ Read wave function file --------------------------
+#### 3.1. Read wave function file
 ```
     bands = banduppy.BandStructure(code="vasp", spinor=False,
                                    fPOS = f"{read_dir}/POSCAR",
                                    fWAV = f"{read_dir}/WAVECAR")
 ```
-#### ----------------- Unfold the band structures ------------------------------
+#### 3.2. Unfold the band structures
 ```
     # save2file : Save unfolded kpoints or not? 
     # fdir : Directory path where to save the file.
@@ -194,7 +194,7 @@ __However,__ you may want save the generated data (from the above function calls
     save_file_name = 'unfolded_bandstructure.png'
 ```
 __Option 1:__ Continue with previous instance.
-#### --------------------- Plot band structure ---------------------------------
+#### 8.1. Plot band structure
 ```
     fig, ax, CountFig \
     = band_unfold.plot_ebs(save_figure_dir=save_to_dir, save_file_name=save_file_name, CountFig=None, 
@@ -215,7 +215,7 @@ __Option 2:__ Using BandUPpy Plotting module.
     with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
         special_kpoints_pos_labels = pickle.load(handle)
 ```
-#### --------------------- Plot band structure ----------------------------------
+#### 8.2. Plot band structure
 ```
     
     fig, ax, CountFig \
@@ -227,7 +227,7 @@ __Option 2:__ Using BandUPpy Plotting module.
                            threshold_weight=0.01, show_legend=True, 
                            color='gray', color_map='viridis')
 ```
-#### --------- Plot and overlay multiple band structures ------------
+#### 8.3. Plot and overlay multiple band structures
 ```
     fig, ax, CountFig \
     = plot_unfold.plot_ebs(kpath_in_angs=kpline1, 
@@ -247,7 +247,7 @@ __Option 2:__ Using BandUPpy Plotting module.
                             smear=0.2, color='black', color_map='viridis')
 ```
 
-#### ----------------- Plot the band centers -----------------------------------
+#### 8.4. Plot the band centers
 ```
     fig, ax, CountFig \
         = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
@@ -258,7 +258,7 @@ __Option 2:__ Using BandUPpy Plotting module.
                                marker='x', smear=0.2, plot_colormap_bandcenter=True,
                                color='black', color_map='viridis')
 ```
-#### -------------- Plot the band centers SCF cycles ---------------------
+#### 8.5. Plot the band centers SCF cycles
 ```
     plot_unfold.plot_scf(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_,
                          al_scf_data=all_scf_data, plot_max_scf_steps=3, save_file_name=save_file_name,
@@ -268,8 +268,47 @@ __Option 2:__ Using BandUPpy Plotting module.
                          plot_colormap_bandcenter=True, show_colorbar=True, colorbar_label=None, 
                          vmin=None, vmax=None, dpi=72)
 ```
-<!-- =========================================================== -->
 __Note__: One can save the generated figure within the function call `plot_ebs()` and `plot_scf()`. `save_plot_figure()` function can also be used to save a figure instance independently.
+
+### 9. High level function that uses Properties class to do high-level post-processing
+
+```
+    prop_cal_hl = banduppy.HighLevelProperties(print_log=None)
+
+```
+#### 9.1. Get both the parabolic and hyperbolic effective masses in a single shot
+```
+    m_star_p_results, m_star_h_results =\
+    prop_cal_hl.calculate_effective_masses(band_centers_data_process,
+                                           opt_params[ii][0],
+                                           opt_params[ii][1],
+                                           ignore_kshift_cbm_fit=True,
+                                           absolute_weights=False,
+                                           hyperbolic_dispersion_positive=True)
+
+    m_star_pa, popt_pa, pcov_pa, params_error_pa = m_star_p_results
+    m_star_ha, popt_ha, pcov_ha, params_error_ha = m_star_h_results
+```
+#### 9.2. Automatically discard outlier band centers for fitting
+The algorithm is based on the TBA paper. Refer to the figures (2nd row, 2nd-3rd column) in the README.
+```
+    # This function applyes SCF algorithm to refine which band centers to fit. So-called
+    # bad/outlier band centers will be discarded during fitting.
+    m_star_theor = 0.3 # Theoretical m* as the initial guess
+    inital_guess_param = [3.81/m_star_theor, 0.1] # [alpha, gamma] 
+    band_center_indices_that_used_in_final_fitting, m_star_p_results, m_star_h_results = \
+       prop_cal_hl.scf_refine_effecfive_mass_calculator(all_band_centers, 
+                                                        inital_guess_param,
+                                                        residual_cutoff_in_eV=0.5,
+                                                        use_residual_std_dev=False,
+                                                        residual_std_dev_start=1.0,
+                                                        initial_guess_fit_dispersion=
+                                                        'positive_hyperbolic_dispersion',
+                                                        ignore_kshift_cbm_fit=True,
+                                                        kshift=None, absolute_weights=False,
+                                                        max_scf_loop=100)
+```
+<!-- =========================================================== -->
 
 
 ##

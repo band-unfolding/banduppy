@@ -896,6 +896,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
                                                                        fitting_bounds_u0=fitting_bounds_u0)
         
         if self.print_log_info is not None:
+            print('-- Alloy scattering potential calculator::')
             if self.print_log_info in ['medium', 'high']:
                 print(f"{'--- Optimized parameters':<{self.space_gap}}: {popt}")
                 print(f"{'--- One standard deviation errors on the parameters':<{self.space_gap}}: {perr}")

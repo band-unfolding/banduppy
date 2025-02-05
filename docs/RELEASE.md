@@ -3,8 +3,9 @@ __Latest release: v0.3.5__
 __v0.3.5__
 
 * Improved band center determination algorithm
-* Alloy disorder scattering potential calculator
+* Added alloy disorder scattering potential calculator
 * Documentation updated for return arguments from effective_mass_calculator function
+* Added high-level properties calculator
 * Added color and marker arguments option for supercell bands in plot_ebs()
 
 __v0.3.4__
