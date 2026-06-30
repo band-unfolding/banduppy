@@ -3,7 +3,9 @@ name: tests
 on:
   push:
     branches:
-    - [main,AlloyScattering]
+    - main
+    - AlloyScattering
+
   pull_request:
     branches:
     - main
