@@ -1,2 +1,9 @@
+rm dist/*
+rm */banduppy.egg-info build
 python -m bulid
 python -m twine upload  --repository banduppy dist/*
+
+# Add git tag
+version="v0.3.5"
+git tag -a $version -m "release of $version"
+git push origin $version

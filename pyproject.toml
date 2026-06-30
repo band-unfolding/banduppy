@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "banduppy"
+dynamic = ["version"]
+dependencies = [
+    'numpy', 
+    'scipy>=1.0',
+    'matplotlib',
+    'irrep>=1.9.3'
+]
+requires-python = ">=3.12"
+authors = [{ name = "Stepan S. Tsirkin", email = "stepan.tsirkin@ehu.eus" }]
+maintainers = [{name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" }]
+description = "BandUPpy: Python Package for Band Unfolding of Plane-wave Based First-Principles Calculations."
+readme = "README.md"
+license = "GPL-3.0-only"
+license-files = ["LICEN[CS]E*"]
+keywords = ["band unfolding", "supercell", "first-principles", "effective mass", "alloy scattering"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/band-unfolding/banduppy.git"
+Documentation = "https://github.com/band-unfolding/banduppy/blob/master/docs/USAGE.md"
+Repository = "https://github.com/band-unfolding/banduppy.git"
+Issues = "https://github.com/band-unfolding/banduppy/issues"
+Changelog = "https://github.com/band-unfolding/banduppy/blob/master/docs/RELEASE.md"
+Releasenotes = "https://github.com/band-unfolding/banduppy/releases"
+
+[tool.setuptools]
+packages = ["banduppy"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["banduppy*", "banduppy.*"]
+exclude = ["tests", "imgs", "docs", "tutorials"]
+namespaces = false
+
+#[tool.setuptools.package-data]
+#mobilitypy = ["imgs/*.png"]
+
+[tool.setuptools.dynamic]
+version = { attr = "banduppy.__version__" }
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-q"
+testpaths = ["tests"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "pytest-cov>=4.1"]

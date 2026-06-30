@@ -1,4 +1,4 @@
-# `BandUP/BandUPpy`: Band Unfolding code for Plane-wave based first-principles calculations             
+# `BandUPpy`: Python Package for Band Unfolding of Plane-wave Based First-Principles Calculations             
 
 __Note:__ This is a Python version to the [BandUP](https://github.com/band-unfolding/bandup) code (not to be confused with bandupy - the interface and plotting tool of BandUP), made in order to restore
 support for modern versions of QuantumEspresso and other codes. In order ot read the wavefunctions
@@ -7,10 +7,10 @@ stored by ab-initio codes, the routines of [irrep](https://github.com/stepan-tsi
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
-![](imgs/Si50Ge50.png)  |  ![](imgs/Si50Ge50_.png) |  ![](imgs/SiGeOverlayBandStructure.png) 
+![](https://raw.githubusercontent.com/band-unfolding/banduppy/refs/heads/master/imgs/Si50Ge50.png)  |  ![](https://raw.githubusercontent.com/band-unfolding/banduppy/refs/heads/master/imgs/Si50Ge50_.png) |  ![](https://raw.githubusercontent.com/band-unfolding/banduppy/refs/heads/master/imgs/SiGeOverlayBandStructure.png) 
 :-------------------------:|:-------------------------:|:-------------------------:
 Unfolded band structure - flatband mode (Si0.5Ge0.5) |  Unfolded band structure - density mode (Si0.5Ge0.5) | Band structures overlay (Si0.5Ge0.5: Red, pure Si: black, pure Ge: blue) 
-![](imgs/band_center_width.png)  |  ![](imgs/effective_mass_plot_0.png) |  ![](imgs/effective_mass_plot_1.png) 
+![](https://raw.githubusercontent.com/band-unfolding/banduppy/refs/heads/master/imgs/band_center_width.png)  |  ![](imgs/effective_mass_plot_0.png) |  ![](imgs/effective_mass_plot_1.png) 
 Band centers and band width (Si0.5Ge0.5) |  Band centers (Al0.84Ga0.16N) | Fitting good band centers (Al0.84Ga0.16N5)
 <!-- =========================================================== -->
 
@@ -76,14 +76,6 @@ Or, without cloning
     pip install git+https://github.com/band-unfolding/banduppy.git #@specific_branch
 ```
 
-### 4. Installation using `setup.py` [deprecated]
-Alternatively you can clone the repository and run `setup.py` in the usual manner:
-
-```
-    git clone https://github.com/band-unfolding/banduppy.git
-    cd banduppy
-    python setup.py install
-```
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -185,8 +177,6 @@ __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for y
 
 <!-- =========================================================== -->
 ## Version release
-__Latest release: v0.3.5__
-
 Chekout out [version release history here](docs/RELEASE.md) for the full list of updates and upgrades.
 
 <!-- =========================================================== -->

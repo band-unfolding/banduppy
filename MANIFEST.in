@@ -1,0 +1,16 @@
+include pyproject.toml
+include README.md
+include LICENSE
+recursive-include tests *
+exclude MANIFEST.in
+
+# Remove unwanted top-level folders
+prune imgs
+prune docs
+prune tutorials
+prune tests
+prune .github
+
+# Or exclude specific patterns:
+#exclude *.ipynb
+#recursive-exclude docs *  # exclude everything under docs/
