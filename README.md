@@ -1,8 +1,7 @@
 # `BandUPpy`: Python Package for Band Unfolding of Plane-wave Based First-Principles Calculations             
 
 __Note:__ This is a Python version to the [BandUP](https://github.com/band-unfolding/bandup) code (not to be confused with bandupy - the interface and plotting tool of BandUP), made in order to restore
-support for modern versions of QuantumEspresso and other codes. In order ot read the wavefunctions
-stored by ab-initio codes, the routines of [irrep](https://github.com/stepan-tsirkin/irrep) are used. 
+support for modern versions of QuantumEspresso and other codes. In order ot read the wavefunctions stored by ab-initio codes, the routines of [irrep](https://github.com/stepan-tsirkin/irrep) are used. 
 
 <!-- =========================================================== -->
 
@@ -18,21 +17,7 @@ Band centers and band width (Si0.5Ge0.5) |  Band centers (Al0.84Ga0.16N) | Fitti
 ## Developers and contributors
 <!-- =========================================================== -->
 
-__Developer of BandUPpy :__ 
-
-* [Stepan S. Tsirkin](https://github.com/stepan-tsirkin)
-
-__BandUPpy Package is Restructured by (maintainer):__
-
-* [Badal Mondal](https://github.com/bmondal94) 
-
-__Developer of original BandUP :__ 
-
-  *  Paulo V. C. Medeiros, Linköping University, (at present: SMHI, the Swedish Meteorological and Hydrological Institute)
-
-  *  Jonas Björk, Linköping University
-  
-  *  [Stepan S. Tsirkin](https://github.com/stepan-tsirkin), (in 2015: Donostia International Physics Center)
+__BandUPpy Package Developer/Maintainer:__ [Stepan S. Tsirkin](https://github.com/stepan-tsirkin), [Badal Mondal](https://github.com/bmondal94) 
 
 __BandUPpy Contributors:__  [Contributors](https://github.com/band-unfolding/banduppy/graphs/contributors)
 
@@ -41,6 +26,8 @@ __BandUPpy Contributors:__  [Contributors](https://github.com/band-unfolding/ban
 __Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@ehu.eus,badalmondal.chembgc@gmail.com) 
 
 * If you would like to contribute to the development of `BandUPpy` or request new functionality, please get in touch with [us](mailto:stepan.tsirkin@ehu.eus,badalmondal.chembgc@gmail.com) or open a pull request. We appreciate and respect our users' views and are committed to providing the best experience possible. Your feedback is highly valued. We will be happy to support your request ASAP. 
+
+__Special mention:__ `BandUPpy` originated from the ideas and implementation developed in the original [BandUP](https://github.com/band-unfolding/bandup) code. `BandUP` was originally developed by _Paulo V. C. Medeiros_ (then at Linköping University, presently at the Swedish Meteorological and Hydrological Institute), _Jonas Björk_ (Linköping University), and [Stepan S. Tsirkin](https://github.com/stepan-tsirkin).
 
 <!-- =========================================================== -->
 
@@ -54,7 +41,7 @@ __Contact us:__ [Email developer/maintainer team](mailto:stepan.tsirkin@ehu.eus,
     3. numpy
     4. pickle
     5. scipy>=1.0
-    6. irrep>=1.9.3
+    6. irrep>=2.6.3
     7. matplotlib
 ```
 
@@ -142,7 +129,11 @@ If you use `BandUPpy` in your work, please:
 
   * **State EXPLICITLY that you have used the BandUPpy code** (or a modified version of it, if this is the case), for instance, adding a sentence like: 
 
-         "The unfolding is performed using the BandUPpy code"
+         "The unfolding has been performed using the BandUPpy code"
+
+  * **How to cite the package:** (use appropriate version number and doi corresponding to your installed banduppy)
+
+        <author_list>, "band-unfolding/banduppy: version-0.3.5 (v0.3.5))". Zenodo, 2026. doi:(10.5281/zenodo.XXXXX)[https://doi.org/10.5281/zenodo.XXXXX]
 
   * **Read and cite the following papers** (and the appropriate references therein):
     
@@ -169,10 +160,6 @@ If you use the `alloy scattering` modules/functions from `BandUPpy` in your work
 
 __Bibliography file:__ Here is the [bibliography file](docs/REFERENCES.md) for your convenience.
 
-## Additional details
-##### <http://www.ifm.liu.se/theomod/compphys/band-unfolding>
-##### <https://github.com/band-unfolding/bandup>
-
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->
@@ -194,8 +181,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with BandUP.  If not, see <http://www.gnu.org/licenses/>.
+* [GNU General Public License v3.0](https://github.com/band-unfolding/banduppy/blob/master/LICENSE)
 <!-- =========================================================== -->
 
 <!-- =========================================================== -->

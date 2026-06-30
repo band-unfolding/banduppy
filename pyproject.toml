@@ -9,7 +9,7 @@ dependencies = [
     'numpy', 
     'scipy>=1.0',
     'matplotlib',
-    'irrep>=1.9.3'
+    'irrep>=2.6.3'
 ]
 requires-python = ">=3.12"
 authors = [

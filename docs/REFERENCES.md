@@ -1,5 +1,16 @@
 
 ```
+@software{SSBM2026banduppy,
+  author       = {...},
+  title        = {band-unfolding/banduppy: version-0.3.5},
+  month        = {},
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {v0.3.5},
+  doi          = {XXXXXX},
+  url          = {https://github.com/band-unfolding/banduppy}
+}
+
 @article{EffectsMedeirosPRB2014,
   title = {Effects of extrinsic and intrinsic perturbations on the electronic structure of graphene: Retaining an effective primitive cell band structure by band unfolding},
   author = {Medeiros, Paulo V. C. and Stafstr\"om, Sven and Bj\"ork, Jonas},
