@@ -93,7 +93,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         return proposed_folding_results
         
     def generate_SC_Kpts_from_pc_k_path(self, pathPBZ=None, nk=11, labels=None, kpts_weights=None, 
-                                        save_all_kpts:bool=False, save_sc_kpts:bool=False, 
+                                        save_sc_kpts:bool=False, save_all_kpts:bool=False, 
                                         save_dir='.', file_name:str='', 
                                         file_name_suffix:str='', file_format:str='vasp'):
         """
@@ -123,11 +123,13 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         kpts_weights : int or float or 1d numpy array, optional
             Weights of the SC kpoints. The default is None. If none, no weights are padded
             in the generated SC K-points list.
-        save_all_kpts : bool, optional
-            Save the PC kpoints, generated SC kpoints, and SC-PC kpoints mapping. 
-            The default is False. If True, has precedence over save_sc_kpts.
         save_sc_kpts : bool, optional
             Save the generated SC kpoints. The default is False.
+        save_all_kpts : bool, optional
+            Save the PC kpoints, generated SC kpoints, and SC-PC kpoints mapping. 
+            The default is False. If True, has precedence over save_sc_kpts. If
+            False only data for SC kpoints are saved. If both the save_sc_kpts=False
+            and save_all_kpts=False, no data is saved.
         save_dir : str/path_object, optional
             Directory to save the file. The default is current directory.
         file_name : str, optional

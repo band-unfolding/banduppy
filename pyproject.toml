@@ -12,8 +12,14 @@ dependencies = [
     'irrep>=1.9.3'
 ]
 requires-python = ">=3.12"
-authors = [{ name = "Stepan S. Tsirkin", email = "stepan.tsirkin@ehu.eus" }]
-maintainers = [{name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" }]
+authors = [
+  { name = "Stepan S. Tsirkin", email = "stepan.tsirkin@ehu.eus" },
+  {name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" }
+  ]
+maintainers = [
+  { name = "Stepan S. Tsirkin", email = "stepan.tsirkin@ehu.eus" },
+  {name = "Badal Mondal", email = "badalmondal.chembgc@gmail.com" }
+  ]
 description = "BandUPpy: Python Package for Band Unfolding of Plane-wave Based First-Principles Calculations."
 readme = "README.md"
 license = "GPL-3.0-only"
@@ -22,6 +28,7 @@ keywords = ["band unfolding", "supercell", "first-principles", "effective mass",
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
 ]
 
@@ -33,26 +40,32 @@ Issues = "https://github.com/band-unfolding/banduppy/issues"
 Changelog = "https://github.com/band-unfolding/banduppy/blob/master/docs/RELEASE.md"
 Releasenotes = "https://github.com/band-unfolding/banduppy/releases"
 
-[tool.setuptools]
-packages = ["banduppy"]
-include-package-data = true
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["banduppy*", "banduppy.*"]
-exclude = ["tests", "imgs", "docs", "tutorials"]
+exclude = ["imgs", "docs", "tutorials"]
 namespaces = false
 
-#[tool.setuptools.package-data]
-#mobilitypy = ["imgs/*.png"]
+#[tool.setuptools]
+#packages = ["banduppy"]
+#include-package-data = true
+
+[tool.setuptools.package-data]
+banduppy = ["examples/**"]
 
 [tool.setuptools.dynamic]
 version = { attr = "banduppy.__version__" }
 
+[tool.coverage.run]
+omit = [ "tests/*","banduppy/tests/*",]
+
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-q"
-testpaths = ["tests"]
+testpaths = ["tests", "banduppy/tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
 
 [project.optional-dependencies]
 test = ["pytest>=7.0", "pytest-cov>=4.1"]

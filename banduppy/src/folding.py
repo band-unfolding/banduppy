@@ -442,12 +442,12 @@ class _KpointsModule:
         """
         # Generate footer text for SC kpoints
         print_msg = {}
-        print_msg['SC'] = 'Saving Kpoints to file...'
+        print_msg['SC'] = 'Saving SC Kpoints to file...'
         print_msg['SpecialKpoints'] = 'Saving special kpoints position indices and labels to file...'
             
         # Save PC, SC kpoints    
         if save_all_kpts:
-            print_msg['PC'] = 'Saving kpoints to file...'
+            print_msg['PC'] = 'Saving PC kpoints to file...'
             print_msg['SCPC_map'] = 'Saving SC Kpoints - PC kpoints indices mapping to file...'           
         return print_msg
 
@@ -704,8 +704,8 @@ class _BandFolding(_KpointsModule, _FindProperties):
         # Saving kpoints data
         if save_all_kpts or save_sc_kpts:
             # save_contents_data: (header text, data, footer text, print message)
-            save_contents_data = self. _generate_save_contents(footer_text=footer_msg, 
-                                                               save_all_kpts=save_all_kpts)
+            save_contents_data = self._generate_save_contents(footer_text=footer_msg, 
+                                                              save_all_kpts=save_all_kpts)
             for data_key, data_items in save_contents_data.items():
                 _SaveData2File._save_sc_kpts_2_file(data=data_items[1],
                                                     save_dir=save_dir, file_name=file_name,

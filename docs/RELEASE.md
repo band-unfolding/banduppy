@@ -3,6 +3,7 @@ __Latest release: v0.3.5__
 __v0.3.5__
 
 * Moved setup.py to project.toml
+* Added testsuit
 * Improved band center determination algorithm
 * Added alloy disorder scattering potential calculator
 * Documentation updated for return arguments from effective_mass_calculator function
