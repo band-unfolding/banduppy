@@ -1,10 +1,12 @@
 from .unfolding import Properties
+from .BasicFunctions import _SaveData2File
+from . import __version__
 import numpy as np
 
 ### =========================================================================== 
 class HighLevelProperties(Properties):
     """
-    Calculate high-level properties from unfolded band structure. This class
+    Calculate properties from unfolded band structure. This class
     is introduced to define high-level finctions that combines multiple small 
     calculation together. E.g., Instead of seperate functions calling for 
     individual parabolic and hyperbolic effective mass calculation, one can call
@@ -105,6 +107,62 @@ class HighLevelProperties(Properties):
                                    absolute_weights:bool=True,
                                    hyperbolic_dispersion_positive:bool=True,
                                    hyperbolic_dispersion_negative:bool=False):
+        """
+       High-level function. This function calculates both the parabolic and hyperbolic 
+       effective masses.
+
+        Parameters
+        ----------
+        band_centers_data_process : TYPE
+            DESCRIPTION.
+        initial_guess_params_parabolic : array_like, optional
+            Initial guess for the parabolic fitting parameters (length N). If None,  
+            then initial values will all be 1 (if the number of parameters for the
+            function can be determined using introspection, otherwise a
+            ValueError is raised).
+        initial_guess_params_hyperbolic : array_like, optional
+            Initial guess for the hyperbolic fitting parameters (length N). If None,  
+            then initial values will all be 1 (if the number of parameters for the
+            function can be determined using introspection, otherwise a
+            ValueError is raised).
+        ignore_kshift_cbm_fit : bool, optional
+            Ignore fitting kshift and cbm parameters during fitting. The default is True.
+        absolute_weights : bool, optional
+            If True, fit_weights is used in an absolute sense and the estimated parameter 
+            covariance pcov reflects these absolute values.
+            If False, only the relative magnitudes of the fit_weights values matter. 
+            The default is True. 
+        hyperbolic_dispersion_positive : bool, optional
+            Fit hyperbolic model (upward hyperbola) of band dispersion. The default is False.
+        hyperbolic_dispersion_negative : bool, optional
+            Fit hyperbolic model (downward hyperbola) of band dispersion. The default is False.
+
+        Returns
+        -------
+        m_star_p_results : tuple, results for parabolic dispersion
+            m_star : (float, float)
+                Calculated effective mass (m_star[0]) and error (m_star[1]) in m_0 unit.
+            popt : array
+                Optimal values for the parameters so that the sum of the squared
+                residuals of ``f(xdata, *popt) - ydata`` is minimized.
+            pcov : 2-D array
+                The estimated approximate covariance of popt. 
+            params_errors : 1-D array
+                One standard deviation error in parameters.
+                perr = np.sqrt(np.diag(pcov))
+        m_star_h_results : tuple, results for hyperbolic dispersion
+            m_star : (float, float)
+                Calculated effective mass (m_star[0]) and error (m_star[1]) in m_0 unit.
+            popt : array
+                Optimal values for the parameters so that the sum of the squared
+                residuals of ``f(xdata, *popt) - ydata`` is minimized.
+            pcov : 2-D array
+                The estimated approximate covariance of popt. 
+            params_errors : 1-D array
+                One standard deviation error in parameters.
+                perr = np.sqrt(np.diag(pcov)).
+        """
+        
         # In scipy curve_fit chisq=sum((r/sigma)**2) => 1/sigma is the weights  
         weightings_ = 1/band_centers_data_process[:, -1] 
         ## ====================================================================================================================
@@ -185,3 +243,31 @@ class HighLevelProperties(Properties):
                                         hyperbolic_dispersion_negative=
                                         self.hyperbolic_dispersion_negative)
         return inlier_indices, m_star_p_results, m_star_h_results
+    
+    def merge_zero_weight_2_sc_kpoint_file(self, nonzero_weight_kp_file, 
+                                           zero_weight_kp_file, 
+                                           save_dir='.', file_name:str='KPOINTS_merged', 
+                                           file_name_suffix:str='', 
+                                           file_format:str = 'vasp'):
+        with open(nonzero_weight_kp_file, 'r') as f:
+            lines = []
+            for i in range(3): 
+                lines.append(f.readline())
+
+        if not lines[-1].lower().startswith('rec'):
+            raise NotImplementedError("Only reciprocal mode Kpoints in IBZKPT file merginf has been implemented so far.")
+          
+        ibz_kps = np.genfromtxt(nonzero_weight_kp_file, skip_header=3, max_rows=int(lines[1]), comments='#')
+        zero_weight_sc_kps = np.genfromtxt(zero_weight_kp_file, skip_header=3, comments='!')
+        merge_data = np.concatenate((ibz_kps, zero_weight_sc_kps), axis=0)
+        
+        header_msg  = f"K-points (IBZKPT plus zero weighted KPOINTS_SC) generated using banduppy-{__version__} package"
+        header_msg += f"\n{len(merge_data)}\nreciprocal"
+        _SaveData2File._save_sc_kpts_2_file(data=merge_data,
+                                            save_dir=save_dir, file_name=file_name,
+                                            file_name_suffix=file_name_suffix, 
+                                            file_format=file_format,
+                                            header_txt=header_msg, 
+                                            footer_txt='',
+                                            print_log=self.print_log_info,
+                                            print_msg='Saving merged KPOINT file')

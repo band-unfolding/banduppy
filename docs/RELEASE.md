@@ -4,6 +4,7 @@ __v0.3.5__
 
 * Moved setup.py to project.toml
 * Added testsuit
+* Merging save_all_kpts and save_sc_kpts to single keyword save_kpts.
 * Improved band center determination algorithm
 * Added alloy disorder scattering potential calculator
 * Documentation updated for return arguments from effective_mass_calculator function

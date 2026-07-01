@@ -111,6 +111,7 @@ banduppy package:
     6. HighLevelProperties class
         3.1 scf_refine_effecfive_mass_calculator()
         3.2 calculate_effective_masses()
+        3.3 merge_zero_weight_2_sc_kpoint_file()
 ```
 
 <!-- =========================================================== -->

@@ -337,7 +337,7 @@ class _KpointsModule:
             if not isinstance(nk_list, Iterable): nk_list = [nk_list]
             append_foot_file += '\n! '
             append_foot_file += ' '.join(str(nk) for nk in nk_list)
-            append_foot_file += "\n! reciprocal"
+            append_foot_file += "\n! Reciprocal"
         # Add kpoints    
         for i, kp in enumerate(pc_kpoints_list):
             append_foot_file += '\n!'
@@ -348,46 +348,31 @@ class _KpointsModule:
                 if labels is not None: append_foot_file += f'   {labels[i]}'
         return append_foot_file
     
-    def _generate_header_text(self, save_all_kpts:bool=False):
+    def _generate_header_text(self):
         """
         Create text that will be added in the front of file.
-
-        Parameters
-        ----------
-        save_all_kpts : bool, optional
-            Generate header text for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints. 
-            The default is False. 
 
         Returns
         -------
         header_msg : dictionary
-            Text string for header of save file. If save_all_kpts is True,
-            generate header text for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints; else generate header
-            text only for SC kpoints.
+            Text string for header of save file. Generate header text for the 
+            PC kpoints, generated SC kpoints, SC-PC kpoints mapping, and 
+            Special kpoints.
 
         """
-        # Generate header text for SC kpoints
         header_msg = {}
         header_msg['SC']  = f"K-points for SC bandstructure generated using banduppy-{__version__} package"
         header_msg['SC'] += f"\n{len(self.SBZ_kpts_list)}\nreciprocal"
-        
         header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{__version__} package"
         header_msg['SpecialKpoints']  += "\nKpoints index: Kpoints label"
-                
-        # Generate header text for PC kpoints, SC-PC kpoints mapping, and special kpoints  
-        if save_all_kpts:
-            # Create text that will be added in the front of file
-            header_msg['PC']  = f"k-points for PC bandstructure generated using banduppy-{__version__} package"
-            header_msg['PC'] += f"\n{len(self.PBZ_kpts_list_org)}\nreciprocal"
-            
-            header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{__version__} package"
-            header_msg['SCPC_map'] += "\nK-k relation: (K index: K -> k index unique: k unique -> k index: k)"
+        header_msg['PC']  = f"k-points for PC bandstructure generated using banduppy-{__version__} package"
+        header_msg['PC'] += f"\n{len(self.PBZ_kpts_list_org)}\nreciprocal"
+        header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{__version__} package"
+        header_msg['SCPC_map'] += "\nK-k relation: (K index: K -> k index unique: k unique -> k index: k)"
             
         return header_msg
     
-    def _generate_footer_text(self, footer_text=None, save_all_kpts:bool=False):
+    def _generate_footer_text(self, footer_text=None):
         """
         Create text that will be added in the bottom of file.
 
@@ -395,63 +380,39 @@ class _KpointsModule:
         ----------
         footer_text: str, optional
             Footer message. 
-        save_all_kpts : bool, optional
-            Generate footer text for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints. 
-            The default is False. 
 
         Returns
         -------
         footer_msg : dictionary
-            Text string for footer of save file. If save_all_kpts is True,
-            generate footer text for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints; else generate footer
-            text only for SC kpoints.
+            Text string for footer of save file. Generate footer text for the 
+            PC kpoints, generated SC kpoints, SC-PC kpoints mapping, and 
+            Special kpoints.
 
         """
-        # Generate footer text for SC kpoints
         footer_msg = {}
         footer_msg['SC'] = self._generate_foot_text(self.PBZ_kpts_list_org) if footer_text is None else footer_text
-        footer_msg['SpecialKpoints'] = ''
-        
-        # Save PC, SC kpoints    
-        if save_all_kpts:
-            footer_msg['PC'] = footer_msg['SC']
-            footer_msg['SCPC_map'] = ''
+        footer_msg['SpecialKpoints'] = ''  
+        footer_msg['PC'] = footer_msg['SC']
+        footer_msg['SCPC_map'] = ''
         return footer_msg
     
-    def _generate_print_text(self, save_all_kpts:bool=False):
+    def _generate_print_text(self):
         """
         Create text that will be printed when print information is True.
-
-        Parameters
-        ----------
-        save_all_kpts : bool, optional
-            Generate print message for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints. 
-            The default is False. 
 
         Returns
         -------
         print_msg : dictionary
-            Text string for print msg when saving to file. If save_all_kpts is True,
-            generate msg text for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints; else generate msg
-            text only for SC kpoints.
-
+            Text string for print msg when saving to file. 
         """
-        # Generate footer text for SC kpoints
         print_msg = {}
         print_msg['SC'] = 'Saving SC Kpoints to file...'
         print_msg['SpecialKpoints'] = 'Saving special kpoints position indices and labels to file...'
-            
-        # Save PC, SC kpoints    
-        if save_all_kpts:
-            print_msg['PC'] = 'Saving PC kpoints to file...'
-            print_msg['SCPC_map'] = 'Saving SC Kpoints - PC kpoints indices mapping to file...'           
+        print_msg['PC'] = 'Saving PC kpoints to file...'
+        print_msg['SCPC_map'] = 'Saving SC Kpoints - PC kpoints indices mapping to file...'           
         return print_msg
 
-    def _generate_save_contents(self, footer_text=None, save_all_kpts:bool=False):
+    def _generate_save_contents(self, footer_text=None):
         """
         Create (kpoints) data that will be saved to file.
 
@@ -459,24 +420,19 @@ class _KpointsModule:
         ----------
         footer_text: str, optional
             Footer message. 
-        save_all_kpts : bool, optional
-            Generate data for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints. 
-            The default is False. 
 
         Returns
         -------
         save_contents_data : dictionary
-            Header, footer texts and data to be saved. If save_all_kpts is True,
-            generate data for the PC kpoints, generated SC kpoints, 
-            SC-PC kpoints mapping, and Special kpoints; else generate data
-            only for SC kpoints.
+            Header, footer texts and data to be saved. 
+            Generate data for the PC kpoints, generated SC kpoints, 
+            SC-PC kpoints mapping, and Special kpoints.
 
         """
         save_contents_data = {}
-        header_msg_ = self._generate_header_text(save_all_kpts=save_all_kpts)
-        footer_msg_ = self._generate_footer_text(footer_text=footer_text, save_all_kpts=save_all_kpts)
-        print_msg_ = self._generate_print_text(save_all_kpts=save_all_kpts)
+        header_msg_ = self._generate_header_text()
+        footer_msg_ = self._generate_footer_text(footer_text=footer_text)
+        print_msg_ = self._generate_print_text()
 
         save_contents_data['SC'] = (header_msg_['SC'], self.SBZ_kpts_list, 
                                     footer_msg_['SC'], print_msg_['SC'])  
@@ -484,15 +440,15 @@ class _KpointsModule:
                                                 self.special_kpoints_pos_labels, 
                                                 footer_msg_['SpecialKpoints'],
                                                 print_msg_['SpecialKpoints'])
-        if save_all_kpts:
-            save_contents_data['PC'] = (header_msg_['PC'], 
-                                        self.PBZ_kpts_list_org, 
-                                        footer_msg_['PC'],
-                                        print_msg_['PC'])
-            save_contents_data['SCPC_map'] = (header_msg_['SCPC_map'], 
-                                              self.SBZ_PBZ_kpts_mapping, 
-                                              footer_msg_['SCPC_map'],
-                                              print_msg_['SCPC_map'])
+
+        save_contents_data['PC'] = (header_msg_['PC'], 
+                                    self.PBZ_kpts_list_org, 
+                                    footer_msg_['PC'],
+                                    print_msg_['PC'])
+        save_contents_data['SCPC_map'] = (header_msg_['SCPC_map'], 
+                                          self.SBZ_PBZ_kpts_mapping, 
+                                          footer_msg_['SCPC_map'],
+                                          print_msg_['SCPC_map'])
         return save_contents_data
 
 ## ============================================================================ 
@@ -552,8 +508,7 @@ class _BandFolding(_KpointsModule, _FindProperties):
                                              serach_mode=serach_mode)
     
     def _generate_SC_K_from_pc_k_path(self, pathPBZ=None, nk=11, labels=None, kpts_weights=None, 
-                                      save_all_kpts:bool=False, save_sc_kpts:bool=False, 
-                                      save_dir='.', file_name:str='', 
+                                      save_kpts:bool=False, save_dir='.', file_name:str='', 
                                       file_name_suffix:str='', file_format:str='vasp'):
         """
         Generate supercell kpoints from reference primitive BZ k-path.
@@ -582,11 +537,9 @@ class _BandFolding(_KpointsModule, _FindProperties):
         kpts_weights : int or float or 1d numpy array, optional
             Weights of the SC kpoints. The default is None. If none, no weights are padded
             in the generated SC K-points list.
-        save_all_kpts : bool, optional
-            Save the PC kpoints, generated SC kpoints, and SC-PC kpoints mapping. 
-            The default is False. If True, has precedence over save_sc_kpts.
-        save_sc_kpts : bool, optional
-            Save the generated SC kpoints. The default is False.
+        save_kpts : bool, optional
+             Save the PC kpoints, SC kpoints, SC-PC kpoints mapping, and 
+             Special kpoints. The default is False.
         save_dir : str/path_object, optional
             Directory to save the file. The default is current directory.
         file_name : str, optional
@@ -617,20 +570,18 @@ class _BandFolding(_KpointsModule, _FindProperties):
         
         # Save SC kpoints
         footer_msg_path = None
-        if save_sc_kpts:
+        if save_kpts:
             footer_msg_path = self._generate_foot_text(pathPBZ, labels=labels, nk_list=nk)
  
         # Return SC kpoints from PC k-path k-points        
         return self._generate_K_from_k(kpointsPBZ=PBZ_kpts, kpts_weights=kpts_weights, 
-                                      save_all_kpts=save_all_kpts,
-                                      save_sc_kpts=save_sc_kpts, save_dir=save_dir, 
+                                      save_kpts=save_kpts, save_dir=save_dir, 
                                       file_name=file_name, file_name_suffix=file_name_suffix, 
                                       file_format=file_format, footer_msg=footer_msg_path,
                                       special_kpoints_pos_labels=special_kpoints_pos_labels) 
             
     def _generate_K_from_k(self, kpointsPBZ=None, kpts_weights=None,
-                           save_all_kpts:bool=False, save_sc_kpts:bool=False, 
-                           save_dir='.', file_name:str='', 
+                           save_kpts:bool=False, save_dir='.', file_name:str='', 
                            file_name_suffix:str='', file_format:str='vasp', footer_msg=None,
                            special_kpoints_pos_labels=None):
         """
@@ -643,11 +594,9 @@ class _BandFolding(_KpointsModule, _FindProperties):
         kpts_weights : int or float or 1d numpy array, optional
             Weights of the SC kpoints. The default is None. If none, no weights are padded
             in the generated SC K-points list.
-        save_all_kpts : bool, optional
-            Save the PC kpoints, generated SC kpoints, and SC-PC kpoints mapping. 
-            The default is False. If True, has precedence over save_sc_kpts.
-        save_sc_kpts : bool, optional
-            Save the generated SC kpoints. The default is False.
+        save_kpts : bool, optional
+             Save the PC kpoints, SC kpoints, SC-PC kpoints mapping, and 
+             Special kpoints. The default is False.
         save_dir : str/path_object, optional
             Directory to save the file. The default is current directory.
         file_name : str, optional
@@ -702,10 +651,9 @@ class _BandFolding(_KpointsModule, _FindProperties):
             self._print_info(level=self.print_information)
             
         # Saving kpoints data
-        if save_all_kpts or save_sc_kpts:
+        if save_kpts:
             # save_contents_data: (header text, data, footer text, print message)
-            save_contents_data = self._generate_save_contents(footer_text=footer_msg, 
-                                                              save_all_kpts=save_all_kpts)
+            save_contents_data = self._generate_save_contents(footer_text=footer_msg)
             for data_key, data_items in save_contents_data.items():
                 _SaveData2File._save_sc_kpts_2_file(data=data_items[1],
                                                     save_dir=save_dir, file_name=file_name,

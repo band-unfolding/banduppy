@@ -33,8 +33,7 @@ SBZ_PBZ_kpts_mapping, special_kpoints_pos_labels \
                                               nk = npoints_per_path_seg,
                                               labels = special_k_points,
                                               kpts_weights = kpts_weights,
-                                              save_all_kpts = save_to_file,
-                                              save_sc_kpts = save_to_file,
+                                              save_kpts = save_to_file,
                                               save_dir = save_to_dir,
                                               file_name_suffix = '',
                                               file_format=kpts_file_format)

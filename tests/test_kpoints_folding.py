@@ -31,8 +31,7 @@ class KpointsFoldingBase:
                                                            nk = self.npoints_per_path_seg,
                                                            labels = self.special_k_points,
                                                            kpts_weights = self.kpts_weights,
-                                                           save_all_kpts = False,
-                                                           save_sc_kpts = False,
+                                                           save_kpts = False,
                                                            file_format=self.kpts_file_format)
 
 
