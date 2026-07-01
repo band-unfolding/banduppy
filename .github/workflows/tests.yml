@@ -36,9 +36,7 @@ jobs:
       run: |
         pip install -e .
     - name: Run tests
-      run: pytest
       env:
         PYTHONPATH: ${{ env.PYTHONPATH }}
-    - name: pytest
       run: |
         pytest --color=yes
