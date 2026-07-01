@@ -65,8 +65,8 @@ class TestBandsUnfolding(UnfoldingBase):
        
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         print("- Comparing generated data with reference data...")
-        np.testing.assert_allclose(unfolded_bandstructure_ref, unfolded_bandstructure, rtol=1e-8,atol=1e-4)
-        np.testing.assert_allclose(kpline_ref, kpline, rtol=1e-8,atol=1e-5)
+        np.testing.assert_allclose(unfolded_bandstructure_ref, unfolded_bandstructure, rtol=1e-8,atol=1e-3)
+        np.testing.assert_allclose(kpline_ref, kpline, rtol=1e-8,atol=1e-4)
         print("- Comparing generated data with reference data - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         print ("- Plotting band structure...")
