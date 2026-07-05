@@ -41,7 +41,7 @@ SBZ_PBZ_kpts_mapping, special_kpoints_pos_labels \
 #%% ------------------------ Read wave function file --------------------------
 print(f"{'='*72}\n - Unfolding bands...")
 read_dir = '<path where the vasp output files are>'
-bands = banduppy.BandStructure(code="vasp", spinor=False, 
+bands = irrep.bandstructure.BandStructure.from_vasp(spinor=False, 
                                fPOS = f"{read_dir}/POSCAR",
                                fWAV = f"{read_dir}/WAVECAR")
 

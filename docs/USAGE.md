@@ -64,7 +64,7 @@ __Note:__ band_unfold.generate_SC_Kpts_from_pc_kpts() can be used to generate SC
 ```
 #### 3.1. Read wave function file
 ```
-    bands = banduppy.BandStructure(code="vasp", spinor=False,
+    bands = irrep.bandstructure.BandStructure.from_vasp(spinor=False,
                                    fPOS = f"{read_dir}/POSCAR",
                                    fWAV = f"{read_dir}/WAVECAR")
 ```

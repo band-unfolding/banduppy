@@ -107,7 +107,7 @@ if do_non_self_consistent:
 #%% ------------------------ Read wave function file --------------------------
 if read_bandstructure:
     print (f"{'='*72}\n- Reading band structure...")
-    bands = banduppy.BandStructure(code="espresso", spinor=False, prefix=f'{sim_folder}/{pw_file}')
+    bands = irrep.bandstructure.BandStructure.from_espresso(spinor=False, prefix=f'{sim_folder}/{pw_file}')
     pickle.dump(bands,open(f"{results_dir}/bandstructure.pickle","wb"))
     print ("- Reading band structure - done")
 else:

@@ -92,7 +92,7 @@ if do_non_self_consistent:
 #%% ------------------------ Read wave function file --------------------------
 if read_bandstructure:
     print (f"{'='*72}\n- Reading band structure...")
-    bands = banduppy.BandStructure(code="vasp", spinor=False, 
+    bands = irrep.bandstructure.BandStructure.from_vasp(spinor=False, 
                                    fPOS = f"{sim_folder}/POSCAR",
                                    fWAV = f"{sim_folder}/WAVECAR")
     pickle.dump(bands,open(f"{results_dir}/bandstructure.pickle","wb"))

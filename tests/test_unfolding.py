@@ -9,6 +9,7 @@ Created on Tue Jun 30 13:34:20 2026
 import numpy as np
 import pickle
 import banduppy
+import irrep
 from pathlib import Path
 
 # Path to test data
