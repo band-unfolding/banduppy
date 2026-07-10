@@ -128,6 +128,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         self.print_information = print_info
     
     def _gather_generated_ab_calculated_kpts_old(self, wavefns_file_kpts):
+        # Same function as _perform_unfolding() but older version.
         """
         Collect Kpoints in the generated SC-Kpoints list those only exist in the 
         wavefunction file from ab-initio calculation. 
@@ -176,13 +177,14 @@ class _BandUnfolding(_GeneralFnsDefs):
                     for kk in vall:
                             print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
                             
-    def _gather_generated_ab_calculated_kpts(self, wavefns_file_kpts) -> None:
+    def _perform_unfolding(self, wavefns_file_kpts) -> None:
         """
-        Collect Kpoints in the generated SC-Kpoints list those only exist in the 
-        wavefunction file from ab-initio calculation. 
+        This function perform unfolding.
         
-        Note: This way you can do sections of k-paths in ab-initio calculations to avoid
-        large calculations. Carefully check the WARNING msgs.
+        Note: It collects Kpoints in the generated SC-Kpoints list those only exist in the 
+        wavefunction file from ab-initio calculation. This way you can do sections of 
+        k-paths in ab-initio calculations to avoid large calculations. 
+        Carefully check the WARNING msgs.
         
         Note: Quick theory:
         If SC reciprocal lattice =  G(k<-K) 
@@ -250,19 +252,14 @@ class _BandUnfolding(_GeneralFnsDefs):
                 for kk in vall:
                         print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
                         
-    def  _split_kp_slices(self, bandstructure):
+    def  _split_kp_slices(self, kpt_list):
         if self.kpt_batch_size < 1: 
             print('WARNING: Minimum batch size should be = 1. Re-setting kpt_batch_size=1')
             self.kpt_batch_size = 1
-        n_kpts = len(bandstructure.kplist)
+        n_kpts = len(kpt_list)
         if self.kpt_batch_size > n_kpts: 
             print('WARNING: Maximum batch size should be total number of kpoints. Re-setting kpt_batch_size to Max value.')
-            self.kpt_batch_size = n_kpts
-            
-        if self.print_information == 'high':
-            print(f'- Total number of K-points: {n_kpts}')
-            print(f"- K-points indices: [{','.join([str(ll) for ll in bandstructure.kplist])}]")
-            
+            self.kpt_batch_size = n_kpts            
         iklist = list(range(n_kpts))
         return np.array_split(iklist, np.arange(self.kpt_batch_size, n_kpts, self.kpt_batch_size)) 
         
@@ -280,19 +277,24 @@ class _BandUnfolding(_GeneralFnsDefs):
 
         """            
         # Unfolding part
+        if self.print_information == 'high':
+            kpt_list = bandstructure.kplist
+            print(f'- Total number of K-points to be unfolded: {len(kpt_list)}')
+            print(f"- K-points indices: [{','.join([str(ll) for ll in kpt_list])}]")
+            
         self.kpSBZcalc = {}
         if self.unfold_in_batch:
             # Split into slices avoids large Memory requirement
-            iklist_split = self._split_kp_slices(bandstructure)
+            iklist_split = self._split_kp_slices(bandstructure.kplist)
             for iklist in iklist_split:
                 for ik in iklist: 
                     bandstructure.set_kpoint(ik) 
                 kpoints_slice = [bandstructure.kpoints[ik] for ik in iklist]
-                self._gather_generated_ab_calculated_kpts(kpoints_slice)
+                self._perform_unfolding(kpoints_slice)
                 for ik in iklist: 
                     bandstructure.forget_kpoint(ik)
         else:
-            self._gather_generated_ab_calculated_kpts(bandstructure.kpoints)
+            self._perform_unfolding(bandstructure.kpoints)
             
         if self._print_warning_Kk_map_file_not_exhausted:
             self._print_warning_if_Kk_map_file_not_exhausted()

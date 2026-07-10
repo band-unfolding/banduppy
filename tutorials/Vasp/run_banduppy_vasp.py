@@ -12,7 +12,6 @@ spinorbit = True
 do_generate_SC_kpts = True
 do_self_consistent = True
 do_non_self_consistent = True
-read_bandstructure = True
 do_unfold = True
 do_plot = True
 
@@ -49,8 +48,7 @@ results_dir = f'{SimulationParentFolder}/results'
 #%% -------------------- Initiate Unfolding method ----------------------------
 if do_generate_SC_kpts:
     print (f"{'='*72}\n- Generating SC Kpoints...")
-    band_unfold = banduppy.Unfolding(supercell=super_cell_size, 
-                                      print_log='high')
+    band_unfold = banduppy.Unfolding(supercell=super_cell_size, print_log='high')
     
     #%% ------------ Creating SC folded kpoints from PC band path -------------
     kpointsPBZ_full, kpointsPBZ_unique, kpointsSBZ, \
@@ -89,32 +87,28 @@ if do_non_self_consistent:
     shutil.copy(f"{sim_folder}/OUTCAR",f"{sim_folder}/OUTCAR_nscf")
     print ("- Non-self-consistent VASP run - done")
 
-#%% ------------------------ Read wave function file --------------------------
-if read_bandstructure:
-    print (f"{'='*72}\n- Reading band structure...")
-    bands = banduppy.BandStructure(code="vasp", spinor=False, 
-                                   fPOS = f"{sim_folder}/POSCAR",
-                                   fWAV = f"{sim_folder}/WAVECAR")
-    pickle.dump(bands,open(f"{results_dir}/bandstructure.pickle","wb"))
-    print ("- Reading band structure - done")
-else:
-    print (f"{'='*72}\n- Unpickling band structure...")
-    bands = pickle.load(open(f"{results_dir}/bandstructure.pickle","rb"))  
-    print ("- Unpickling - done")
-
 #%% ----------------- Unfold the band structures ------------------------------
 if do_unfold:
     print (f"{'='*72}\n- Unfolding band structure...")
     unfolded_bandstructure_, kpline \
-    = band_unfold.Unfold(bands, kline_discontinuity_threshold = 0.1, 
+    = band_unfold.Unfold(ab_initio_code='vasp', 
+                         unfold_kpts_in_batch=False, 
+                         #unfold_kpts_in_batch=True, kpt_batch_size=10, # Memory efficient routine
+                         vasp_keywards = {'poscar_file_path': f'{sim_folder}/POSCAR', 
+                                          'wavecar_file_path':f'{sim_folder}/WAVECAR', 
+                                          'vasprunxml_file_path': f'{sim_folder}/vasprun.xml',
+                                          'is_spin_nondegenrate': False, 
+                                          'unfold_spin_channel': 'up'},
+                         kline_discontinuity_threshold = 0.1, 
+                         #SBZ_PBZ_kpts_map={k:SBZ_PBZ_kpts_mapping[k] for k in range(5,20)}, # Allow unfolding selected K-points
                          save_unfolded_kpts = {'save2file': True, 
-                                              'fdir': results_dir,
-                                              'fname': 'kpoints_unfolded',
-                                              'fname_suffix': ''},
+                                               'fdir': results_dir,
+                                               'fname': 'kpoints_unfolded',
+                                               'fname_suffix': ''},
                          save_unfolded_bandstr = {'save2file': True, 
-                                                'fdir': results_dir,
-                                                'fname': 'bandstructure_unfolded',
-                                                'fname_suffix': ''})
+                                                  'fdir': results_dir,
+                                                  'fname': 'bandstructure_unfolded',
+                                                  'fname_suffix': ''})
     print ("- Unfolding - done")
 else:
     print (f"{'='*72}\n- Reading band structure data from saved file...")
@@ -128,31 +122,36 @@ else:
 if do_plot:
     print (f"{'='*72}\n- Plotting band structure...")
     # Fermi energy
-    Efermi = 5.9786
+    Efermi = 'auto' # Energy scale is already scalled during Unfolding 
     # Minima in Energy axis to plot
     Emin = -5
     # Maxima in Energy axis to plot
     Emax = 5
     # Filename to save the figure. If None, figure will not be saved
     save_file_name = 'unfolded_bandstructure.png'
-
-    plot_unfold = banduppy.Plotting(save_figure_dir=results_dir)
-    
-    fig, ax, CountFig \
-    = plot_unfold.plot_ebs(kpath_in_angs=kpline,
-                           unfolded_bandstructure=unfolded_bandstructure_,
-                           save_file_name=save_file_name, CountFig=None,
-                           Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5,
-                           mode="fatband", special_kpoints=special_kpoints_pos_labels,
-                           plotSC=True, fatfactor=20, nE=100,smear=0.2,
-                           color='red', color_map='viridis', show_colorbar=False)
-    
-#%%
+    # Special k-points info
+    # One can set this to None, to see only the unfolded part of bandstructure when
+    # SBZ_PBZ_kpts_map={k:SBZ_PBZ_kpts_mapping[k] for k in range(5,20)} is used for e.g.
+    special_kpts = special_kpoints_pos_labels
+    # Plotting
     fig, ax, CountFig \
     = band_unfold.plot_ebs(save_figure_dir=results_dir,
                            save_file_name=save_file_name, CountFig=None, 
                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
-                           mode="fatband", special_kpoints=special_kpoints_pos_labels, 
+                           mode="fatband", special_kpoints=special_kpts, 
                            plotSC=True, fatfactor=20, nE=100,smear=0.2, 
                            color='red', color_map='viridis', show_colorbar=False)
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Plotting can be done later/separately using Plotting class
+    save_file_name = 'unfolded_bandstructure_.png'
+    plot_unfold = banduppy.Plotting(save_figure_dir=results_dir)
+    fig, ax, CountFig \
+    = plot_unfold.plot_ebs(kpath_in_angs=kpline,
+                           unfolded_bandstructure=unfolded_bandstructure_,
+                           save_file_name=save_file_name, CountFig=None,
+                           Emin=-5, Emax=+5, pad_energy_scale=0.5,
+                           mode="fatband", special_kpoints=special_kpts,
+                           plotSC=True, fatfactor=20, nE=100,smear=0.2,
+                           color='red', color_map='viridis', show_colorbar=False)
+    
     print ("- Plotting band structure - done")

@@ -56,8 +56,7 @@ class _ProcessPWs(BandStructure_irrep):
         """
         file_too_large = _BasicFunctionsModule._check_file_size(wf_file, 'GB') > 5
         if file_too_large and (not self.kpts_batch_unfold_): 
-            print(f"WARNING: Wavefunction file is >{wf_file_size_cutoff} GB. If memory error occure, set kpts_batch_unfold_=True in Unfold().")
-            
+            print(f"WARNING: Wavefunction file is >{wf_file_size_cutoff} GB. If memory error occure, set unfold_kpts_in_batch=True in Unfold().")
             #print(f"WARNING: Wavefunction is large. Falling back to batch unfolding with default kpt_batch_size")
             #self.kpts_batch_unfold_ = True
                 

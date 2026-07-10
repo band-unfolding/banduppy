@@ -1,4 +1,4 @@
-K-points for SC bandstructure generated using banduppy-0.3.2 package
+K-points for SC bandstructure generated using banduppy-0.3.6 package
 84
 reciprocal
   0.00000000   0.00000000   0.00000000   1.00000000
@@ -91,7 +91,7 @@ reciprocal
 ! unfold onto the pckpts listed below (selected by you):
 ! k-points for PC bandstructure L-G-X-U,K-G
 ! 23 27 9 29
-! reciprocal
+! Reciprocal
 !  0.50000000   0.50000000   0.50000000   L
 !  0.00000000   0.00000000   0.00000000   G
 !  0.50000000   0.00000000   0.50000000   X

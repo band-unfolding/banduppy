@@ -310,7 +310,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
 
         """
         self.kline_discontinuity_threshold = kline_discontinuity_threshold
-        self.save_unfolded_kpts = save_unfolded_kpts,
+        self.save_unfolded_kpts = save_unfolded_kpts
         self.save_unfolded_bandstr = save_unfolded_bandstr
         # Print warning msg when not all K-points in Kk map file can not be unfolded
         self._print_warning_Kk_map_file_not_exhausted = True  
@@ -347,7 +347,6 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                 self._print_warning_Kk_map_file_not_exhausted = False
         # Passing bandstructure class from other packages is allowed
         return self._unfold(bandstructure)
-
 
     def plot_ebs(self, fig=None, ax=None, save_figure_dir='.', save_file_name=None,  
                  CountFig=None, Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 

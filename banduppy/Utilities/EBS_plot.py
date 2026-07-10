@@ -171,7 +171,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         if len(self.plot_result[0]) == 3:
             self.plot_result = np.insert(self.plot_result, 0, np.nan, axis=1) 
         
-        if (isinstance(Ef, str) and (Ef=='auto')) or (Ef is None):  Ef = self.efermi
+        if (isinstance(Ef, str) and (Ef=='auto')) or (Ef is None): Ef = self.efermi
             
         Emin, Emax, result = \
             _GeneralFunctionsDefs._get_data_in_energy_window(self.plot_result, 

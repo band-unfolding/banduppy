@@ -25,7 +25,6 @@ class UnfoldingBase:
                    
         return band_unfold.Unfold(ab_initio_code=self.ab_initio_code, 
                                   vasp_keywards=self.vasp_keywards,
-                                  fermi_energy=self.fermi_energy,
                                   unfold_kpts_in_batch=self.unfold_kpts_in_batch, 
                                   kpt_batch_size=10,
                                   only_unfold_for_kpts_idxs=self.only_unfold_for_kpts_idxs,
@@ -49,7 +48,7 @@ class TestBandsUnfolding(UnfoldingBase):
         ref_results_dir = SimulationParentFolder / "vasp/Si_8atom/BandUPpyUnfoldedResults"
         self.super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        print ("- Reading band structure data from saved file...")
+        print("- Reading band structure data from saved file...")
         unfolded_bandstructure_ref = np.loadtxt(ref_results_dir / 'bandstructure_unfolded.dat')
         kpline_ref = np.loadtxt(ref_results_dir / 'kpoints_unfolded.dat')[:,1]
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -60,9 +59,9 @@ class TestBandsUnfolding(UnfoldingBase):
             self.sc_pc_kp_map = pickle.load(f)
         with open(kpoints_file / "KPOINTS_SpecialKpoints.pkl", "rb") as f:
             special_kpoints_pos_labels = pickle.load(f)
-        print ("- Reading band structure file - done")
+        print("- Reading band structure file - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        print ("- Unfolding band structure...")
+        print("- Unfolding band structure...")
         self.ab_initio_code = 'vasp'
         self.vasp_keywards = {'poscar_file_path': f'{sim_folder}/POSCAR', 
                               'wavecar_file_path': f'{sim_folder}/WAVECAR', 
@@ -72,19 +71,18 @@ class TestBandsUnfolding(UnfoldingBase):
         self.zero_weight_kp = False
         self.only_unfold_for_kpts_idxs = None
         self.only_unfold_band_idx = (None, None)
-        self.fermi_energy = 0 # Reference unfolding data was done with fermi_energy=0
         
         # Loading full bandstructure in memory for unfolding 
         # => Dependeing on avaiable RAM, get memory error when wave function file is large ~10 GB
         self.unfold_kpts_in_batch = False
         unfolded_bandstructure, kpline = self.banduppy_unfolding_testing()
-        print ("- Unfolding that reads full bandstructure - done")
+        print("- Unfolding that reads full bandstructure - done")
         # Loop over loading one k-point WF, unfold it, delete WF => solves memory problem
         print ("- Unfolding that reads bandstructure kpoints at a time (memory safe)...")
         self.unfold_kpts_in_batch = True
         unfolded_bandstructure_mem, kpline_mem = self.banduppy_unfolding_testing()
-        print ("- Unfolding that reads bandstructure kpoints at a time (memory safe) - Done")
-        print ("- Unfolding - done")
+        print("- Unfolding that reads bandstructure kpoints at a time (memory safe) - Done")
+        print("- Unfolding - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         print("- Comparing generated data with reference data...")
         np.testing.assert_allclose(unfolded_bandstructure_ref, unfolded_bandstructure, rtol=1e-8,atol=1e-3)
@@ -96,20 +94,37 @@ class TestBandsUnfolding(UnfoldingBase):
         np.testing.assert_allclose(kpline_mem, kpline, rtol=1e-8,atol=1e-4)
         print("- Comparing unfolded bandstructure with memory efficient method - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        print ("- Plotting band structure...")
-        self.fermi_energy = None # This returns unfolded band structure rescaled to fermi energy.
+        print("- Plotting band structure...")
         unfolded_bandstructure, kpline = self.banduppy_unfolding_testing()
         plot_unfold = banduppy.Plotting()
         _ = plot_unfold.plot_ebs(kpath_in_angs=kpline,
                                  unfolded_bandstructure=unfolded_bandstructure,
                                  save_file_name=None, CountFig=None,
-                                 Ef=self.fermi_energy, Emin=-5, Emax=5, pad_energy_scale=0.5,
+                                 Emin=-5, Emax=5, pad_energy_scale=0.5,
                                  mode="fatband", special_kpoints=special_kpoints_pos_labels,
                                  plotSC=True, fatfactor=20, nE=100,smear=0.2,
                                  color='red', color_map='viridis', 
                                  show_colorbar=False, show_plot=False)
-        
-        print ("- Plotting band structure - done")
+        print("- Plotting band structure - done")
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        print("- Plotting band structure with only part of the K-points from map file are unfolded...")
+        Kkmap_tmp = self.sc_pc_kp_map.copy()
+        self.sc_pc_kp_map = {k:Kkmap_tmp[k] for k in range(5,10)}
+        unfolded_bandstructure, kpline = self.banduppy_unfolding_testing()
+        for special_kpts in [special_kpoints_pos_labels, None]:
+            # TODO: WARNING: No PC k-point mapping is found for SC K-point: [  0.66964286,  0.66964286,  0.00000000]. Ignoring unfolding of this SC K-point.
+            # TODO: Handle special_kpoints_pos_labels problem
+            plot_unfold = banduppy.Plotting()
+            _ = plot_unfold.plot_ebs(kpath_in_angs=kpline,
+                                     unfolded_bandstructure=unfolded_bandstructure,
+                                     save_file_name=None, CountFig=None, Emin=-5, 
+                                     Emax=5, pad_energy_scale=0.5,
+                                     mode="fatband", special_kpoints=special_kpts,
+                                     plotSC=True, fatfactor=20, nE=100,smear=0.2,
+                                     color='red', color_map='viridis', 
+                                     show_colorbar=False, show_plot=True)
+        self.sc_pc_kp_map = Kkmap_tmp
+        print("- Plotting band structure with only part of the K-points from map file are unfolded - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         print("- Unfolding with user specified list of kpoint indices...")
         self.only_unfold_for_kpts_idxs = [5]
@@ -117,4 +132,4 @@ class TestBandsUnfolding(UnfoldingBase):
         unfolded_bandstructure_kplist, kpline_kplist = self.banduppy_unfolding_testing()
         print("- Unfolding with user specified list of kpoint indices - Done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        print ("** test_unfolding_Si8atomUnitcell_vasp => Congrats! All assertions successfull")
+        print("** test_unfolding_Si8atomUnitcell_vasp => Congrats! All assertions successfull")
