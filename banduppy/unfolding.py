@@ -23,7 +23,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             The default is 'low'. If None, nothing is printed.
 
         """       
-        if print_log is not None: print_log = print_log.lower()
+        if isinstance(print_log, str): print_log = print_log.lower()
         _BandFolding.__init__(self, supercell=supercell, print_info=print_log)
         
     def propose_maximum_minimum_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
@@ -210,8 +210,10 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                                        file_format=file_format, footer_msg=footer_msg,
                                        special_kpoints_pos_labels=special_kpoints_pos_labels)
     
-    def Unfold(self, bandstructure,  
-               PBZ_kpts_list_full=None, SBZ_kpts_list=None, SBZ_PBZ_kpts_map=None,
+    def Unfold(self, bandstructure=None, 
+               PBZ_kpts_list_full = None, 
+               SBZ_kpts_list = None, 
+               SBZ_PBZ_kpts_map = None,
                kline_discontinuity_threshold = 0.1,
                save_unfolded_kpts = {'save2file': False, 
                                      'fdir': '.',
@@ -220,14 +222,36 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                save_unfolded_bandstr = {'save2file': False, 
                                         'fdir': '.',
                                         'fname': 'bandstructure_unfolded',
-                                        'fname_suffix': ''}):
+                                        'fname_suffix': ''},
+               ab_initio_code:str = 'vasp', 
+               wf_cutoff_energy:float|None = None, 
+               only_unfold_for_kpts_idxs:np.ndarray|list[int]|None = None,
+               only_unfold_band_idx:tuple[int|None, int|None]|list[int | 
+               None, int|None] = (None, None), 
+               unfold_kpts_in_batch:bool = False, 
+               kpt_batch_size:int = 10,
+               zero_weight_kp:bool = False, 
+               fermi_energy:float|None = None,
+               vasp_keywards:dict|None = {'poscar_file_path': './POSCAR', 
+                                          'wavecar_file_path':'./WAVECAR', 
+                                          'vasprunxml_file_path': './vasprun.xml',
+                                          'is_spin_nondegenrate': False, 
+                                          'unfold_spin_channel': 'up'},
+               abinit_keywards:dict|None = None, 
+               qe_keywards:dict|None = None,
+               gpaw_keywards:dict|None = None, 
+               wannier90_keywards:dict|None = None,
+               **other_ab_initio_code_related_kwargs):
         """
         Unfold the band structure.
 
         Parameters
         ----------
-        bandstructure : irrep.bandstructure.BandStructure
-            irrep.bandstructure.BandStructure.
+        bandstructure : BandStructure instance from irrep.bandstructure or None, optional
+            If None, the BandStructure instance is generated within banduppy. This internally
+            calls irrep.bandstructure functions and add some processing on it. Instead of None,
+            one can also pass BandStructure instance from original irrep.bandstructure class or
+            from any other packages. The default is None.
         PBZ_kpts_list_full : ndarray, optional
             List of PC k-points. If None, try to find the list from class instance.
             The default is None.
@@ -262,6 +286,19 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                 Suffix to add to the file name. 
             The default is {'save2file': False, 'fdir': '.', 'fname': 'bandstructure_unfolded', 'fname_suffix': ''}.
             
+        unfold_kpts_in_batch: bool, optional
+            Whether to unfold complete wave function file in sigle shot. If False,
+            unfolding is performed in K-point batch. Chunk of K-point info is loaded in RAM, 
+            unfolded, and then removed from RAM once unfolding is done. This allows 
+            us to aviod large memory requirement when the wave function file is 
+            very large (~few GB). The default is False.
+        kpt_batch_size : int (1 <= kpt_batch_size <= # of kpoints), optional
+            Batch size of K-points to be unfolded in single instance. Only needed
+            when unfold_kpts_in_batch = True. Smaller the batch size lower the 
+            RAM requirement. Will be re-set to max and min value allowed if outside 
+            range. The default is 10. 
+            
+            
         Returns
         -------
         numpy ndarray
@@ -272,22 +309,45 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Format: [k on path (A^-1)]
 
         """
-        if (PBZ_kpts_list_full is None) or \
-            (SBZ_kpts_list is None) or (SBZ_PBZ_kpts_map is None):
-            _BandUnfolding.__init__(self, self.transformation_matrix, 
-                                    self.PBZ_kpts_list_org, self.SBZ_kpts_list, 
-                                    self.SBZ_PBZ_kpts_mapping,
-                                    print_info=self.print_information)
-        else:
-            _BandUnfolding.__init__(self, self.transformation_matrix, 
-                                    PBZ_kpts_list_full, SBZ_kpts_list, 
-                                    SBZ_PBZ_kpts_map, 
-                                    print_info=self.print_information)
+        self.kline_discontinuity_threshold = kline_discontinuity_threshold
+        self.save_unfolded_kpts = save_unfolded_kpts,
+        self.save_unfolded_bandstr = save_unfolded_bandstr
+        # Print warning msg when not all K-points in Kk map file can not be unfolded
+        self._print_warning_Kk_map_file_not_exhausted = True  
         
-        return self._unfold(bandstructure, 
-                            kline_discontinuity_threshold = kline_discontinuity_threshold,
-                            save_unfolded_kpts = save_unfolded_kpts,
-                            save_unfolded_bandstr = save_unfolded_bandstr)
+        if PBZ_kpts_list_full is None: PBZ_kpts_list_full = self.PBZ_kpts_list_org
+        if SBZ_kpts_list is None: SBZ_kpts_list = self.SBZ_kpts_list
+        if SBZ_PBZ_kpts_map is None: SBZ_PBZ_kpts_map = self.SBZ_PBZ_kpts_mapping
+        
+        _BandUnfolding.__init__(self, self.transformation_matrix, 
+                                PBZ_kpts_list_full, SBZ_kpts_list, 
+                                SBZ_PBZ_kpts_map, print_info=
+                                self.print_information)
+        
+        #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        if bandstructure is None: 
+            from .parsers import _ProcessPWs
+            bds = _ProcessPWs(ab_initio_code=ab_initio_code,
+                              wf_cutoff_energy=wf_cutoff_energy,
+                              only_unfold_band_idx=only_unfold_band_idx,
+                              only_unfold_for_kpts_idxs=only_unfold_for_kpts_idxs,
+                              kpts_batch_unfold=unfold_kpts_in_batch,
+                              zero_weight_kp=zero_weight_kp, fermi_energy=fermi_energy,
+                              vasp_kwards=vasp_keywards, abinit_kwards=abinit_keywards,
+                              qe_kwards=qe_keywards, gpaw_kwards=gpaw_keywards,
+                              wannier90_kwards=wannier90_keywards,
+                              print_log=self.print_information)
+            paw = True if ab_initio_code == 'gpaw' else False 
+            bandstructure = bds._generate_bandstructure_instance(**other_ab_initio_code_related_kwargs)   
+            self.unfold_in_batch = bds.kpts_batch_unfold_
+            self.kpt_batch_size = kpt_batch_size
+            # Do not warning msg when not all K-points in Kk map file is not unfolded.
+            # User wants to unfold only a few K-points.
+            if only_unfold_for_kpts_idxs:
+                self._print_warning_Kk_map_file_not_exhausted = False
+        # Passing bandstructure class from other packages is allowed
+        return self._unfold(bandstructure)
+
 
     def plot_ebs(self, fig=None, ax=None, save_figure_dir='.', save_file_name=None,  
                  CountFig=None, Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 

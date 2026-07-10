@@ -1,4 +1,5 @@
 import numpy as np
+#import warnings
 from ..BasicFunctions.general_functions import _SaveData2File, _BasicFunctionsModule, _draw_line_length
 
 ### ===========================================================================
@@ -126,7 +127,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         self.SBZ_PBZ_kpts_index_map = SBZ_PBZ_kpts_map
         self.print_information = print_info
     
-    def _gather_generated_ab_calculated_kpts(self, wavefns_file_kpts):
+    def _gather_generated_ab_calculated_kpts_old(self, wavefns_file_kpts):
         """
         Collect Kpoints in the generated SC-Kpoints list those only exist in the 
         wavefunction file from ab-initio calculation. 
@@ -174,32 +175,131 @@ class _BandUnfolding(_GeneralFnsDefs):
                 for _, vall in val.items(): # kkk: unique PC-kpts indices; vall: list of PC-kpts indices
                     for kk in vall:
                             print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
-        
-    def _unfold_bandstructure(self, bandstructure, break_thresh = 0.1):  
+                            
+    def _gather_generated_ab_calculated_kpts(self, wavefns_file_kpts) -> None:
         """
+        Collect Kpoints in the generated SC-Kpoints list those only exist in the 
+        wavefunction file from ab-initio calculation. 
         
+        Note: This way you can do sections of k-paths in ab-initio calculations to avoid
+        large calculations. Carefully check the WARNING msgs.
+        
+        Note: Quick theory:
+        If SC reciprocal lattice =  G(k<-K) 
+        o K unfold onto k with the unfolding vector G(k<-K). One K can unfold to multiple k.
+        o But a given k can fold to only one K.
 
         Parameters
         ----------
-        bandstructure : irrep.bandstructure.BandStructure
-            irrep.bandstructure.BandStructure instance.
-        break_thresh : float, optional
-            If the distance between two neighboring k-points in the path is 
-            larger than `break_thresh` break continuity in k-path. Set break_thresh 
-            to a large value if the unfolded kpoints line is continuous.
-            The default is 0.1.
+        wavefns_file_kpts : irrep.kpoint.Kpoint
+            List of irrep.kpoint.Kpoint from ab-initio calculations.
+
+        Calculates
+        -------
+        kpSBZcalc Dictionary = 
+            {SC-Kpoint index: 
+                 unfolded PC-kpoint index: (band energy, Bloch weights).}
+
+        """
+
+        if not self.kpSBZcalc:
+            self.tmp_Kk_map = self.SBZ_PBZ_kpts_index_map.copy()
+            # Otherwise we wouldn't know on which k-points, the K-point should be unfolded. Mapping info is missing.
+            assert len(self.kpointsSBZ) >= len(self.tmp_Kk_map), 'Total no. of SC K-points in supplied SBZ file has to be greater than the no. in K-k map file.'
+        
+        for KP in wavefns_file_kpts:
+            # Check if WAVECAR K exists in SC file K-list
+            Kk_match_found = False
+            for key, val in self.tmp_Kk_map.items(): # Loop over all SC-Kpoints
+                if KP.k_close_mod1(self.kpointsSBZ[key, :3], prec=1e-6):
+                    #print(f'K-K match found: {key}, Map dict len:{len(self.tmp_Kk_map)}')
+                    self.kpSBZcalc[key] = {}
+                    for vall in val.values(): # Loop over PC-kpoints
+                        for kk in vall:
+                            # Calculate weights for the PBZ kpoints from SBZ kpoints on which
+                            # it was folded.
+                            # If SC reciprocal lattice =  G(k<-K) 
+                            # o K unfold onto k with the unfolding vector G(k<-K). One K can unfold to multiple k.
+                            # o But a given k can fold to only one K.
+                            self.kpSBZcalc[key][kk] = KP.unfold(supercell=self.transformation_matrix, 
+                                                                kptPBZ=self.kpointsPBZ_full[kk, :3])
+                    Kk_match_found = True
+                    break
+            if Kk_match_found:
+                del self.tmp_Kk_map[key]
+            else:
+                kp_coord = ",".join(f"{kpp:12.8f}" for kpp in KP.k)
+                print(f"WARNING: No PC k-point mapping is found for SC K-point: [{kp_coord}]. Ignoring unfolding of this SC K-point.")         
+        return 
+    
+    def _print_warning_if_Kk_map_file_not_exhausted(self) -> None:
+        """
+        This function prints warning message if there are K-points that are in the
+        user specified SC_K-PC_k map file but does not exists in the wave function
+        file. 
+
+        Returns
+        -------
+        None
+        """
+        for key, val in self.tmp_Kk_map.items():
+            kp_coord = ",".join(f"{kpp:12.8f}" for kpp in self.kpointsSBZ[key])
+            print(f"WARNING: Can't find SC K-point {key:>5} [{kp_coord}] in the wavefunction file.")
+            print("- The corresponding following PC-kpoints in the unfolding path will be skipped:")
+            for _, vall in val.items(): # kkk: unique PC-kpts indices; vall: list of PC-kpts indices
+                for kk in vall:
+                        print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
+                        
+    def  _split_kp_slices(self, bandstructure):
+        if self.kpt_batch_size < 1: 
+            print('WARNING: Minimum batch size should be = 1. Re-setting kpt_batch_size=1')
+            self.kpt_batch_size = 1
+        n_kpts = len(bandstructure.kplist)
+        if self.kpt_batch_size > n_kpts: 
+            print('WARNING: Maximum batch size should be total number of kpoints. Re-setting kpt_batch_size to Max value.')
+            self.kpt_batch_size = n_kpts
+            
+        if self.print_information == 'high':
+            print(f'- Total number of K-points: {n_kpts}')
+            print(f"- K-points indices: [{','.join([str(ll) for ll in bandstructure.kplist])}]")
+            
+        iklist = list(range(n_kpts))
+        return np.array_split(iklist, np.arange(self.kpt_batch_size, n_kpts, self.kpt_batch_size)) 
+        
+    def _unfold_bandstructure(self, bandstructure):  
+        """
+
+        Parameters
+        ----------
+        bandstructure : BandStructure instance from irrep.bandstructure 
+            BandStructure instance from irrep.bandstructure class.
 
         Returns
         -------
         None.
 
         """            
-        # Check/return if kpoints in the generated SC-kpoints list exists in the
-        # wavefunction file from ab-initio calculation.
-        _ = self._gather_generated_ab_calculated_kpts(bandstructure.kpoints)
+        # Unfolding part
+        self.kpSBZcalc = {}
+        if self.unfold_in_batch:
+            # Split into slices avoids large Memory requirement
+            iklist_split = self._split_kp_slices(bandstructure)
+            for iklist in iklist_split:
+                for ik in iklist: 
+                    bandstructure.set_kpoint(ik) 
+                kpoints_slice = [bandstructure.kpoints[ik] for ik in iklist]
+                self._gather_generated_ab_calculated_kpts(kpoints_slice)
+                for ik in iklist: 
+                    bandstructure.forget_kpoint(ik)
+        else:
+            self._gather_generated_ab_calculated_kpts(bandstructure.kpoints)
+            
+        if self._print_warning_Kk_map_file_not_exhausted:
+            self._print_warning_if_Kk_map_file_not_exhausted()
         
         # Collect all unfolded PBZ kpoints, energy and weights from calculated kpSBZcalc dictionary
         kpPBZ_unfolded = {k: v for val in self.kpSBZcalc.values() for k, v in val.items()} 
+        
         # Sort the unfolded PBZ
         kpPBZ_unfolded = {k: v for k, v in sorted(kpPBZ_unfolded.items(), key=lambda item: item[0])}
 
@@ -208,17 +308,18 @@ class _BandUnfolding(_GeneralFnsDefs):
         # k-index, k1, k2, k3
         self.unfolded_kpts_dat = np.array([[kk]+list(self.kpointsPBZ_full[kk, :3]) 
                                            for kk in kpPBZ_unfolded])
+        
         # Generate k-path in distance unit
         self.kpline = bandstructure.KPOINTSline(kpred=self.unfolded_kpts_dat[:,1:], 
                                                 supercell=self.transformation_matrix,
-                                                breakTHRESH=break_thresh)
+                                                breakTHRESH=self.kline_discontinuity_threshold)
+        
         # Insert k on path (A^-1) after k-indices
         self.unfolded_kpts_dat = np.insert(self.unfolded_kpts_dat,1, self.kpline, axis=1)
-        
+ 
         # Add k-indices and k-path to the energy, weight band structure array
-        self.unfolded_bandstructure = np.concatenate([np.insert(unf, [0, 0], [kk, self.kpline[kk]], axis=1) 
-                                                      for kk, unf in kpPBZ_unfolded.items()], axis=0)
-        
+        self.unfolded_bandstructure = np.concatenate([np.insert(unf, [0, 0], [kk, self.kpline[ii]], axis=1) 
+                                                      for ii, (kk, unf) in enumerate(kpPBZ_unfolded.items())], axis=0)
         # Print information about folding
         if self.print_information is not None: 
             self._print_info_post(level=self.print_information)          
@@ -309,45 +410,13 @@ class _BandUnfolding(_GeneralFnsDefs):
                                                   file_name_suffix=save_unfolded_bandstr["fname_suffix"],
                                                   print_information=self.print_information)
 
-    def _unfold(self, bandstructure, kline_discontinuity_threshold = 0.1,
-                save_unfolded_kpts = {'save2file': False, 
-                                      'fdir': '.',
-                                      'fname': 'kpoints_unfolded',
-                                      'fname_suffix': ''},
-                save_unfolded_bandstr = {'save2file': False, 
-                                         'fdir': '.',
-                                         'fname': 'bandstructure_unfolded',
-                                         'fname_suffix': ''}): 
+    def _unfold(self, bandstructure): 
         """
-        
 
         Parameters
         ----------
-        bandstructure : irrep.bandstructure.BandStructure
-            irrep.bandstructure.BandStructure.
-        kline_discontinuity_threshold : float, optional
-            If the distance between two neighboring k-points in the path is 
-            larger than `break_thresh` break continuity in k-path. Set break_thresh 
-            to a large value if the unfolded kpoints line is continuous.
-            The default is 0.1.
-        save_unfolded_kpts : dictionary, optional
-            save2file :: Save unfolded kpoints data to file or not? 
-            fir :: str or path
-                Directory path where to save the file.
-            fname :: str
-                Name of the file.
-            fname_suffix :: str
-                Suffix to add to the file name.
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'kpoints_unfolded', 'fname_suffix': ''}.
-        save_unfolded_bandstr : dictionary, optional
-            save2file :: Save unfolded band structure data to file or not? 
-            fir :: str or path
-                Directory path where to save the file.
-            fname :: str
-                Name of the file.
-            fname_suffix :: str
-                Suffix to add to the file name. 
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'bandstructure_unfolded', 'fname_suffix': ''}.
+        bandstructure : BandStructure instance from irrep.bandstructure 
+            BandStructure instance from irrep.bandstructure class.
             
         Returns
         -------
@@ -359,14 +428,10 @@ class _BandUnfolding(_GeneralFnsDefs):
             Format: k on path (A^-1)
 
         """
-        # kline_discontinuity_threshold: float, default=0.1
-        #    If the distance between two neighboring k-points in the path is 
-        #    larger than `kline_discontinuity_threshold`, it is taken to be 0.
-        # Set kline_discontinuity_threshold to a large value if the unfolded kpoints line is continuous
         # Unfold bandstructure
-        self._unfold_bandstructure(bandstructure, break_thresh=kline_discontinuity_threshold)
+        self._unfold_bandstructure(bandstructure)
         
         # Save unfolded kpoints after post processing of wave function file
-        self._save_unfolded_kpts_bandstr(save_unfolded_kpts, save_unfolded_bandstr)
+        self._save_unfolded_kpts_bandstr(self.save_unfolded_kpts, self.save_unfolded_bandstr)
         
         return self.unfolded_bandstructure, self.kpline

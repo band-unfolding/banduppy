@@ -1,0 +1,4 @@
+# PC to SC transformation matrix (==supercell dimesion)
+-1 1 1
+1 -1 1
+1 1 -1

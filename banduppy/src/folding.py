@@ -663,6 +663,15 @@ class _BandFolding(_KpointsModule, _FindProperties):
                                                     footer_txt=data_items[2],
                                                     print_log=bool(self.print_information),
                                                     print_msg=data_items[3])
+                
+            # saving the PC to SC transformation matrix
+            header_txt_transM='# PC to SC transformation matrix (==supercell dimesion)'
+            _SaveData2File._save_sc_kpts_2_file(data=self.transformation_matrix,
+                                                save_dir=save_dir, file_name='SC_dimension.dat',
+                                                file_name_suffix='', file_format='dat',
+                                                data_fmt='%d', header_txt=header_txt_transM, 
+                                                footer_txt='', print_log=bool(self.print_information),
+                                                print_msg='Saving SC dimension to file...')
         
         return self.PBZ_kpts_list_org, self.PBZ_kpts_list, self.SBZ_kpts_list, \
                 self.SBZ_PBZ_kpts_mapping, self.special_kpoints_pos_labels

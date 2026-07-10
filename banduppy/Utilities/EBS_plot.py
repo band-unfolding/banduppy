@@ -171,7 +171,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         if len(self.plot_result[0]) == 3:
             self.plot_result = np.insert(self.plot_result, 0, np.nan, axis=1) 
         
-        if Ef == 'auto' or Ef is None:  Ef = self.efermi
+        if (isinstance(Ef, str) and (Ef=='auto')) or (Ef is None):  Ef = self.efermi
             
         Emin, Emax, result = \
             _GeneralFunctionsDefs._get_data_in_energy_window(self.plot_result, 
@@ -191,7 +191,6 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                                                  sc_marker=sc_marker, show_legend=show_legend,
                                                  plotSC=plotSC)
         elif mode == "density":
-            
             ax, return_plot = self._plot_density(result, ax, Emin, Emax, nE, self.kpath_in_angs_, 
                                                  smear, cmap=color_map, vmin=vmin, vmax=vmax)
         elif mode == 'band_centers':
@@ -223,7 +222,10 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         ax.set_xlim([self.kpath_in_angs_.min(), self.kpath_in_angs_.max()])
 
         if save_file_name is None:
-            if show_plot: plt.show()
+            if show_plot: 
+                plt.show()
+            else:
+                plt.close()
         else:
             CountFig = self._save_figure(save_file_name, fig=self.fig,
                                          savefig=savefig, show_plot=show_plot,

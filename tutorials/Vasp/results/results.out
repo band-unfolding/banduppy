@@ -283,6 +283,10 @@
 - Saving SC Kpoints - PC kpoints indices mapping to file....
 -- Filepath: /local/GitHub/TestBandUPpy/Vasp/input/KPOINTS_SCPC_map.pkl
 - Done
+========================================================================
+- Saving SC dimension to file....
+-- Filepath: /local/GitHub/TestBandUPpy/Vasp/input/SC_dimension.dat
+- Done
 - Generating SC Kpoints - done
 ========================================================================
 - Reading band structure...

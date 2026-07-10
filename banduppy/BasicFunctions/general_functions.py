@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+from pathlib import Path
 
 _draw_line_length = 72
 
@@ -66,6 +67,15 @@ class _BasicFunctionsModule(object):
         else:
             return input_array%1
         
+    @staticmethod
+    def _check_file_size(file_, return_unit:str='MB'):
+        
+        # 1024.0*1024.0 = 1048576.0
+        # 1024.0*1024.0*1024.0 = 1073741824.0
+        # 1024.0*1024.0*1024.0*1024.0 = 1099511627776.0
+        div_fact = {'BYTE':1.0, 'KB':1024.0, 'MB': 1048576.0, 'GB': 1073741824.0, 'TB': 1099511627776.0}
+        return Path(file_).stat().st_size / div_fact[return_unit.upper()] #
+        
 ## ============================================================================
 class _SaveData2File:
     def __init__(self):
@@ -131,7 +141,8 @@ class _SaveData2File:
     @staticmethod
     def _save_sc_kpts_2_file(data=None, save_dir='.', file_name:str='', 
                              file_name_suffix:str='', file_format:str='vasp',
-                             header_txt:str='', footer_txt:str='',comments_symbol='! ',
+                             data_fmt='%12.8f', header_txt:str='', 
+                             footer_txt:str='',comments_symbol='! ',
                              print_log:bool=False, print_msg:str='Saving to file...'):
         """
         Save the generated SC kpoints to a file.
@@ -150,6 +161,8 @@ class _SaveData2File:
         file_format : ['vasp', 'qe'], optional
             Format of the file. The default is 'vasp'. 
             If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
+        data_fmt: str
+            Data format for numpy.savetxt.
         header_txt : str, optional
             String that will be written at the beginning of the file. The default is None.
         footer_txt : str, optional
@@ -177,13 +190,17 @@ class _SaveData2File:
             comments_symbol = ''
             tmp_header = header_txt.split('\n')
             if tmp_header[-1] == 'Reciprocal':
-                header_txt = f'!{tmp_header[0]}\nK_POINTS crystal\n{tmp_header[1]}'          
+                header_txt = f'!{tmp_header[0]}\nK_POINTS crystal\n{tmp_header[1]}'    
+        else:
+            file_name_ = file_name.strip() if file_name else 'Test'
+            comments_symbol = ''
 
         if print_log: print(f"{'='*_draw_line_length}\n- {print_msg}.")
         
         fname_save_file = \
         _SaveData2File._save_2_file(data=data, save_dir=save_dir, file_name=file_name_, 
-                                    file_name_suffix=file_name_suffix, header_txt=header_txt, 
+                                    file_name_suffix=file_name_suffix, 
+                                    np_data_fmt=data_fmt, header_txt=header_txt, 
                                     footer_txt=footer_txt,comments_symbol=comments_symbol)
         if print_log: print(f'-- Filepath: {fname_save_file}\n- Done')
         return fname_save_file
