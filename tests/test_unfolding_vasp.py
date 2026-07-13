@@ -43,16 +43,17 @@ class TestBandsUnfolding(UnfoldingBase):
     Test class to check unfolded bandstructure.
     """
     
-    def test_unfolding_Si8atomUnitcell(self):
-        sim_folder = SimulationParentFolder / 'vasp/Si_8atom/VaspSimulations' 
-        ref_results_dir = SimulationParentFolder / "vasp/Si_8atom/BandUPpyUnfoldedResults"
+    def test_unfolding_SiGe8atomUnitcell(self):
+        vasp_files_path = 'vasp/SiGe_8atom/'
+        sim_folder = SimulationParentFolder / f'{vasp_files_path}/VaspSimulations' 
+        ref_results_dir = SimulationParentFolder / f'{vasp_files_path}/BandUPpyUnfoldedResults'
         self.super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         print("- Reading band structure data from saved file...")
         unfolded_bandstructure_ref = np.loadtxt(ref_results_dir / 'bandstructure_unfolded.dat')
-        kpline_ref = np.loadtxt(ref_results_dir / 'kpoints_unfolded.dat')[:,1]
+        kpline_ref = np.loadtxt(ref_results_dir / 'kpoints_unfolded.dat')
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        kpoints_file = SimulationParentFolder / 'vasp/Si_8atom/BandUPpyKpointsGen'
+        kpoints_file = SimulationParentFolder / f'{vasp_files_path}/BandUPpyKpointsGen'
         self.sckpts = np.genfromtxt(kpoints_file / 'KPOINTS_SC', skip_header=3, comments='!')
         self.pckpts = np.genfromtxt(kpoints_file / 'KPOINTS_PC', skip_header=3, comments='!')
         with open(kpoints_file / "KPOINTS_SCPC_map.pkl", "rb") as f:
@@ -97,8 +98,10 @@ class TestBandsUnfolding(UnfoldingBase):
         print("- Plotting band structure...")
         unfolded_bandstructure, kpline = self.banduppy_unfolding_testing()
         plot_unfold = banduppy.Plotting()
-        _ = plot_unfold.plot_ebs(kpath_in_angs=kpline,
-                                 unfolded_bandstructure=unfolded_bandstructure,
+        _ = plot_unfold.plot_ebs(unfolded_kpoints =ref_results_dir / 'kpoints_unfolded.dat', 
+                                 unfolded_bandstructure =ref_results_dir / 'bandstructure_unfolded.dat', 
+                                 #unfolded_kpoints=kpline,
+                                 #unfolded_bandstructure=unfolded_bandstructure,
                                  save_file_name=None, CountFig=None,
                                  Emin=-5, Emax=5, pad_energy_scale=0.5,
                                  mode="fatband", special_kpoints=special_kpoints_pos_labels,
@@ -112,17 +115,15 @@ class TestBandsUnfolding(UnfoldingBase):
         self.sc_pc_kp_map = {k:Kkmap_tmp[k] for k in range(5,10)}
         unfolded_bandstructure, kpline = self.banduppy_unfolding_testing()
         for special_kpts in [special_kpoints_pos_labels, None]:
-            # TODO: WARNING: No PC k-point mapping is found for SC K-point: [  0.66964286,  0.66964286,  0.00000000]. Ignoring unfolding of this SC K-point.
-            # TODO: Handle special_kpoints_pos_labels problem
             plot_unfold = banduppy.Plotting()
-            _ = plot_unfold.plot_ebs(kpath_in_angs=kpline,
+            _ = plot_unfold.plot_ebs(unfolded_kpoints=kpline,
                                      unfolded_bandstructure=unfolded_bandstructure,
                                      save_file_name=None, CountFig=None, Emin=-5, 
                                      Emax=5, pad_energy_scale=0.5,
                                      mode="fatband", special_kpoints=special_kpts,
                                      plotSC=True, fatfactor=20, nE=100,smear=0.2,
                                      color='red', color_map='viridis', 
-                                     show_colorbar=False, show_plot=True)
+                                     show_colorbar=False, show_plot=False)
         self.sc_pc_kp_map = Kkmap_tmp
         print("- Plotting band structure with only part of the K-points from map file are unfolded - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

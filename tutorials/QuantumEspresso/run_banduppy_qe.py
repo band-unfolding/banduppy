@@ -25,8 +25,11 @@ npb = 4
 qe_exe = f"mpirun -np {nproc} {qe_bin_path} -nk {nproc/npb} -nb {npb}".split()
 
 #%% ------------------------ Define variables ---------------------------------
-# supercell : 4X4X2 supercell == np.diag([4,4,2]) or
-super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 
+# supercell dimension 
+## A general note on supercell dimension: If you have let say a 4X4X2 supercell then you can explicitely write 
+## super_cell_size = [[4, 0, 0], [0, 4, 0], [0, 0, 2]] or you can also simply pass
+## super_cell_size = np.diag([4,4,2]). Both was defining super_cell_size is allowed.
+super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] # this is for our Si 8-atom conventional unitcell/supercell case. Not to be confused with above note.
 # k-path: L-G-X-U,K-G. If the segmant is skipped, put a None between nodes.
 PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
 # Number of k-points in each path segments. or, one single number if they are same.

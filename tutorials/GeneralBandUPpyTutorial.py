@@ -6,8 +6,11 @@ import banduppy
 print(f'- BandUPpy version: {banduppy.__version__}')
 
 #%% ------------------------ Define variables ---------------------------------
-# supercell : 4X4X2 supercell == np.diag([4,4,2]) or
-super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 
+# supercell dimension 
+## A general note on supercell dimension: If you have let say a 4X4X2 supercell then you can explicitely write 
+## super_cell_size = [[4, 0, 0], [0, 4, 0], [0, 0, 2]] or you can also simply pass
+## super_cell_size = np.diag([4,4,2]). Both was defining super_cell_size is allowed.
+super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] # this is for our Si 8-atom conventional unitcell/supercell case. Not to be confused with above note.
 # k-path: L-G-X-U,K-G. If the segmant is skipped, put a None between nodes.
 PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
 # Number of k-points in each path segments. or, one single number if they are same.
@@ -53,15 +56,23 @@ bands = banduppy.BandStructure(code="vasp", spinor=False,
 
 # Option 1: Continue with previous instance.
 unfolded_bandstructure_, kpline \
-= band_unfold.Unfold(bands, kline_discontinuity_threshold = 0.1, 
-                    save_unfolded_kpts = {'save2file': True, 
-                                          'fdir': save_to_dir,
-                                          'fname': 'kpoints_unfolded',
-                                          'fname_suffix': ''},
-                    save_unfolded_bandstr = {'save2file': True, 
-                                            'fdir': save_to_dir,
-                                            'fname': 'bandstructure_unfolded',
-                                            'fname_suffix': ''})
+= band_unfold.Unfold(ab_initio_code='vasp', 
+                     unfold_kpts_in_batch=False, 
+                     #unfold_kpts_in_batch=True, kpt_batch_size=10, # Memory efficient routine
+                     vasp_keywards = {'poscar_file_path': f'{read_dir}/POSCAR', 
+                                      'wavecar_file_path':f'{read_dir}/WAVECAR', 
+                                      'vasprunxml_file_path': f'{read_dir}/vasprun.xml',
+                                      'is_spin_nondegenrate': False, 
+                                      'unfold_spin_channel': 'up'}, 
+                     kline_discontinuity_threshold = 0.1, 
+                     save_unfolded_kpts = {'save2file': True, 
+                                           'fdir': save_to_dir,
+                                           'fname': 'kpoints_unfolded',
+                                           'fname_suffix': ''},
+                     save_unfolded_bandstr = {'save2file': True, 
+                                              'fdir': save_to_dir,
+                                              'fname': 'bandstructure_unfolded',
+                                              'fname_suffix': ''})
 
 # Option 2: If this part is used independently from the above instances, 
 # re-initiate the Unfolding module.
@@ -70,18 +81,26 @@ unfolded_bandstructure_, kpline \
 #                                  print_info='high')
 # # ----------------- Unfold the band structures ------------------------------
 # unfolded_bandstructure_, kpline \
-# = band_unfold.Unfold(bands, PBZ_kpts_list_full=kpointsPBZ_full, 
+# = band_unfold.Unfold(ab_initio_code='vasp', 
+#                      unfold_kpts_in_batch=False, 
+#                      #unfold_kpts_in_batch=True, kpt_batch_size=10, # Memory efficient routine
+#                      vasp_keywards = {'poscar_file_path': f'{read_dir}/POSCAR', 
+#                                       'wavecar_file_path':f'{read_dir}/WAVECAR', 
+#                                       'vasprunxml_file_path': f'{read_dir}/vasprun.xml',
+#                                       'is_spin_nondegenrate': False, 
+#                                       'unfold_spin_channel': 'up'}, 
+#                      PBZ_kpts_list_full=kpointsPBZ_full, 
 #                      SBZ_kpts_list=kpointsSBZ, 
 #                      SBZ_PBZ_kpts_map=SBZ_PBZ_kpts_mapping,
 #                      kline_discontinuity_threshold = 0.1, 
 #                      save_unfolded_kpts = {'save2file': True, 
-#                                           'fdir': save_to_dir,
-#                                           'fname': 'kpoints_unfolded',
-#                                           'fname_suffix': ''},
+#                                            'fdir': save_to_dir,
+#                                            'fname': 'kpoints_unfolded',
+#                                            'fname_suffix': ''},
 #                      save_unfolded_bandstr = {'save2file': True, 
-#                                             'fdir': save_to_dir,
-#                                             'fname': 'bandstructure_unfolded',
-#                                             'fname_suffix': ''})
+#                                               'fdir': save_to_dir,
+#                                               'fname': 'bandstructure_unfolded',
+#                                               'fname_suffix': ''})
 
 #%% ---------------- Determine band centers and band width --------------------
 # -------------------- Initiate Properties method -----------------------------
@@ -148,7 +167,7 @@ unfolded_bandstructure_properties, all_scf_data = \
 
 #%% --------------------- Plot band structure ---------------------------------
 # Fermi energy
-Efermi = 5.9740
+Efermi = 'auto' #5.9740
 # Minima in Energy axis to plot
 Emin = -5
 # Maxima in Energy axis to plot
@@ -171,12 +190,15 @@ plot_unfold = banduppy.Plotting(save_figure_dir=save_to_dir)
 
 # -------- Read the saved unfolded bandstructure saved data file ------------
 unfolded_bandstructure_ = np.loadtxt(f'{save_to_dir}/bandstructure_unfolded.dat')
-kpline = np.loadtxt(f'{save_to_dir}/kpoints_unfolded.dat')[:,1]
+kpline = np.loadtxt(f'{save_to_dir}/kpoints_unfolded.dat')
 with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
     special_kpoints_pos_labels = pickle.load(handle)
     
 fig, ax, CountFig \
-= plot_unfold.plot_ebs(kpath_in_angs=kpline, unfolded_bandstructure=unfolded_bandstructure_, 
+= plot_unfold.plot_ebs(unfolded_kpoints=f'{save_to_dir}/kpoints_unfolded.dat', 
+                       unfolded_bandstructure=f'{save_to_dir}/bandstructure_unfolded.dat', 
+                       #unfolded_kpoints=kpline, 
+                       #unfolded_bandstructure=unfolded_bandstructure_, 
                        save_file_name=save_file_name, CountFig=None, 
                        Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                        mode="fatband", special_kpoints=special_kpoints_pos_labels, 
@@ -187,7 +209,7 @@ fig, ax, CountFig \
 #%% ----------------- Plot the band centers -----------------------------------
 plot_unfold = banduppy.Plotting(save_figure_dir=save_to_dir)
 fig, ax, CountFig \
-    = plot_unfold.plot_ebs(kpath_in_angs=kpline, 
+    = plot_unfold.plot_ebs(unfolded_kpoints=kpline, 
                            unfolded_bandstructure=unfolded_bandstructure_properties, 
                            save_file_name=save_file_name, CountFig=None, threshold_weight=min_dN,
                            Ef=Efermi, Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 

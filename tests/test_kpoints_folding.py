@@ -59,7 +59,8 @@ class TestKpoints_Si8atomUnitcell(KpointsFoldingBase):
         print ("- Generating SC Kpoints - done")
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         print ("- Reading data from reference saved files...")
-        kpoints_file = SimulationParentFolder / 'vasp/Si_8atom/BandUPpyKpointsGen'
+        vasp_files_path = 'vasp/SiGe_8atom/'
+        kpoints_file = SimulationParentFolder / f'{vasp_files_path}/BandUPpyKpointsGen'
         sckp_data = np.genfromtxt(kpoints_file / 'KPOINTS_SC', skip_header=3, comments='!')
         pckp_data = np.genfromtxt(kpoints_file / 'KPOINTS_PC', skip_header=3, comments='!')
         with open(kpoints_file / "KPOINTS_SCPC_map.pkl", "rb") as f:

@@ -37,12 +37,16 @@ class _GeneralFnsDefs:
             print(f"{'='*_draw_line_length}\n- Saving unfolded kpoints to file...")
         header_msg  = " Unfolded PC k-points from postprocessed wavefunction file\n"
         header_msg += " k-index, k on path (A^-1), k1, k2, k3\n"
+        n_cols_data = unfolded_kpts_dat.shape[1]
+        kp_ind_max_len = len(str(max(unfolded_kpts_dat[:,0])))
+        np_data_fmt = [f'%{kp_ind_max_len}d'] + ['%12.8f']*(n_cols_data-1)
         # Save the sc-kpoints in file
         save_f_name = \
         _SaveData2File._save_2_file(data=unfolded_kpts_dat, 
                                     save_dir=save_dir, file_name=file_name,
                                     file_name_suffix=f'{file_name_suffix}.dat', 
                                     header_txt=header_msg, comments_symbol='#',
+                                    np_data_fmt=np_data_fmt,
                                     print_log=bool(print_information))
         if print_information is not None: 
             print(f'-- Filepath: {save_f_name}\n- Done')
@@ -81,12 +85,16 @@ class _GeneralFnsDefs:
         header_msg  = " Unfolded band structure from postprocessed wavefunction file\n"
         header_msg += " k-index, k on path (A^-1), energy (eV), weight " + \
                         ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
+        n_cols_data = unfolded_bandstructure.shape[1]
+        kp_ind_max_len = len(str(max(unfolded_bandstructure[:,0])))
+        np_data_fmt = [f'%{kp_ind_max_len}d'] + ['%12.8f']*(n_cols_data-1)
         # Save the unfolded band structure in file
         save_f_name = \
         _SaveData2File._save_2_file(data=unfolded_bandstructure, 
                                     save_dir=save_dir, file_name=file_name,
                                     file_name_suffix=f'{file_name_suffix}.dat', 
                                     header_txt=header_msg, comments_symbol='#',
+                                    np_data_fmt=np_data_fmt,
                                     print_log=bool(print_information)) #,
                                       #np_data_fmt='%.18e')
         if print_information is not None: 
@@ -128,6 +136,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         self.print_information = print_info
     
     def _gather_generated_ab_calculated_kpts_old(self, wavefns_file_kpts):
+        ### THIS FUNCTION CAN BE REMOVED LATER
         # Same function as _perform_unfolding() but older version.
         """
         Collect Kpoints in the generated SC-Kpoints list those only exist in the 
@@ -230,8 +239,8 @@ class _BandUnfolding(_GeneralFnsDefs):
             if Kk_match_found:
                 del self.tmp_Kk_map[key]
             else:
-                kp_coord = ",".join(f"{kpp:12.8f}" for kpp in KP.k)
-                print(f"WARNING: No PC k-point mapping is found for SC K-point: [{kp_coord}]. Ignoring unfolding of this SC K-point.")         
+                kp_coord = 'Wavefunction file contains SC K-point: ['+ ",".join(f"{kpp:12.8f}" for kpp in KP.k) +  ']'
+                print(f"WARNING: {kp_coord}. But no PC k-point mapping is found in KPOINTS_SCPC_map file. Ignoring unfolding of this SC K-point.")         
         return 
     
     def _print_warning_if_Kk_map_file_not_exhausted(self) -> None:
@@ -245,9 +254,9 @@ class _BandUnfolding(_GeneralFnsDefs):
         None
         """
         for key, val in self.tmp_Kk_map.items():
-            kp_coord = ",".join(f"{kpp:12.8f}" for kpp in self.kpointsSBZ[key])
-            print(f"WARNING: Can't find SC K-point {key:>5} [{kp_coord}] in the wavefunction file.")
-            print("- The corresponding following PC-kpoints in the unfolding path will be skipped:")
+            kp_coord = f'KPOINTS_SCPC_map file contans SC K-point {key:>5} [' + ",".join(f"{kpp:12.8f}" for kpp in self.kpointsSBZ[key]) + ']'
+            print(f"WARNING: {kp_coord}. Can't find this SC K-point in the wavefunction file. ")
+            print("- Accordingly, following PC-kpoints in the unfolding path will be skipped:")
             for _, vall in val.items(): # kkk: unique PC-kpts indices; vall: list of PC-kpts indices
                 for kk in vall:
                         print(f"\t--- {kk:>5}:" + "  ".join(f"{x:12.8f}" for x in self.kpointsPBZ_full[kk, :3])) 
@@ -279,8 +288,8 @@ class _BandUnfolding(_GeneralFnsDefs):
         # Unfolding part
         if self.print_information == 'high':
             kpt_list = bandstructure.kplist
-            print(f'- Total number of K-points to be unfolded: {len(kpt_list)}')
-            print(f"- K-points indices: [{','.join([str(ll) for ll in kpt_list])}]")
+            print(f'- Total number of unfolded K-points: {len(kpt_list)}')
+            print(f"- K-point indices: [{','.join([str(ll) for ll in kpt_list])}]")
             
         self.kpSBZcalc = {}
         if self.unfold_in_batch:
@@ -296,7 +305,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         else:
             self._perform_unfolding(bandstructure.kpoints)
             
-        if self._print_warning_Kk_map_file_not_exhausted:
+        if not self.is_wf_file_contain_only_bandstr_sec:
             self._print_warning_if_Kk_map_file_not_exhausted()
         
         # Collect all unfolded PBZ kpoints, energy and weights from calculated kpSBZcalc dictionary
@@ -336,9 +345,9 @@ class _BandUnfolding(_GeneralFnsDefs):
         None.
 
         """
-        print(f"{'='*_draw_line_length}\n- Unfolded PC k-points from postprocessed wavefunction file:[k on path (A^-1), k1, k2, k3]")
+        print(f"{'='*_draw_line_length}\n- Unfolded PC k-points from postprocessed wavefunction file:[k-index, k on path (A^-1), k1, k2, k3]")
         for val in self.unfolded_kpts_dat:
-                print('-- '+"  ".join(f"{x:12.8f}" for x in val[1:]))
+                print('-- ' + f"{int(val[0]):5d}" + "  ".join(f"{x:12.8f}" for x in val[1:]))
 
     def _print_info_post(self, level='low'):
         """
@@ -427,7 +436,7 @@ class _BandUnfolding(_GeneralFnsDefs):
             Format: k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if is_spinor.
         numpy ndarray
             Unfolded effective band structure k-path.
-            Format: k on path (A^-1)
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
 
         """
         # Unfold bandstructure
@@ -436,4 +445,4 @@ class _BandUnfolding(_GeneralFnsDefs):
         # Save unfolded kpoints after post processing of wave function file
         self._save_unfolded_kpts_bandstr(self.save_unfolded_kpts, self.save_unfolded_bandstr)
         
-        return self.unfolded_bandstructure, self.kpline
+        return self.unfolded_bandstructure, self.unfolded_kpts_dat

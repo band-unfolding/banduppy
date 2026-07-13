@@ -13,24 +13,75 @@ from ..BasicFunctions.general_functions import _BasicFunctionsModule
 
 class _ProcessPWs(BandStructure_irrep):
     
-    def __init__(self, ab_initio_code:str='vasp', wf_cutoff_energy:float|None=None, 
+    def __init__(self, ab_initio_code:str='vasp', 
                  only_unfold_for_kpts_idxs:np.ndarray|list[int]|None=None,
                  only_unfold_band_idx:tuple[int|None, int|None]|list[int | 
                  None, int|None] = (None, None), kpts_batch_unfold:bool=False, 
                  zero_weight_kp:bool=False, fermi_energy:float|None=None,
-                 vasp_kwards = None, abinit_kwards=None,
-                 qe_kwards=None, gpaw_kwards=None,
-                 wannier90_kwards=None,print_log=None):
+                 vasp_kwards:dict|None = None, abinit_kwards:dict|None=None,
+                 qe_kwards:dict|None=None, gpaw_kwards:dict|None=None,
+                 wannier90_kwards:dict|None=None,print_log=None):
+        """
+
+        Parameters
+        ----------
+        ab_initio_code : str, optional
+            Ab-initio code used to generate the wavefunction file. The default is 'vasp'.
+        only_unfold_for_kpts_idxs : np.ndarray|list[int]|None, optional
+            List of indices of k-points to be considered (starts from 0).
+            If None, all k-points will be considered. Indices outside the range 
+            [0, NK) will be ignored, where NK is the total number of K-points.
+             The default is None.
+        only_unfold_band_idx : tuple[int|None, int|None]|list[int | None, int|None], optional
+            First number is the first band to be considered (starting from 0 for the lowest band).
+            If negative, it will be counted from the top, i.e., -1 for the highest band.
+            Second number is the last band to be considered (Not included) (NBin for the highest band, 
+            NBin-2 to exclude the two highest bands, where NBin is the total number of bands
+            used in the calculation). If negative, it will be counted from the top, 
+            i.e., -3 is equaivalent to NBin-3 (exclude 3 upper bands).
+            The default is (None, None).
+        kpts_batch_unfold : bool, optional
+            Whether to unfold complete wave function file in sigle shot. If False,
+            unfolding is performed in K-point batch. Chunk of K-point info is loaded in RAM, 
+            unfolded, and then removed from RAM once unfolding is done. This allows 
+            us to aviod large memory requirement when the wave function file is 
+            very large (~few GB). The default is False.            
+        zero_weight_kp : bool, optional
+            Whether the K-points in ab-initio calculation corresponds to zero-weight 
+            k-point method. This automatically exclude unfolding of non-zero weight
+            K-points. The default is False.
+        fermi_energy : float|None, optional
+            User supplied Fermi-energy. If None, by default it is extracted from
+            output files corresponds to specific ab-inito codes. The default is None.
+        vasp_kwards : dict | None, optional
+            The keywards specific to VASP ab-initio code. Will be ignored when ab_init_code != vasp.
+            The default is None.
+        abinit_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        qe_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        gpaw_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        wannier90_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        print_log : [None,'low','medium','high'], optional
+            Level of printing information. If None, nothing is printed.
+            The default is 'low'. 
+
+        Returns
+        -------
+        None
+        """
         _irrep_verbosity_map = {None: 0, 'low': 1, 'medium':2, 'high':3}
         self.print_log_ = _irrep_verbosity_map[print_log]
         self.ab_initio_code_ = ab_initio_code
-        self.wf_cutoff_energy_ = wf_cutoff_energy
         self.only_unfold_band_idx_ = only_unfold_band_idx
         self.only_unfold_for_kpts_idxs_ = only_unfold_for_kpts_idxs
         self.kpts_batch_unfold_ = kpts_batch_unfold
         self.zero_weight_kp_ = zero_weight_kp
         self.fermi_energy_ = fermi_energy
-        self.vasp_kwards_ = vasp_kwards
+        
+        self.vasp_kwards_ = self._check_reset_vasp_keywards(vasp_kwards)
         self.abinit_kwards_ = abinit_kwards
         self.qe_kwards_ = qe_kwards
         self.gpaw_kwards_ = gpaw_kwards
@@ -54,7 +105,7 @@ class _ProcessPWs(BandStructure_irrep):
         -------
         None
         """
-        file_too_large = _BasicFunctionsModule._check_file_size(wf_file, 'GB') > 5
+        file_too_large = _BasicFunctionsModule._check_file_size(wf_file, 'GB') > wf_file_size_cutoff
         if file_too_large and (not self.kpts_batch_unfold_): 
             print(f"WARNING: Wavefunction file is >{wf_file_size_cutoff} GB. If memory error occure, set unfold_kpts_in_batch=True in Unfold().")
             #print(f"WARNING: Wavefunction is large. Falling back to batch unfolding with default kpt_batch_size")
@@ -94,7 +145,7 @@ class _ProcessPWs(BandStructure_irrep):
                                                  fPOS=self.vasp_kwards_['poscar_file_path'],
                                                  spinor=self.vasp_kwards_['is_spin_nondegenrate'],
                                                  spin_channel=self.vasp_kwards_['unfold_spin_channel'],
-                                                 Ecut=self.wf_cutoff_energy_, 
+                                                 Ecut=self.vasp_kwards_['wf_cutoff_energy'], 
                                                  EF=self.fermi_energy_,
                                                  IBstart=self.only_unfold_band_idx_[0],
                                                  IBend=self.only_unfold_band_idx_[1],
@@ -119,7 +170,58 @@ class _ProcessPWs(BandStructure_irrep):
         else:
             raise ValueError(code_not_support_msg)
             
+    @classmethod        
+    def _check_reset_vasp_keywards(cls, vasp_keywards:dict):
+        """
+        Check user specified VASP code related keywards. If not any dictionary key
+        is not found, will be reset to default.
+
+        Parameters
+        ----------
+        vasp_keywards : dict
+            Following (key, value) pairs are allowed:
+            {
+             'poscar_file_path': str or file Path object, optional
+                 File path containing the crystal structure in VASP (POSCAR format).
+                 The default is './POSCAR', 
+             'wavecar_file_path': str or file Path object, optional
+                 File path containing wave-functions in VASP (WAVECAR format).
+                 The default is './WAVECAR', 
+             'vasprunxml_file_path': str or file Path object, optional
+                 File path of VASP vasprun.xml file. The default is './vasprun.xml',
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy. If None, automatically read from WAVECAR file.
+                 This tag is usefull when getting plane wave related runtime error (see FAQ).
+                 The default is None.
+             'is_spin_nondegenrate': Whether wave functions are spinors. False if they are scalars. 
+                                     The default is False, 
+             'unfold_spin_channel': In case of spin non degenracy which spin-channel to unfold. 
+                                    'up' for spin-up, 'dw' for spin-down. The default is 'up'
+            }
+
+        Returns
+        -------
+
+        """
+        default_vasp_kwards = {'poscar_file_path': './POSCAR', 
+                               'wavecar_file_path':'./WAVECAR', 
+                               'vasprunxml_file_path': './vasprun.xml',
+                               'wf_cutoff_energy': None,
+                               'is_spin_nondegenrate': False, 
+                               'unfold_spin_channel': 'up'}
+        return cls._reset_abinitio_code_keywards(default_vasp_kwards, vasp_keywards)
+    
+    @staticmethod    
+    def _reset_abinitio_code_keywards(default_kwards:dict, code_keywards:dict|None=None):
+        if code_keywards is None:
+            return default_kwards
         
+        #default_keywords = default_kwards.copy()
+        for ll in default_kwards:
+            if ll in code_keywards:
+                default_kwards[ll] = code_keywards[ll]
+        return default_kwards
+    
     @staticmethod
     def _get_zero_weight_kp_indices(ibz_kpoints_wts):
         """

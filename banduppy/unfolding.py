@@ -215,28 +215,18 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                SBZ_kpts_list = None, 
                SBZ_PBZ_kpts_map = None,
                kline_discontinuity_threshold = 0.1,
-               save_unfolded_kpts = {'save2file': False, 
-                                     'fdir': '.',
-                                     'fname': 'kpoints_unfolded',
-                                     'fname_suffix': ''},
-               save_unfolded_bandstr = {'save2file': False, 
-                                        'fdir': '.',
-                                        'fname': 'bandstructure_unfolded',
-                                        'fname_suffix': ''},
+               save_unfolded_kpts:dict|None = None,
+               save_unfolded_bandstr:dict|None = None,
                ab_initio_code:str = 'vasp', 
-               wf_cutoff_energy:float|None = None, 
                only_unfold_for_kpts_idxs:np.ndarray|list[int]|None = None,
                only_unfold_band_idx:tuple[int|None, int|None]|list[int | 
                None, int|None] = (None, None), 
                unfold_kpts_in_batch:bool = False, 
                kpt_batch_size:int = 10,
+               is_wf_file_contain_only_bandstructure_section:bool=False,
                zero_weight_kp:bool = False, 
                fermi_energy:float|None = None,
-               vasp_keywards:dict|None = {'poscar_file_path': './POSCAR', 
-                                          'wavecar_file_path':'./WAVECAR', 
-                                          'vasprunxml_file_path': './vasprun.xml',
-                                          'is_spin_nondegenrate': False, 
-                                          'unfold_spin_channel': 'up'},
+               vasp_keywards:dict|None = None,
                abinit_keywards:dict|None = None, 
                qe_keywards:dict|None = None,
                gpaw_keywards:dict|None = None, 
@@ -248,8 +238,9 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         Parameters
         ----------
         bandstructure : BandStructure instance from irrep.bandstructure or None, optional
-            If None, the BandStructure instance is generated within banduppy. This internally
-            calls irrep.bandstructure functions and add some processing on it. Instead of None,
+            If None, the BandStructure instance is generated within banduppy according to ab initio
+            set up provided. In that cases, banduppy internally calls bandstructure functionality
+            from irrep.bandstructure and add some processing on it. Instead of None,
             one can also pass BandStructure instance from original irrep.bandstructure class or
             from any other packages. The default is None.
         PBZ_kpts_list_full : ndarray, optional
@@ -267,25 +258,49 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             larger than `break_thresh` break continuity in k-path. Set break_thresh 
             to a large value if the unfolded kpoints line is continuous.
             The default is 0.1.
-        save_unfolded_kpts : dictionary, optional
-            save2file :: Save unfolded kpoints data to file or not? 
-            fir :: str or path
-                Directory path where to save the file.
-            fname :: str
-                Name of the file.
-            fname_suffix :: str
-                Suffix to add to the file name.
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'kpoints_unfolded', 'fname_suffix': ''}.
+        save_unfolded_kpts : dictionary or None, optional
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+            save2file : bool, optional
+                Save unfolded kpoints data to file or not? The default is False.
+            fir : str or path, optional
+                Directory path where to save the file. The default is current directory.
+            fname : str, optional
+                Where to save. File name. The default is 'kpoints_unfolded'.
+            fname_suffix : str, optional
+                Suffix to add to the file name. The default is no suffix.
+            }
+            The default is None. If None, dictionary values will be set to default.
         save_unfolded_bandstr : dictionary, optional
-            save2file :: Save unfolded band structure data to file or not? 
-            fir :: str or path
-                Directory path where to save the file.
-            fname :: str
-                Name of the file.
-            fname_suffix :: str
-                Suffix to add to the file name. 
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'bandstructure_unfolded', 'fname_suffix': ''}.
-            
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+            save2file : bool, optional
+                Save unfolded kpoints data to file or not? The default is False.
+            fir : str or path, optional
+                Directory path where to save the file. The default is current directory.
+            fname : str, optional
+                Where to save. File name. The default is 'bandstructure_unfolded'.
+            fname_suffix : str, optional
+                Suffix to add to the file name. The default is no suffix.
+            }
+            The default is None. If None, dictionary values will be set to default.            
+        ab_initio_code : str, optional
+            Ab-initio code used to generate the wavefunction file. The default is 'vasp'.
+        only_unfold_for_kpts_idxs : np.ndarray|list[int]|None, optional
+            List of indices of k-points to be considered (starts from 0).
+            If None, all k-points will be considered. Indices outside the range 
+            [0, NK) will be ignored, where NK is the total number of K-points.
+             The default is None.
+        only_unfold_band_idx : tuple[int|None, int|None]|list[int | None, int|None], optional
+            First number is the first band to be considered (starting from 0 for the lowest band).
+            If negative, it will be counted from the top, i.e., -1 for the highest band.
+            Second number is the last band to be considered (Not included) (NBin for the highest band, 
+            NBin-2 to exclude the two highest bands, where NBin is the total number of bands
+            used in the calculation). If negative, it will be counted from the top, 
+            i.e., -3 is equaivalent to NBin-3 (exclude 3 upper bands).
+            The default is (None, None).
         unfold_kpts_in_batch: bool, optional
             Whether to unfold complete wave function file in sigle shot. If False,
             unfolding is performed in K-point batch. Chunk of K-point info is loaded in RAM, 
@@ -296,8 +311,57 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Batch size of K-points to be unfolded in single instance. Only needed
             when unfold_kpts_in_batch = True. Smaller the batch size lower the 
             RAM requirement. Will be re-set to max and min value allowed if outside 
-            range. The default is 10. 
-            
+            range. The default is 10.    
+        is_wf_file_contain_only_bandstructure_section : bool, optional
+            Whether the wave function has only part of the complete bandstuture.
+            Controls printing warning messages.
+            This keyward is useful when user generates wavefunction file in sections due to
+            memory restriction. Each section wave function file can be unfolded,
+            saved unfolding data and after that remove wave function file to save
+            space. Later user can merge multiple of the unfolded files to get the
+            full unfolded bandstructure informations.
+        zero_weight_kp : bool, optional
+            Whether the K-points in ab-initio calculation corresponds to zero-weight 
+            k-point method. This automatically exclude unfolding of non-zero weight
+            K-points. The default is False.
+        fermi_energy : float|None, optional
+            User supplied Fermi-energy. If None, by default it is extracted from
+            output files corresponds to specific ab-inito codes. The default is None.
+        vasp_kwards : dict | None, optional
+            The keywards specific to VASP ab-initio code. Will be ignored when ab_init_code != vasp.
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+             'poscar_file_path': str or file Path object, optional
+                 File path containing the crystal structure in VASP (POSCAR format).
+                 The default is './POSCAR', 
+             'wavecar_file_path': str or file Path object, optional
+                 File path containing wave-functions in VASP (WAVECAR format).
+                 The default is './WAVECAR', 
+             'vasprunxml_file_path': str or file Path object, optional
+                 File path of VASP vasprun.xml file. The default is './vasprun.xml',
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy. If None, automatically read from WAVECAR file.
+                 This tag is usefull when getting plane wave related runtime error (see FAQ).
+                 The default is None.
+             'is_spin_nondegenrate': Whether wave functions are spinors. False if they are scalars. 
+                                     The default is False, 
+             'unfold_spin_channel': In case of spin non degenracy which spin-channel to unfold. 
+                                    'up' for spin-up, 'dw' for spin-down. The default is 'up'
+            }
+            The default is None. If None, dictionary values will be set to default.  
+        abinit_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        qe_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        gpaw_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        wannier90_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        ** other_ab_initio_code_related_kwargs :dict
+            Any other keywards that external code such as irrep.bandstruture.from_*()
+            accepts. This allows expert users finer control on the reading ab-inito
+            wave function reading using irrep.bandstruture.from_*() for e.g.   
             
         Returns
         -------
@@ -306,14 +370,14 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor]
         numpy ndarray
             Unfolded effective band structure k-path.
-            Format: [k on path (A^-1)]
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
 
         """
         self.kline_discontinuity_threshold = kline_discontinuity_threshold
         self.save_unfolded_kpts = save_unfolded_kpts
         self.save_unfolded_bandstr = save_unfolded_bandstr
-        # Print warning msg when not all K-points in Kk map file can not be unfolded
-        self._print_warning_Kk_map_file_not_exhausted = True  
+        # Print warning msg when WF file does not contain all K-points as in Kk map file
+        self.is_wf_file_contain_only_bandstr_sec = is_wf_file_contain_only_bandstructure_section
         
         if PBZ_kpts_list_full is None: PBZ_kpts_list_full = self.PBZ_kpts_list_org
         if SBZ_kpts_list is None: SBZ_kpts_list = self.SBZ_kpts_list
@@ -328,7 +392,6 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         if bandstructure is None: 
             from .parsers import _ProcessPWs
             bds = _ProcessPWs(ab_initio_code=ab_initio_code,
-                              wf_cutoff_energy=wf_cutoff_energy,
                               only_unfold_band_idx=only_unfold_band_idx,
                               only_unfold_for_kpts_idxs=only_unfold_for_kpts_idxs,
                               kpts_batch_unfold=unfold_kpts_in_batch,
@@ -344,7 +407,7 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             # Do not warning msg when not all K-points in Kk map file is not unfolded.
             # User wants to unfold only a few K-points.
             if only_unfold_for_kpts_idxs:
-                self._print_warning_Kk_map_file_not_exhausted = False
+                self.is_wf_file_contain_only_bandstr_sec = True
         # Passing bandstructure class from other packages is allowed
         return self._unfold(bandstructure)
 
@@ -354,7 +417,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                  special_kpoints:dict=None, plotSC:bool=True, marker='o', sc_marker='o', fatfactor=20, 
                  nE:int=100, smear:float=0.05, color='gray', sc_color='gray', color_map='viridis', 
                  show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None, 
-                 vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
+                 vmin=None, vmax=None, show_plot:bool=True, append_plts:bool=False,
+                 savefig:bool=True, **kwargs_savefig):
         
         """
         Scatter/density plot of the band structure.
@@ -427,6 +491,9 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        append_plts : bool, optional
+            Special case, when overlay of multiple plots is needed. If True, it returns 
+            the figure without closing the figure instance.The default is False. 
         savefig : bool, optional
             To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
@@ -455,7 +522,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                           color=color, sc_color=sc_color, color_map=color_map,
                           show_legend=show_legend, show_colorbar=show_colorbar,
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                          show_plot=show_plot, savefig=savefig, **kwargs_savefig)
+                          show_plot=show_plot, append_plts=append_plts,
+                          savefig=savefig, **kwargs_savefig)
     
 class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_params):
     """
@@ -1066,6 +1134,90 @@ class SaveBandStructuredata:
                                                          print_information=print_information, 
                                                          is_spinor=is_spinor)
         return
+    
+    @staticmethod
+    def save_merge_unfolded_kp_bd_data(unfolded_kpoints_list, unfolded_bandstructure_list,
+                                       save_data:bool=True, save_dir='.', 
+                                       save_file_name=['kpoints_unfolded_merged',
+                                                       'bandstructure_unfolded_merged'], 
+                                       print_information='low', **kwargs):
+        """
+        This function merges multiple unfolded kpoints and bandstructure files.
+        This is useful when separate kpoints_unfolded.dat and bandstructure_unfolded.dat
+        files are generated for different band structure sections (e.g. kpoints_unfolded_LG.dat,
+        kpoints_unfolded_GX.dat) etc. and needed to merge them in the end for plotting.
+        
+        NOTE: The files will be merged in the order they appear in the list. 
+        Ensure the list is arranged in the intended merge order.
+
+        Parameters
+        ----------
+        unfolded_kpoints_list : list of str or Path or ndarray
+            If string: Full file path containing unfolded kpoints. E.g.,
+            ['./kpoints_unfolded_LG.dat', './kpoints_unfolded_GX.dat'].
+            If numpy array: Unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
+        unfolded_bandstructure : list of str or Path or ndarray
+            If string: Full file path containing unfolded bandstructure/bandcenters. 
+            E.g., ['./bandstructure_unfolded_LG.dat', './bandstructure_unfolded_GX.dat'].
+            If numpy array: Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        save_data : bool, optional
+            Whether to save the merged kpoints and bandstructure to files.
+        save_dir : str or path, optional
+            Directory path where to save the file. The default is current directory.
+        save_file_name : str, optional
+            Name of the file to be saved. The defult is 
+            'kpoints_unfolded_merged.dat' for merged kpoints file and 
+            'bandstructure_unfolded_merged.dat' for merged bandstructure file. 
+        print_information : [None,'low','medium','high'], optional
+                Level of printing information. 
+                The default is 'low'. If None, nothing is printed.
+
+        Returns
+        -------
+        unfolded_kpoints_ : ndarray
+            Merged unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1)].
+        unfolded_bandstructure_ : ndarray
+            Merged unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        """
+        unfolded_kpoints_, unfolded_bandstructure_ = [], []
+        
+        shift_kpt_angs = 0
+        #Format: [k-index, k on path (A^-1)]
+        for unfolded_kpoints in unfolded_kpoints_list:
+            ukpt = unfolded_kpoints if isinstance(unfolded_kpoints, np.ndarray)\
+                                     else np.loadtxt(unfolded_kpoints, comments='#', usecols=(0,1))
+            shift_kpt_angs = ukpt[-1,1]
+            ukpt[:,1] += shift_kpt_angs
+            unfolded_kpoints_.append(ukpt)
+        unfolded_kpoints_ = np.concat(unfolded_kpoints_, axis=0)  
+        
+        #Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
+        #Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        shift_kpt_angs = 0
+        for unfolded_bandstructure in unfolded_bandstructure_list:
+            bbds = unfolded_bandstructure if isinstance(unfolded_bandstructure, np.ndarray)\
+                                           else np.loadtxt(unfolded_bandstructure, comments='#')
+            shift_kpt_angs = max(bbds[:,1])
+            bbds[:,1] += shift_kpt_angs
+            unfolded_bandstructure_.append(bbds)
+        unfolded_bandstructure_ = np.concatenate(unfolded_bandstructure_, axis=0) 
+        
+        if save_data:
+            _GeneralFnsDefs._save_Post_unfolded_PBZ_kpts(unfolded_kpoints_, save_dir,  
+                                                         save_file_name[0], '', 
+                                                         print_information=print_information)
+    
+            _GeneralFnsDefs._save_Post_unfolded_bandstucture(unfolded_bandstructure_, save_dir, 
+                                                             save_file_name[1], '', 
+                                                             print_information=print_information)
+        
+        return unfolded_kpoints_, unfolded_bandstructure_
       
     @classmethod
     def save_unfolded_bandcenter(cls, unfolded_bandcenter, save_dir='.', file_name='unfolded_bandcenters', 
@@ -1114,7 +1266,45 @@ class Plotting(_EBSplot):
         """
         self.save_figure_directory = save_figure_dir
     
-    def plot_ebs(self, kpath_in_angs, unfolded_bandstructure, 
+    @staticmethod
+    def _get_unfolded_kp_bd_data(unfolded_kpoints, unfolded_bandstructure):
+        """
+        Generate unfolded data from files or numpy array.
+
+        Parameters
+        ----------
+        unfolded_kpoints : str or Path or ndarray
+            If string: Full file path containing unfolded kpoints, e.g. './kpoints_unfolded.dat'.
+            If numpy array: Unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
+        unfolded_bandstructure : str or Path or ndarray
+            If string: Full file path containing unfolded bandstructure/bandcenters. 
+            E.g., './bandstructure_unfolded.dat'.
+            If numpy array: Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+
+        Returns
+        -------
+        unfolded_kpoints_ : ndarray
+            Unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1)].
+        unfolded_bandstructure_ : ndarray
+            Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
+            Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        """
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        #Format: [k-index, k on path (A^-1)]
+        unfolded_kpoints_ = unfolded_kpoints[:, :2] if isinstance(unfolded_kpoints, np.ndarray) else \
+            np.loadtxt(unfolded_kpoints, comments='#', usecols=(0,1))
+        #Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
+        #Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
+        unfolded_bandstructure_ = unfolded_bandstructure if isinstance(unfolded_bandstructure, np.ndarray) else \
+            np.loadtxt(unfolded_bandstructure, comments='#')
+        return unfolded_kpoints_, unfolded_bandstructure_
+    
+    def plot_ebs(self, unfolded_kpoints, unfolded_bandstructure, 
                  fig=None, ax=None, save_file_name=None, CountFig=None, 
                  Ef=None, Emin=None, Emax=None, pad_energy_scale:float=0.5, 
                  threshold_weight:float=None, mode:str="fatband", 
@@ -1123,16 +1313,21 @@ class Plotting(_EBSplot):
                  color='gray', sc_color='gray', color_map='viridis', show_legend:bool=True,
                  plot_colormap_bandcenter:bool=True, show_colorbar:bool=False,
                  colorbar_label:str=None, vmin=None, vmax=None, 
-                 show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
+                 show_plot:bool=True, append_plts:bool=False,
+                 savefig:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
         Parameters
         ----------
-        kpath_in_angs : array
-            k on path (in A^-1) coordinate.
-        unfolded_bandstructure : ndarray
-            Unfolded effective band structure/band center data. 
+        unfolded_kpoints : str or Path or ndarray
+            If string: Full file path containing unfolded kpoints, e.g. './kpoints_unfolded.dat'.
+            If numpy array: Unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
+        unfolded_bandstructure : str or Path or ndarray
+            If string: Full file path containing unfolded bandstructure/bandcenters. 
+            E.g., './bandstructure_unfolded.dat'.
+            If numpy array: Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
         fig : matplotlib.pyplot figure instance, optional
@@ -1201,6 +1396,9 @@ class Plotting(_EBSplot):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        append_plts : bool, optional
+            Special case, when overlay of multiple plots is needed. If True, it returns 
+            the figure without closing the figure instance.The default is False. 
         savefig : bool, optional
             To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
@@ -1218,9 +1416,11 @@ class Plotting(_EBSplot):
 
         """
         print('- Plotting band structures...')
-        _EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
-                         unfolded_bandstructure=unfolded_bandstructure, 
-                         save_figure_dir=self.save_figure_directory)
+        unfolded_kpts, unfolded_bandstr = self._get_unfolded_kp_bd_data(unfolded_kpoints, 
+                                                                        unfolded_bandstructure)
+        _EBSplot.__init__(self, unfolded_kpoints=unfolded_kpts, 
+                          unfolded_bandstructure=unfolded_bandstr, 
+                          save_figure_dir=self.save_figure_directory)
 
         return self._plot(fig=fig, ax=ax, save_file_name=save_file_name, CountFig=CountFig, Ef=Ef, 
                           Emin=Emin, Emax=Emax, pad_energy_scale=pad_energy_scale, 
@@ -1232,9 +1432,10 @@ class Plotting(_EBSplot):
                           plot_colormap_bandcenter=plot_colormap_bandcenter,
                           show_legend=show_legend, show_colorbar=show_colorbar,
                           colorbar_label=colorbar_label, vmin=vmin, vmax=vmax, 
-                          show_plot=show_plot, savefig=savefig, **kwargs_savefig)
+                          show_plot=show_plot, append_plts=append_plts,
+                          savefig=savefig, **kwargs_savefig)
     
-    def plot_scf(self, kpath_in_angs, unfolded_bandstructure, al_scf_data, 
+    def plot_scf(self, al_scf_data, unfolded_kpoints, unfolded_bandstructure, 
                  plot_max_scf_steps:int=None, save_file_name=None, 
                  Ef=None, Emin=None, Emax=None, 
                  pad_energy_scale:float=0.5, threshold_weight:float=None, 
@@ -1250,11 +1451,6 @@ class Plotting(_EBSplot):
 
         Parameters
         ----------
-        kpath_in_angs : array
-            k on path (in A^-1) coordinate. 
-        unfolded_bandstructure : ndarray
-            Unfolded effective band structure data. 
-            Format: [k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor]
         al_scf_data : dictionary
             All SCF data.
             Each array contains the final details of band centers in a particular
@@ -1263,6 +1459,15 @@ class Plotting(_EBSplot):
             details for each kpoints with keys are the kpoint indices. Returns None
             if collect_data_scf is false.
             Format: {kpoint_index: {SCF_cycle_index: [Band center, Band width, Sum of dN]}}
+        unfolded_kpoints : str or Path or ndarray
+            If string: Full file path containing unfolded kpoints, e.g. './kpoints_unfolded.dat'.
+            If numpy array: Unfolded kpoints in k-path.
+            Format: [k-index, k on path (A^-1), k1, k2, k3]
+        unfolded_bandstructure : str or Path or ndarray
+            If string: Full file path containing unfolded bandstructure/bandcenters.
+            E.g., './bandstructure_unfolded.dat'.
+            If numpy array: Unfolded effective band structure. 
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor]  
         plot_max_scf_steps : int, optional
             How many maximum scf cycle to plot?
             The default is maximum SCF steps found in the dictionary of all k-points.
@@ -1329,9 +1534,11 @@ class Plotting(_EBSplot):
 
         """
         print('- Plotting band centers in band structures...')
-        _EBSplot.__init__(self, kpath_in_angs=kpath_in_angs, 
-                         unfolded_bandstructure=unfolded_bandstructure, 
-                         save_figure_dir=self.save_figure_directory)
+        unfolded_kpts, unfolded_bandstr = self._get_unfolded_kp_bd_data(unfolded_kpoints, 
+                                                                        unfolded_bandstructure)
+        _EBSplot.__init__(self, unfolded_kpoints=unfolded_kpts, 
+                          unfolded_bandstructure=unfolded_bandstr, 
+                          save_figure_dir=self.save_figure_directory)
         
         return self._plot_scf(al_scf_data, plot_max_scf_steps=plot_max_scf_steps, 
                              save_file_name=save_file_name, Ef=Ef, Emin=Emin, 

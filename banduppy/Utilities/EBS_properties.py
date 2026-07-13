@@ -174,12 +174,15 @@ class _GeneralFunctionsDefs:
                 print(f"{'='*_draw_line_length}\n- Saving unfolded band centers to file...")
             header_msg  = " Unfolded band centers data\n"
             header_msg += "k-index, k on path (A^-1), Band center energy (eV), Band width (eV), Sum of dN\n"
+            n_cols_data = data2save.shape[1]
+            np_data_fmt = ['%d'] + ['%12.8f']*(n_cols_data-1)
             # Save the sc-kpoints in file
             save_f_name = _SaveData2File._save_2_file(data=data2save, 
                                                       save_dir=save_data["fdir"], 
                                                       file_name=save_data["fname"],
                                                       file_name_suffix=f'{save_data["fname_suffix"]}.dat', 
                                                       header_txt=header_msg, comments_symbol='#',
+                                                      np_data_fmt=np_data_fmt,
                                                       print_log=bool(print_log))
             if print_log is not None: 
                 print(f'-- Filepath: {save_f_name}\n- Done')
@@ -191,7 +194,7 @@ class _FormatSpecialKpts:
 
     """
     @staticmethod
-    def _extract_special_kpts_info(special_kpts, kpath_angs):
+    def _extract_special_kpts_info(special_kpts, kp_file):
         """
         Reform position and labels of special kpoints.
     
@@ -201,7 +204,7 @@ class _FormatSpecialKpts:
             Dictionary of special kpoints position and labels. If None, ignore
             special kpoints. 
         kpath_angs : array
-            k on path (in A^-1) coordinate.
+            [k-index, k on path (in A^-1].
     
         Returns
         -------
@@ -211,14 +214,22 @@ class _FormatSpecialKpts:
             Positions (in angstrom) of the special kpoints.
     
         """
-        kl = np.array([kpath_angs[ik] for ik in special_kpts.keys()])
-        ll = np.array([k for k in special_kpts.values()])
-        borders = [0] + list(np.where((kl[1:]-kl[:-1])>1e-4)[0]+1) + [len(kl)]
-        k_labels=[(kl[b1:b2].mean(),"/".join(list(dict.fromkeys(ll[b1:b2])))) for b1,b2 in zip(borders,borders[1:])]
-        
-        special_kpts_labels = [label[1] for label in k_labels]
-        special_kpts_poss = [label[0] for label in k_labels]
-        return special_kpts_labels, special_kpts_poss
+        kl, ll = [], []
+        kp_indices, kpath_angs = kp_file[:, 0], kp_file[:, 1]
+        for ik, k in special_kpts.items():
+            if ik in kp_indices:
+                kl.append(kpath_angs[np.argwhere(kp_indices==ik)])
+                ll.append(k)
+        kl, ll = np.ravel(kl), np.ravel(ll)
+        if kl.shape[0]:
+            borders = [0] + list(np.where((kl[1:]-kl[:-1])>1e-4)[0]+1) + [len(kl)]
+            k_labels=[(kl[b1:b2].mean(),"/".join(list(dict.fromkeys(ll[b1:b2])))) for b1,b2 in zip(borders,borders[1:])]
+            
+            special_kpts_labels = [label[1] for label in k_labels]
+            special_kpts_poss = [label[0] for label in k_labels]
+            return special_kpts_labels, special_kpts_poss
+        else:
+            return [], []
 
 class _BandCentersBroadening(_GeneralFunctionsDefs):
     """

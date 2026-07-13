@@ -24,8 +24,11 @@ nproc = 44
 vasp = f"mpirun -np {nproc} {vasp_bin_path}".split()
 
 #%% ------------------------ Define variables ---------------------------------
-# supercell : 4X4X2 supercell == np.diag([4,4,2]) or
-super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 
+# supercell dimension 
+## A general note on supercell dimension: If you have let say a 4X4X2 supercell then you can explicitely write 
+## super_cell_size = [[4, 0, 0], [0, 4, 0], [0, 0, 2]] or you can also simply pass
+## super_cell_size = np.diag([4,4,2]). Both was defining super_cell_size is allowed.
+super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] # this is for our Si 8-atom conventional unitcell/supercell case. Not to be confused with above note.
 # k-path: L-G-X-U,K-G. If the segmant is skipped, put a None between nodes.
 PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
 # Number of k-points in each path segments. or, one single number if they are same.
@@ -38,7 +41,7 @@ kpts_weights = 1
 save_to_file = True 
 # Directory to save file
 save_to_dir = f'{SimulationParentFolder}/input'
-# Wavefunction file path
+# VASP simulation file path
 sim_folder = f'{SimulationParentFolder}/reference_without_SOC' # '<path where the vasp output files are>'
 # File format of kpoints file that will be created and saved
 kpts_file_format = 'vasp' # This will generate vasp KPOINTS file format
@@ -110,13 +113,6 @@ if do_unfold:
                                                   'fname': 'bandstructure_unfolded',
                                                   'fname_suffix': ''})
     print ("- Unfolding - done")
-else:
-    print (f"{'='*72}\n- Reading band structure data from saved file...")
-    unfolded_bandstructure_ = np.loadtxt(f'{results_dir}/bandstructure_unfolded.dat')
-    kpline = np.loadtxt(f'{results_dir}/kpoints_unfolded.dat')[:,1]
-    with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
-        special_kpoints_pos_labels = pickle.load(handle)
-    print ("- Reading band structure file - done")
 
 #%% --------------------- Plot band structure ---------------------------------
 if do_plot:
@@ -130,9 +126,8 @@ if do_plot:
     # Filename to save the figure. If None, figure will not be saved
     save_file_name = 'unfolded_bandstructure.png'
     # Special k-points info
-    # One can set this to None, to see only the unfolded part of bandstructure when
-    # SBZ_PBZ_kpts_map={k:SBZ_PBZ_kpts_mapping[k] for k in range(5,20)} is used for e.g.
-    special_kpts = special_kpoints_pos_labels
+    with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
+        special_kpts = pickle.load(handle)
     # Plotting
     fig, ax, CountFig \
     = band_unfold.plot_ebs(save_figure_dir=results_dir,
@@ -146,8 +141,10 @@ if do_plot:
     save_file_name = 'unfolded_bandstructure_.png'
     plot_unfold = banduppy.Plotting(save_figure_dir=results_dir)
     fig, ax, CountFig \
-    = plot_unfold.plot_ebs(kpath_in_angs=kpline,
-                           unfolded_bandstructure=unfolded_bandstructure_,
+    = plot_unfold.plot_ebs(unfolded_kpoints =f'{results_dir}/kpoints_unfolded.dat', 
+                           unfolded_bandstructure =f'{results_dir}/bandstructure_unfolded.dat', 
+                           #unfolded_kpoints=kpline,
+                           #unfolded_bandstructure=unfolded_bandstructure_,
                            save_file_name=save_file_name, CountFig=None,
                            Emin=-5, Emax=+5, pad_energy_scale=0.5,
                            mode="fatband", special_kpoints=special_kpts,

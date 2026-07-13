@@ -659,6 +659,7 @@ class _BandFolding(_KpointsModule, _FindProperties):
                                                     save_dir=save_dir, file_name=file_name,
                                                     file_name_suffix=f'{file_name_suffix}_{data_key}', 
                                                     file_format=file_format,
+                                                    data_fmt='%12.8f',
                                                     header_txt=data_items[0], 
                                                     footer_txt=data_items[2],
                                                     print_log=bool(self.print_information),

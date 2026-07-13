@@ -9,16 +9,16 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
     Plotting (effective) band structures and related.
 
     """
-    def __init__(self, kpath_in_angs=None, unfolded_bandstructure=None,
+    def __init__(self, unfolded_kpoints=None, unfolded_bandstructure=None,
                  save_figure_dir='.'):
         """
         Initialize the band structure plotting class.
 
         Parameters
         ----------
-        kpath_in_angs : array, optional
-            k on path (in A^-1) coordinate. The default is None.
-        unfolded_bandstructure : ndarray, optional
+        unfolded_kpoints : None or array, optional
+            [k-index, k on path (A^-1)]. The default is None.
+        unfolded_bandstructure : None or ndarray, optional
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight, "Sx, Sy, Sz" if spinor.] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
@@ -28,8 +28,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             
         Returns
         -------
-        kpath_in_angs : array
-            k on path (in A^-1) coordinate.
+        unfolded_kpoints : array
+            [k-index, k on path (A^-1)].
         unfolded_bandstructure : ndarray
             Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy, weight] or
@@ -41,13 +41,13 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         _GeneratePlots.__init__(self, save_figure_dir=save_figure_dir)
         self.efermi = 0.0
         
-        if kpath_in_angs is None:
+        if unfolded_kpoints is None:
             try:
-                self.kpath_in_angs_ = self.kpline.copy()
+                self.unfolded_kpoints_ = self.unfolded_kpts_dat.copy()
             except:
                 raise ValueError('Provide k-path data (kpath_in_angs).')
         else:
-            self.kpath_in_angs_ = kpath_in_angs.copy()
+            self.unfolded_kpoints_ = unfolded_kpoints.copy()
         
         if unfolded_bandstructure is None:
             try:
@@ -64,7 +64,8 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
               smear:float=0.05, color='gray', sc_color='gray',
               color_map='viridis', plot_colormap_bandcenter:bool=True,
               show_legend:bool=True, show_colorbar:bool=False, colorbar_label:str=None,
-              vmin=None, vmax=None, show_plot:bool=True, savefig:bool=True, **kwargs_savefig):
+              vmin=None, vmax=None, show_plot:bool=True, append_plts:bool=False,
+              savefig:bool=True, **kwargs_savefig):
         """
         Scatter/density/band_centers plot of the band structure.
 
@@ -136,6 +137,9 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
             By default, the colormap covers the complete value range of the supplied data.
         show_plot : bool, optional
             To show the plot when not saved. The default is True.
+        append_plts : bool, optional
+            Special case, when overlay of multiple plots is needed. If True, it returns 
+            the figure without closing the figure instance.The default is False. 
         savefig : bool, optional
             To save the plot. Ignored when save_file_name is None. The default is True.
         **kwargs_savefig : dict
@@ -178,12 +182,13 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                                                              Ef, Emin=Emin, Emax=Emax,  
                                                              pad_energy_scale=pad_energy_scale, 
                                                              threshold_weight=threshold_weight)
-        result = result[:, 1:]
+        result = result[:, 1:] # k on path (A^-1), energy (eV), weight 
         # Shift the energy scale to 0 fermi energy level   
         if Ef is not None:
             ax.axhline(y=0, color='k', ls='--', lw=1)
             if yaxis_label == 'E (eV)': yaxis_label = r"E$-$E$_\mathrm{F}$ (eV)"
         
+        kpath_in_angs_ = self.unfolded_kpoints_[:, 1]
         # Plot as fat band
         if mode == "fatband":
             ax, return_plot = self._plot_fatband(result, ax, marker=marker, fatfactor=fatfactor, 
@@ -191,13 +196,13 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                                                  sc_marker=sc_marker, show_legend=show_legend,
                                                  plotSC=plotSC)
         elif mode == "density":
-            ax, return_plot = self._plot_density(result, ax, Emin, Emax, nE, self.kpath_in_angs_, 
+            ax, return_plot = self._plot_density(result, ax, Emin, Emax, nE, kpath_in_angs_, 
                                                  smear, cmap=color_map, vmin=vmin, vmax=vmax)
         elif mode == 'band_centers':
             ax, return_plot = self._plot_band_centers(result, ax, color=color, color_map=color_map,
                                                       plot_colormap=plot_colormap_bandcenter,
-                                                      err_bar_fmt=marker,
-                                                      min_weight=vmin, max_weight=vmax)
+                                                      err_bar_fmt=marker, min_weight=vmin, 
+                                                      max_weight=vmax)
         elif mode == 'only_for_all_scf': # This mode is hidden. Used for all_scf plots later.
             pass # This plots the skeleton of the plots without raising error.
         else:
@@ -211,7 +216,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         if special_kpoints is not None:
             x_tiks_labels, x_tiks_positions = \
                 _FormatSpecialKpts._extract_special_kpts_info(special_kpoints, 
-                                                              self.kpath_in_angs_)
+                                                              self.unfolded_kpoints_)
             ax.set_xticks(x_tiks_positions, x_tiks_labels)
             # Draw vertical lines
             for line_pos in x_tiks_positions:
@@ -219,7 +224,10 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         
         ax.set_ylabel(yaxis_label)
         ax.set_ylim([Emin, Emax])
-        ax.set_xlim([self.kpath_in_angs_.min(), self.kpath_in_angs_.max()])
+        ax.set_xlim([kpath_in_angs_.min(), kpath_in_angs_.max()])
+        
+        if append_plts:
+            return self.fig, ax, CountFig
 
         if save_file_name is None:
             if show_plot: 
@@ -517,7 +525,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
         plot_mode = 'fatband' if plot_sc_unfold else 'only_for_all_scf'
         if Ef == 'auto' or Ef is None: Ef = self.efermi
         count_fig_pec = len(str(plot_max_scf_steps+1))
-        
+        kpath_in_angs_ = self.unfolded_kpoints_[:, 1]
         for scf_step in range(1, plot_max_scf_steps+1): # loop over scf cycle
             print(f'-- Plotting SCF step: {scf_step}')
             fig, ax = plt.subplots()
@@ -538,7 +546,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                     else:
                         break
                 
-                kp_coordinate = self.kpath_in_angs_[which_kp]
+                kp_coordinate = kpath_in_angs_[which_kp]
                 XX = [kp_coordinate]*len(al_scf_data[which_kp][scf_step])
                 YY = al_scf_data[which_kp][scf_step][:, 0] - Ef
                 result_tmp = np.column_stack( (XX, YY, al_scf_data[which_kp][scf_step][:, 1:]) )
@@ -555,7 +563,7 @@ class _EBSplot(_GeneratePlots, _GeneralFunctionsDefs, _FormatSpecialKpts):
                     cbar.set_label(colorbar_label)
 
             # ax.set_ylim([Emin, Emax])
-            # ax.set_xlim([self.kpath_in_angs_.min(), self.kpath_in_angs_.max()])
+            # ax.set_xlim([kpath_in_angs_.min(), kpath_in_angs_.max()])
 
             if save_file_name is None:
                 if show_plot: plt.show()

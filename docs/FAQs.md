@@ -4,9 +4,16 @@ __Question:__ I am getting `RuntimeError` in one of my calculations using VASP. 
 
 `RuntimeError: *** error - computed ncnt=18134 != input nplane=18133`
 
-**Answer**: VASP does not write which plane waves it uses to the `WAVECAR` file. Therefore, when `banduppy` (specifically `IrRep`) reads the band structure, it tries to mimic `VASP`'s selection and ordering of plane waves that fall within the cut-off sphere. Occasionally, due to numerical errors, one code might consider a plane wave within the sphere while the other does not. This discrepancy can result in an extra vector, as seen in the above case. To address this, use a slightly small `Ecut` value. This slightly adjusts the `Ecut` to either exclude plane waves near the boundary of the cut-off sphere. In the example case, use small negative correction to exclude plane waves near the boundary of the cut-off sphere.
+**Answer**: VASP does not write which plane waves it uses to the `WAVECAR` file. Therefore, when `banduppy` (specifically `IrRep`) reads the band structure, it tries to mimic `VASP`'s selection and ordering of plane waves that fall within the cut-off sphere. Occasionally, due to numerical errors, one code might consider a plane wave within the sphere while the other does not. This discrepancy can result in an extra vector, as seen in the above case. To address this, explicitly pass a slightly large/small `Ecut`/`wf_cutoff_energy` value to the `Bandstructure()`/`Unfold()` function. This slightly adjusts to either include/exclude plane waves near the boundary of the cut-off sphere. In the example case, use small negative correction to exclude plane waves near the boundary of the cut-off sphere.
+
+For  banduppy < v1.0: [\* banduppy.BandStructure() is deprecated in the latest banduppy] 
 
 `bands = banduppy.BandStructure(code="vasp", spinor=spinorbit, fPOS = "POSCAR", fWAV = "WAVECAR", Ecut=599.999999)`
+
+For banduppy > v1.0:
+
+`Unfold(..., vasp_keywards={'wf_cutoff_energy':599.999999, ...},...)`
+
 
 __Question:__ BandUP code needed both the primitive unit cell and supercell POSCAR files. But in Banduppy it seems  only POSCAR_SC is needed. What do I need to modify if I want to do calculations with a different primitiveunit cell and where does it come? 
 
@@ -31,7 +38,7 @@ __Answer:__ To turn off the legends, you can use 'show_legend=False' in banduppy
 
 __Question:__ How can change the color of the gray supercell points to a different color or lighter shade?
 
- __Answer:__ Use 'sc_color' argument. Only available for banduppy version > 0.3.4.
+ __Answer:__ Use 'sc_color' argument. Only available for banduppy version > v0.3.4.
 
  __Question:__ Can banduppy unfold band structure from non-collinear calculations?
 

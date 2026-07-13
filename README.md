@@ -102,7 +102,8 @@ banduppy package:
     3. SaveBandStructuredata class
         3.1 save_unfolded_pc_kpts()
         3.2 save_unfolded_bandstucture()
-        3.3 save_unfolded_bandcenter()
+        3.3 save_merge_unfolded_kp_bd_data()
+        3.4 save_unfolded_bandcenter()
     4. Plotting class
         4.1 plot_ebs()
         4.2 plot_scf()
