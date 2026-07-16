@@ -1,0 +1,35 @@
+! SYSTEM = Bulk Silicon - Self Consistent calculation
+! Non-SCF calculation to generate supercell wave function file
+
+&control
+    title = 'Silicon Supercell SCF'
+    calculation = 'bands'
+    restart_mode = 'from_scratch' ! mode 'restart' is not recommended for bands calculation
+    prefix = 'bulk_Si'       ! Output files will have this prefix
+    pseudo_dir = './pseudo/'   ! Directory where pseudopotentials are stored
+    outdir = './'
+    disk_io = 'default'
+    nstep = 50
+    wfcdir = './tmp/'
+/
+&system
+    smearing = 'gaussian'
+    occupations = 'smearing'
+    lspinorb = .false.
+    noncolin = .false.
+    degauss = 0.005
+    ibrav = 1
+    A = 5.43
+    nat = 8
+    ntyp = 1
+    ecutwfc = 18.03
+    ecutrho = 100
+    nbnd = 30
+/
+&electrons
+    conv_thr = 1.0D-6   ! Convergence threshold
+    mixing_beta = 0.7   ! Mixing factor for electron density
+/
+
+ATOMIC_SPECIES
+  Si  28.0855  Si.pbe-rrkj.UPF ! Silicon pseudopotential

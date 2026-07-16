@@ -9,8 +9,8 @@ print(f'- BandUPpy version: {banduppy.__version__}')
 
 #%% ----------------------------- Set job -------------------------------------
 do_generate_SC_kpts = True
-do_self_consistent = True
-do_non_self_consistent = True
+do_self_consistent = False
+do_non_self_consistent = False
 do_unfold = True
 do_plot = True
 
@@ -84,12 +84,15 @@ if do_self_consistent:
     # Writing input file appended with kpoints
     with open(f"{sim_folder}/{pw_file}_scf.in", 'w') as f:
         f.write(read_scf_in+read_alat+read_kpts)
-        
-    ## WARNING: Need to copy potential file for all atom species
-    shutil.copy(f"{save_to_dir}/pseudo/{SimSystem}.pbe-rrkj.UPF", sim_folder)
+    # cp pseudo potential files
+    shutil.copytree(f"{save_to_dir}/pseudo", f'{sim_folder}/pseudo', dirs_exist_ok=False)
     
-    # scf_run = run(qe_exe+['-input', f'{pw_file}_scf.in'],
-    #               stdout=open(f"{sim_folder}/{pw_file}_scf.out","w"))
+    scf_run = run(qe_exe+['-input', f'{pw_file}_scf.in'],
+                  stdout=open(f"{sim_folder}/{pw_file}_scf.out","w"))
+    
+    # backup .save file files
+    shutil.copytree(f"{sim_folder}/{pw_file}.save", f'{sim_folder}/{pw_file}_scf.save', dirs_exist_ok=True)
+
     print ("- Self-consistent QE run - done")
 
 #%% -------------------- Run non-SCF calculation ------------------------------
@@ -108,17 +111,22 @@ if do_non_self_consistent:
     with open(f"{sim_folder}/{pw_file}_nscf.in", 'w') as f:
         f.write(read_scf_in+read_alat+read_kpts)
 
-    # bands_run = run(qe_exe+['-input', f'{pw_file}_nscf.in'],
-    #                 stdout=open(f"{sim_folder}/{pw_file}_nscf.out","w"))
+    bands_run = run(qe_exe+['-input', f'{pw_file}_nscf.in'],
+                    stdout=open(f"{sim_folder}/{pw_file}_nscf.out","w"))
+    
     print ("- Non-self-consistent QE run - done")
 
 #%% ----------------- Unfold the band structures ------------------------------
 if do_unfold:
+    ## NOTE: For banduppy/irrep ONLY the {pw_file}.save file is needed.
+    ## In this example {pw_file}.save == bulk_Si.save folder
+    ## *.wfc{N} are temporary file for restart crashed calculation and 
+    ## banduppy/irrep woun't read them at all. 
     print (f"{'='*72}\n- Unfolding band structure...")
     unfolded_bandstructure_, kpline \
     = band_unfold.Unfold(ab_initio_code='qe', 
-                         #unfold_kpts_in_batch=False, 
-                         unfold_kpts_in_batch=True, kpt_batch_size=10, # Memory efficient routine
+                         unfold_kpts_in_batch=False, 
+                         #unfold_kpts_in_batch=True, kpt_batch_size=10, # Memory efficient routine
                          qe_keywards = {'output_file_dir' : sim_folder, 
                                         'save_file_prefix' : pw_file, 
                                         'unfold_spin_channel': None # ['up', 'dw']
@@ -146,7 +154,7 @@ if do_plot:
     # Filename to save the figure. If None, figure will not be saved
     save_file_name = 'unfolded_bandstructure.png'
     # Special k-points info
-    with open(f'{save_to_dir}/KPOINTS_SpecialKpoints.pkl', 'rb') as handle:
+    with open(f'{save_to_dir}/K_POINTS_SpecialKpoints.pkl', 'rb') as handle:
         special_kpts = pickle.load(handle)
     # Plotting
     fig, ax, CountFig \

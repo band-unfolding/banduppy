@@ -67,8 +67,8 @@ class TestKpoints_Si8atomUnitcell(KpointsFoldingBase):
         print ("- Reading data from reference saved files...")
         vasp_files_path = 'vasp/SiGe_8atom/'
         kpoints_file = SimulationParentFolder / f'{vasp_files_path}/BandUPpyKpointsGen'
-        sckp_data = np.genfromtxt(kpoints_file / 'KPOINTS_SC', skip_header=3, comments='!')
-        pckp_data = np.genfromtxt(kpoints_file / 'KPOINTS_PC', skip_header=3, comments='!')
+        sckp_data = np.genfromtxt(kpoints_file / 'KPOINTS_SC', skip_header=3, comments='#')
+        pckp_data = np.genfromtxt(kpoints_file / 'KPOINTS_PC', skip_header=3, comments='#')
         with open(kpoints_file / "KPOINTS_SCPC_map.pkl", "rb") as f:
             sc_pc_kp_map = pickle.load(f)
         with open(kpoints_file / "KPOINTS_SpecialKpoints.pkl", "rb") as f:

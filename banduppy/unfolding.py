@@ -244,11 +244,15 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         Parameters
         ----------
         bandstructure : BandStructure instance from irrep.bandstructure or None, optional
-            If None, the BandStructure instance is generated within banduppy according to ab initio
-            set up provided. In that cases, banduppy internally calls bandstructure functionality
-            from irrep.bandstructure and add some processing on it. Instead of None,
-            one can also pass BandStructure instance from original irrep.bandstructure class or
-            from any other packages. The default is None.
+            BandStructure instance from irrep.bandstructure class or from any other 
+            external package. The default is None.
+            If None, the `bandStructure` instance is generated within banduppy according 
+            to ab initio set up provided by other keywords in the following. In this cases, 
+            banduppy internally calls bandstructure functionality from irrep.bandstructure 
+            and add some processing on it. 
+            NOTE: Passing not None 'bandstructure' ignores bandStructure instance
+            generations by banduppy's internal routine. Not None 'bandstructure' 
+            has higher priority.
         PBZ_kpts_list_full : ndarray, optional
             List of PC k-points. If None, try to find the list from class instance.
             The default is None.

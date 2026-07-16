@@ -72,15 +72,15 @@ reciprocal
   0.00000000   0.00000000   0.00000000
 
 
-! The above SCKPTS (and/or some other SCKPTS related to them by symm. ops. of the SCBZ)
-! unfold onto the pckpts listed below (selected by you):
-! k-points for PC bandstructure L-G-X-U,K-G
-! 21 21 6 21
-! Reciprocal
-!  0.50000000   0.50000000   0.50000000   L
-!  0.00000000   0.00000000   0.00000000   G
-!  0.50000000   0.00000000   0.50000000   X
-!  0.62500000   0.25000000   0.62500000   U
-! 
-!  0.37500000   0.37500000   0.75000000   K
-!  0.00000000   0.00000000   0.00000000   G
+# Above SC Kpoints (and/or some other SCKPTS related to them by symm. ops. of the SCBZ)
+# unfold onto user specified PC kpoints or kpath.
+# k-points for PC bandstructure L-G-X-U,K-G
+# 21 21 6 21
+# Reciprocal
+#   0.50000000   0.50000000   0.50000000   L
+#   0.00000000   0.00000000   0.00000000   G
+#   0.50000000   0.00000000   0.50000000   X
+#   0.62500000   0.25000000   0.62500000   U
+#  
+#   0.37500000   0.37500000   0.75000000   K
+#   0.00000000   0.00000000   0.00000000   G

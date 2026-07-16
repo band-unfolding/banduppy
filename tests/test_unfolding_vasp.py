@@ -54,8 +54,8 @@ class TestBandsUnfolding(UnfoldingBase):
         kpline_ref = np.loadtxt(ref_results_dir / 'kpoints_unfolded.dat')
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         kpoints_file = SimulationParentFolder / f'{vasp_files_path}/BandUPpyKpointsGen'
-        self.sckpts = np.genfromtxt(kpoints_file / 'KPOINTS_SC', skip_header=3, comments='!')
-        self.pckpts = np.genfromtxt(kpoints_file / 'KPOINTS_PC', skip_header=3, comments='!')
+        self.sckpts = np.genfromtxt(kpoints_file / 'KPOINTS_SC', skip_header=3, comments='#')
+        self.pckpts = np.genfromtxt(kpoints_file / 'KPOINTS_PC', skip_header=3, comments='#')
         with open(kpoints_file / "KPOINTS_SCPC_map.pkl", "rb") as f:
             self.sc_pc_kp_map = pickle.load(f)
         with open(kpoints_file / "KPOINTS_SpecialKpoints.pkl", "rb") as f:
