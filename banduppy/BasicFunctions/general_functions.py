@@ -82,7 +82,7 @@ class _SaveData2File:
         pass
     
     @staticmethod
-    def _default_save_settings(save_data):
+    def _default_unfolded_kp_bd_save_settings(save_data):
         tmp_save = {'save2file': False, 'fdir': '.', 'fname': 'test', 'fname_suffix': ''}
         if save_data is None:
             return tmp_save
@@ -94,8 +94,8 @@ class _SaveData2File:
     
     @staticmethod
     def _save_2_file(data=None, save_dir='.', file_name:str='', file_name_suffix:str='', 
-                     header_txt:str='', footer_txt:str='',comments_symbol='! ',
-                     np_data_fmt='%12.8f', print_log:bool=True):
+                     file_extension:str='', header_txt:str='', footer_txt:str='',
+                     comments_symbol='', np_data_fmt='%12.8f', print_log:bool=True):
         """
         Save the generated SC kpoints to a file.
 
@@ -107,16 +107,17 @@ class _SaveData2File:
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
+        file_extension : str, optional
+            Extension of the file. The default is ''. 
         header_txt : str, optional
             String that will be written at the beginning of the file. The default is None.
         footer_txt : str, optional
             String that will be written at the end of the file. The default is None.
         comments_symbol : str, optional
             String that will be prepended to the header and footer strings, 
-            to mark them as comments. The default is ‘!‘. 
+            to mark them as comments. The default is ‘‘. 
         np_data_fmt: str
             Data format for numpy.savetxt.
         print_log : bool, optional
@@ -131,6 +132,7 @@ class _SaveData2File:
         if data is None: return
         fname_save_file = f'{save_dir}/{file_name}{file_name_suffix}'
         if isinstance(data, np.ndarray):
+            fname_save_file += file_extension
             with open(fname_save_file, 'w') as f:
                 np.savetxt(f, data, header=header_txt, footer=footer_txt, 
                            fmt=np_data_fmt, comments=comments_symbol)
@@ -145,7 +147,7 @@ class _SaveData2File:
     def _save_sc_kpts_2_file(data=None, save_dir='.', file_name:str='', 
                              file_name_suffix:str='', file_format:str='vasp',
                              data_fmt='%12.8f', header_txt:str='', 
-                             footer_txt:str='',comments_symbol='! ',
+                             footer_txt:str='',comments_symbol='',
                              print_log:bool=False, print_msg:str='Saving to file...'):
         """
         Save the generated SC kpoints to a file.
@@ -158,12 +160,12 @@ class _SaveData2File:
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is qe, file_name=K_POINTS_<file_name_suffix>
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp', 'qe'], optional
+        file_format : ['vasp','qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         data_fmt: str
             Data format for numpy.savetxt.
         header_txt : str, optional
@@ -172,7 +174,7 @@ class _SaveData2File:
             String that will be written at the end of the file. The default is None.
         comments_symbol : str, optional
             String that will be prepended to the header and footer strings, 
-            to mark them as comments. The default is ‘!‘. 
+            to mark them as comments. The default is ‘‘. 
         print_log : bool, optional
             Print path of save file. The default is False.
         print_msg : str, optional
@@ -184,26 +186,31 @@ class _SaveData2File:
             File path where the data is saved.
 
         """
-
+        file_extension = ''
         if file_format == 'vasp':
             file_name_ = file_name.strip() if file_name else 'KPOINTS'
-            comments_symbol = ''
         elif file_format in ['qe', 'espresso', 'quantum_espresso']:
-            file_name_ = file_name.strip() if file_name else 'K_POINTS'
-            comments_symbol = ''
-            tmp_header = header_txt.split('\n')
-            if tmp_header[-1] == 'Reciprocal':
-                header_txt = f'!{tmp_header[0]}\nK_POINTS crystal\n{tmp_header[1]}'    
+            file_name_ = file_name.strip() if file_name else 'K_POINTS' 
+            file_extension = '.dat'
         else:
             file_name_ = file_name.strip() if file_name else 'Test'
-            comments_symbol = ''
 
         if print_log: print(f"{'='*_draw_line_length}\n- {print_msg}.")
         
         fname_save_file = \
         _SaveData2File._save_2_file(data=data, save_dir=save_dir, file_name=file_name_, 
-                                    file_name_suffix=file_name_suffix, 
+                                    file_name_suffix=file_name_suffix, file_extension=file_extension,
                                     np_data_fmt=data_fmt, header_txt=header_txt, 
                                     footer_txt=footer_txt,comments_symbol=comments_symbol)
         if print_log: print(f'-- Filepath: {fname_save_file}\n- Done')
         return fname_save_file
+    
+    @staticmethod
+    def _header_footer_msg_comment_symbol(file_format):
+        if file_format == 'vasp':
+             comment_sym = ('', '# ') 
+        elif file_format == 'qe':
+            comment_sym = ('! ', '! ')
+        else:
+            comment_sym = ('', '#')
+        return comment_sym

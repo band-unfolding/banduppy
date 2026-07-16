@@ -42,7 +42,9 @@ __Question:__ How can change the color of the gray supercell points to a differe
 
  __Question:__ Can banduppy unfold band structure from non-collinear calculations?
 
-__Answer:__ Yes. Banduppy can be used for both the collinear and non-collinear calculations.
+__Answer:__ Yes. Banduppy can be used for both the collinear and non-collinear calculations. For unfolding ab-initio wavefunction file that is generated using spinor calculations, one needs to set `unfold_spin_channel` (also `is_spin_nondegenrate` for VASP) keyword in `banduppy.Unfold()` function. E.g., for non-colinear VASP calculations set the followings:
+
+`banduppy.Unfold(..., vasp_kwards={..., 'is_spin_nondegenrate': True, 'unfold_spin_channel': 'up', ...}, ...` 
 
 
 ##

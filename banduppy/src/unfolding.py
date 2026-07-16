@@ -95,8 +95,7 @@ class _GeneralFnsDefs:
                                     file_name_suffix=f'{file_name_suffix}.dat', 
                                     header_txt=header_msg, comments_symbol='#',
                                     np_data_fmt=np_data_fmt,
-                                    print_log=bool(print_information)) #,
-                                      #np_data_fmt='%.18e')
+                                    print_log=bool(print_information)) 
         if print_information is not None: 
             print(f'-- Filepath: {save_f_name}\n- Done')
 
@@ -366,15 +365,7 @@ class _BandUnfolding(_GeneralFnsDefs):
         if level == 'high':
             self._print_Post_unfolded_PBZ_kpts()
             
-    def _save_unfolded_kpts_bandstr(self,
-                                    save_unfolded_kpts = {'save2file': False,
-                                                          'fdir': '.',
-                                                          'fname': 'kpoints_unfolded',
-                                                          'fname_suffix': ''},
-                                    save_unfolded_bandstr = {'save2file': False, 
-                                                             'fdir': '.',
-                                                             'fname': 'bandstructure_unfolded',
-                                                             'fname_suffix': ''}): 
+    def _save_unfolded_kpts_bandstr(self, save_unfolded_kpts, save_unfolded_bandstr): 
         """
         Save the unfolded kpoints and band structure data.
 
@@ -405,7 +396,7 @@ class _BandUnfolding(_GeneralFnsDefs):
 
         """
         # Save unfolded kpoints after post processing of wave function file
-        save_unfolded_kpts = _SaveData2File._default_save_settings(save_unfolded_kpts)
+        save_unfolded_kpts = _SaveData2File._default_unfolded_kp_bd_save_settings(save_unfolded_kpts)
         if save_unfolded_kpts['save2file']:
             self._save_Post_unfolded_PBZ_kpts(unfolded_kpts_dat=self.unfolded_kpts_dat, 
                                               save_dir=save_unfolded_kpts["fdir"], 
@@ -413,7 +404,7 @@ class _BandUnfolding(_GeneralFnsDefs):
                                               file_name_suffix=save_unfolded_kpts["fname_suffix"],
                                               print_information=self.print_information)
         # Save unfolded band structure after post processing of wave function file
-        save_unfolded_bandstr = _SaveData2File._default_save_settings(save_unfolded_bandstr)
+        save_unfolded_bandstr = _SaveData2File._default_unfolded_kp_bd_save_settings(save_unfolded_bandstr)
         if save_unfolded_bandstr['save2file']:
             self._save_Post_unfolded_bandstucture(unfolded_bandstructure=self.unfolded_bandstructure, 
                                                   save_dir=save_unfolded_bandstr["fdir"], 

@@ -3,6 +3,7 @@
  Flags which affect the runtime for parallel jobs (and don't change the results)
    ALGO = Fast ! A faily robust mixture of both IALGO=38 and IALGO=48   
    LPLANE = .TRUE.
+   KSPACING = 0.25
 
  Start parameter for this Run:
    ISTART = 0  ! job   : 0-new  1-cont  2-samecut
@@ -19,6 +20,11 @@
    IBRION = -1 ! No update. Ions are not moved. 
    ISIF = 2
    NSW = 0
+
+ Paralleization
+   NSIM = 8
+   NCORE = 11
+   KPAR = 1
 
  DOS related values
    ISMEAR = -5

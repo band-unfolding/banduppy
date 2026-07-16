@@ -18,8 +18,8 @@ class _ProcessPWs(BandStructure_irrep):
                  only_unfold_band_idx:tuple[int|None, int|None]|list[int | 
                  None, int|None] = (None, None), kpts_batch_unfold:bool=False, 
                  zero_weight_kp:bool=False, fermi_energy:float|None=None,
-                 vasp_kwards:dict|None = None, abinit_kwards:dict|None=None,
-                 qe_kwards:dict|None=None, gpaw_kwards:dict|None=None,
+                 vasp_kwards:dict|None = None, qe_kwards:dict|None=None,  
+                 abinit_kwards:dict|None=None, gpaw_kwards:dict|None=None,
                  wannier90_kwards:dict|None=None,print_log=None):
         """
 
@@ -56,9 +56,9 @@ class _ProcessPWs(BandStructure_irrep):
         vasp_kwards : dict | None, optional
             The keywards specific to VASP ab-initio code. Will be ignored when ab_init_code != vasp.
             The default is None.
-        abinit_kwards : dict | None, optional
-            DESCRIPTION. The default is None.
         qe_kwards : dict | None, optional
+            DESCRIPTION. The default is None.
+        abinit_kwards : dict | None, optional
             DESCRIPTION. The default is None.
         gpaw_kwards : dict | None, optional
             DESCRIPTION. The default is None.
@@ -75,17 +75,25 @@ class _ProcessPWs(BandStructure_irrep):
         _irrep_verbosity_map = {None: 0, 'low': 1, 'medium':2, 'high':3}
         self.print_log_ = _irrep_verbosity_map[print_log]
         self.ab_initio_code_ = ab_initio_code
+        self.zero_weight_kp_ = zero_weight_kp
+        self._check_ab_inito_code_related_conditions()
+        
         self.only_unfold_band_idx_ = only_unfold_band_idx
         self.only_unfold_for_kpts_idxs_ = only_unfold_for_kpts_idxs
         self.kpts_batch_unfold_ = kpts_batch_unfold
-        self.zero_weight_kp_ = zero_weight_kp
         self.fermi_energy_ = fermi_energy
-        
+
         self.vasp_kwards_ = self._check_reset_vasp_keywards(vasp_kwards)
+        self.qe_kwards_ = self._check_reset_qe_keywards(qe_kwards)
         self.abinit_kwards_ = abinit_kwards
-        self.qe_kwards_ = qe_kwards
         self.gpaw_kwards_ = gpaw_kwards
         self.wannier90_kwards_ = wannier90_kwards
+        
+        #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Some of the irrep keywards are set by banduppy, user does not have access
+        self.onlysym_ = False 
+        self.irreps_ = False 
+        self.spacegroup_ = None
 
     def _unfold_in_batch_decission(self, wf_file, wf_file_size_cutoff:float=5.0):
         """
@@ -110,8 +118,8 @@ class _ProcessPWs(BandStructure_irrep):
             print(f"WARNING: Wavefunction file is >{wf_file_size_cutoff} GB. If memory error occure, set unfold_kpts_in_batch=True in Unfold().")
             #print(f"WARNING: Wavefunction is large. Falling back to batch unfolding with default kpt_batch_size")
             #self.kpts_batch_unfold_ = True
-                
-    def _generate_bandstructure_instance(self, **kwargs):
+            
+    def _check_ab_inito_code_related_conditions(self):
         _ab_code_implemented = ['vasp', 'qe', 'espresso', 'quantum_espresso', 
                                 'abinit', 'gpaw', 'wannier90'] 
         code_not_support_msg = f'''{self.ab_initio_code_} is not supported in banduppy yet. Contact developer. 
@@ -127,19 +135,22 @@ class _ProcessPWs(BandStructure_irrep):
             
         if self.zero_weight_kp_ and (self.ab_initio_code_ not in zero_weight_kp_method_support_code):
             raise ValueError(zero_weightcode_not_support_msg)
-        
-        #//////////////////////////////////////////////////////////////////////
+                
+    def _generate_bandstructure_instance(self, **kwargs):
         if self.ab_initio_code_ == 'vasp':
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            self._unfold_in_batch_decission(self.vasp_kwards_['wavecar_file_path'])
+            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             from .parse_vasprunxml import VasprunXml
-            vr = VasprunXml(self.vasp_kwards_['vasprunxml_file_path'])            
+            
+            if (self.fermi_energy_ is None) or self.zero_weight_kp_:
+                vr = VasprunXml(self.vasp_kwards_['vasprunxml_file_path'])  
+                
             if self.fermi_energy_ is None: 
                 self.fermi_energy_ = vr.vasprun_data['efermi']
-            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                
             if self.zero_weight_kp_:
                 self.only_unfold_for_kpts_idxs_ = self._get_zero_weight_kp_indices(vr.vasprun_data['kpoints_wts'])
-            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            self._unfold_in_batch_decission(self.vasp_kwards_['wavecar_file_path'])
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             return BandStructure_irrep.from_vasp(fWAV=self.vasp_kwards_['wavecar_file_path'], 
                                                  fPOS=self.vasp_kwards_['poscar_file_path'],
@@ -152,11 +163,26 @@ class _ProcessPWs(BandStructure_irrep):
                                                  kplist=self.only_unfold_for_kpts_idxs_,
                                                  read_kpoints=not self.kpts_batch_unfold_,
                                                  verbosity=self.print_log_,
-                                                 onlysym=False, irreps=False,  
-                                                 spacegroup=None,**kwargs)
+                                                 onlysym=self.onlysym_, 
+                                                 irreps=self.irreps_,  
+                                                 spacegroup=self.spacegroup_,
+                                                 **kwargs)
         #//////////////////////////////////////////////////////////////////////
         elif self.ab_initio_code_ in ['qe', 'espresso', 'quantum_espresso']:
-            pass
+            _prefix = f"{self.qe_kwards_['output_file_dir']}/{self.qe_kwards_['save_file_prefix']}"
+            return BandStructure_irrep.from_espresso(prefix=_prefix, alat=None,
+                                                     spin_channel=self.qe_kwards_['unfold_spin_channel'],
+                                                     Ecut=self.qe_kwards_['wf_cutoff_energy'], 
+                                                     EF=self.fermi_energy_,
+                                                     IBstart=self.only_unfold_band_idx_[0],
+                                                     IBend=self.only_unfold_band_idx_[1],
+                                                     kplist=self.only_unfold_for_kpts_idxs_,
+                                                     read_kpoints=not self.kpts_batch_unfold_,
+                                                     verbosity=self.print_log_,
+                                                     onlysym=self.onlysym_, 
+                                                     irreps=self.irreps_,  
+                                                     spacegroup=self.spacegroup_,
+                                                     **kwargs)
         #//////////////////////////////////////////////////////////////////////
         elif self.ab_initio_code_ == 'abinit':
             pass
@@ -166,9 +192,6 @@ class _ProcessPWs(BandStructure_irrep):
         #//////////////////////////////////////////////////////////////////////
         elif self.ab_initio_code_ == 'wannier90':
             pass
-        #//////////////////////////////////////////////////////////////////////
-        else:
-            raise ValueError(code_not_support_msg)
             
     @classmethod        
     def _check_reset_vasp_keywards(cls, vasp_keywards:dict):
@@ -188,15 +211,18 @@ class _ProcessPWs(BandStructure_irrep):
                  File path containing wave-functions in VASP (WAVECAR format).
                  The default is './WAVECAR', 
              'vasprunxml_file_path': str or file Path object, optional
-                 File path of VASP vasprun.xml file. The default is './vasprun.xml',
+                 File path of VASP vasprun.xml file. The default is './vasprun.xml'.
+             'is_spin_nondegenrate': bool, optional
+                 Whether wave functions are spinors. False if they are scalars. 
+                 The default is False.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw', when is_spin_nondegenrate=True.
              'wf_cutoff_energy': float|None, optional (unit: eV)
-                 Plane wave cutoff energy. If None, automatically read from WAVECAR file.
-                 This tag is usefull when getting plane wave related runtime error (see FAQ).
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
                  The default is None.
-             'is_spin_nondegenrate': Whether wave functions are spinors. False if they are scalars. 
-                                     The default is False, 
-             'unfold_spin_channel': In case of spin non degenracy which spin-channel to unfold. 
-                                    'up' for spin-up, 'dw' for spin-down. The default is 'up'
             }
 
         Returns
@@ -208,8 +234,45 @@ class _ProcessPWs(BandStructure_irrep):
                                'vasprunxml_file_path': './vasprun.xml',
                                'wf_cutoff_energy': None,
                                'is_spin_nondegenrate': False, 
-                               'unfold_spin_channel': 'up'}
+                               'unfold_spin_channel': None}
         return cls._reset_abinitio_code_keywards(default_vasp_kwards, vasp_keywards)
+    
+    @classmethod        
+    def _check_reset_qe_keywards(cls, qe_keywards:dict):
+        """
+        Check user specified Quantum Espresso code related keywards. If not any dictionary key
+        is not found, will be reset to default.
+
+        Parameters
+        ----------
+        qe_keywards : dict
+            Following (key, value) pairs are allowed:
+            {
+             'output_file_dir' : str or Path object
+                 Directory path where Quantum ESPRESSO output folder 'prefix.save' resides.
+                 The default is current directory, './'. 
+             'save_file_prefix' : str
+                 Prefix of the Quantum ESPRESSO output files (e.g. 'prefix' for 'prefix.save').
+                 The default is 'prefix'.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw' for spin polarized calculations.
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
+                 The default is None.
+            }
+
+        Returns
+        -------
+
+        """
+        default_qe_kwards = {'output_file_dir': './', 
+                             'save_file_prefix':'prefix', 
+                             'wf_cutoff_energy': None,
+                             'unfold_spin_channel': None}
+        return cls._reset_abinitio_code_keywards(default_qe_kwards, qe_keywards)
     
     @staticmethod    
     def _reset_abinitio_code_keywards(default_kwards:dict, code_keywards:dict|None=None):

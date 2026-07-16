@@ -14,7 +14,7 @@ super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] # this is for our Si 8-
 # k-path: L-G-X-U,K-G. If the segmant is skipped, put a None between nodes.
 PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
 # Number of k-points in each path segments. or, one single number if they are same.
-npoints_per_path_seg = (23,27,9,29) 
+npoints_per_path_seg = (21,21,6,21) 
 # Labels of special k-points: list or string. e.g ['L','G','X','U','K','G'] or 'LGXUKG'
 special_k_points = "LGXUKG"
 # Weights of the k-points to be appended in the final generated k-points files
@@ -63,7 +63,8 @@ unfolded_bandstructure_, kpline \
                                       'wavecar_file_path':f'{read_dir}/WAVECAR', 
                                       'vasprunxml_file_path': f'{read_dir}/vasprun.xml',
                                       'is_spin_nondegenrate': False, 
-                                      'unfold_spin_channel': 'up'}, 
+                                      'unfold_spin_channel': None # ['up', 'dw']
+                                      },
                      kline_discontinuity_threshold = 0.1, 
                      save_unfolded_kpts = {'save2file': True, 
                                            'fdir': save_to_dir,
@@ -88,7 +89,8 @@ unfolded_bandstructure_, kpline \
 #                                       'wavecar_file_path':f'{read_dir}/WAVECAR', 
 #                                       'vasprunxml_file_path': f'{read_dir}/vasprun.xml',
 #                                       'is_spin_nondegenrate': False, 
-#                                       'unfold_spin_channel': 'up'}, 
+#                                       'unfold_spin_channel': None # ['up', 'dw']
+#                                       }, 
 #                      PBZ_kpts_list_full=kpointsPBZ_full, 
 #                      SBZ_kpts_list=kpointsSBZ, 
 #                      SBZ_PBZ_kpts_map=SBZ_PBZ_kpts_mapping,
@@ -167,7 +169,7 @@ unfolded_bandstructure_properties, all_scf_data = \
 
 #%% --------------------- Plot band structure ---------------------------------
 # Fermi energy
-Efermi = 'auto' #5.9740
+Efermi = None #5.9740
 # Minima in Energy axis to plot
 Emin = -5
 # Maxima in Energy axis to plot

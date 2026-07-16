@@ -85,7 +85,8 @@ unfolded_bandstructure_properties, all_scf_data = \
 #%% ============================== Plottings ==================================
 plot_unfold = banduppy.Plotting(save_figure_dir=SimulationParentFolder)
 
-Efermi = 5.5305; Emin = -5; Emax = 5
+Efermi = None #5.5305
+Emin = -5; Emax = 5
 
 fig, ax, CountFig \
 = plot_unfold.plot_ebs(kpath_in_angs=kpline, 

@@ -19,7 +19,7 @@
     # k-path: L-G-X-U,K-G. If the segmant is skipped, put a None between nodes.
     PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
     # Number of k-points in each path segments. or, one single number if they are same.
-    npoints_per_path_seg = (23,27,9,29) 
+    npoints_per_path_seg = (21,21,6,21) 
     # Labels of special k-points: list or string. e.g ['L','G','X','U','K','G'] or 'LGXUKG'
     special_k_points = "LGXUKG"
     # Weights of the k-points to be appended in the final generated k-points files
@@ -79,7 +79,8 @@ __Option 1:__ Continue with previous instance.
                                           'wavecar_file_path':f'{sim_folder}/WAVECAR', 
                                           'vasprunxml_file_path': f'{sim_folder}/vasprun.xml',
                                           'is_spin_nondegenrate': False, 
-                                          'unfold_spin_channel': 'up'},
+                                          'unfold_spin_channel': None # ['up', 'dw']
+                                          },
                          kline_discontinuity_threshold = 0.1, 
                          #SBZ_PBZ_kpts_map={k:SBZ_PBZ_kpts_mapping[k] for k in range(1,60)}, # Allow unfolding selected K-points
                          #is_wf_file_contain_only_bandstructure_section=True,
@@ -107,7 +108,8 @@ __Option 2:__ If this part is used independently from the above instances re-ini
                                           'wavecar_file_path':f'{sim_folder}/WAVECAR', 
                                           'vasprunxml_file_path': f'{sim_folder}/vasprun.xml',
                                           'is_spin_nondegenrate': False, 
-                                          'unfold_spin_channel': 'up'},
+                                          'unfold_spin_channel': None # ['up', 'dw']
+                                          },
                          PBZ_kpts_list_full=kpointsPBZ_full, 
                          SBZ_kpts_list=kpointsSBZ, 
                          SBZ_PBZ_kpts_map=SBZ_PBZ_kpts_mapping,
@@ -197,7 +199,7 @@ __However,__ you may want save the generated data (from the above function calls
 ### 8. Plot unfolded band structure (scatter plot/density plot/band_centers plot)
 ```
     # Fermi energy
-    Efermi = 'auto' # 5.9740
+    Efermi = None # 5.9740
     # Minima in Energy axis to plot
     Emin = -5
     # Maxima in Energy axis to plot

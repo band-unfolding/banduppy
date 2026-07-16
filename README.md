@@ -134,7 +134,7 @@ If you use `BandUPpy` in your work, please:
 
   * **How to cite the package:** (use appropriate version number and doi corresponding to your installed banduppy)
 
->> 1. <author_list>, "band-unfolding/banduppy: version-0.3.5 (v0.3.5))". Zenodo, 2026. [doi:10.5281/zenodo.XXXXX](https://doi.org/10.5281/zenodo.XXXXX)
+>> 1. <author_list\>, "band-unfolding/banduppy: version-0.3.5 (v0.3.5))". Zenodo, 2026. [doi:10.5281/zenodo.XXXXX](https://doi.org/10.5281/zenodo.XXXXX)
 >> 2. Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin, "IrRep: Symmetry eigenvalues and irreducible representations of ab initio band structures", [Comput. Phys. Commun. **272**, 108226 (2022)](https://doi.org/10.1016/j.cpc.2021.108226)
 
   * **Read and cite the following papers** (and the appropriate references therein):
@@ -182,7 +182,8 @@ GNU General Public License for more details: [GNU General Public License v3.0](h
 
 <!-- =========================================================== -->
 ## Upcoming (TBD)
-1. Orbital contribution projection implementation
-2. Set up wiki
+1. Inverse participation ratio implementation
+2. Orbital contribution projection implementation
+3. Set up wiki
 <!-- =========================================================== -->
 

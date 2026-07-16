@@ -107,13 +107,12 @@ class _KpointsModule:
         # Loop over nkpoints in the path segment starting with min_div_points until
         # max_div_points with increment of 1.
         for div_points in range(min_div_points, max_div_points): 
-            len_unique_Kpts = \
-            len(cls._remove_duplicate_kpoints(
+            len_unique_Kpts = len(cls._remove_duplicate_kpoints(
                 _KpointsModule._find_K_from_k(np.linspace(start, end, div_points), 
                                                             transformation_matrix),
                 sort_kpts=False, return_id_mapping=False))
             
-            folding_info_list.append([div_points, 
+            folding_info_list.append([div_points, len_unique_Kpts, 
                                       (div_points-len_unique_Kpts)/div_points*100]) 
         return np.array(folding_info_list)
 
@@ -154,10 +153,10 @@ class _KpointsModule:
             folding_data_ = cls._search_folding_percent_brute_force(transformation_matrix, 
                                                                     start, end, 
                                                                     min_num_pts, max_num_pts)
-            max_folding = folding_data_[np.argmax(folding_data_[:,1])]
-            min_folding = folding_data_[np.argmin(folding_data_[:,1])]
-            print(f'--- Maximum folding (nkpts, folding percent): {int(max_folding[0]):>3d}, {max_folding[1]:.3f}%')
-            print(f'--- Minimum folding (nkpts, folding percent): {int(min_folding[0]):>3d}, {min_folding[1]:.3f}%')
+            max_folding = folding_data_[np.argmax(folding_data_[:,-1])]
+            min_folding = folding_data_[np.argmin(folding_data_[:,-1])]
+            print(f'--- Maximum folding (nkpts, nKpts, folding percent): {int(max_folding[0]):>3d}, {int(max_folding[1]):>3d}, {max_folding[-1]:.3f}%')
+            print(f'--- Minimum folding (nkpts, nKpts, folding percent): {int(min_folding[0]):>3d}, {int(min_folding[1]):>3d}, {min_folding[-1]:.3f}%')
             return folding_data_ 
         
     @classmethod           
@@ -306,7 +305,7 @@ class _KpointsModule:
         return np.concatenate((kpoints, append_weights.T), axis=1)
     
     @staticmethod
-    def _generate_foot_text(pc_kpoints_list, labels=None, nk_list=None):
+    def _generate_foot_text(pc_kpoints_list, labels=None, nk_list=None, comment_symbol='#'):
         """
         Create foorter text for the SC kpoints save file.
 
@@ -318,6 +317,9 @@ class _KpointsModule:
             List of special k-points in k-path. The default is None.
         nk_list : list, optional
             List of number of k-points in each k-path segments. The default is None.
+        comments_symbol : str, optional
+            String that will be prepended to the header and footer strings, 
+            to mark them as comments. The default is ‘#‘. 
 
         Returns
         -------
@@ -325,9 +327,9 @@ class _KpointsModule:
             Text string for footer of save file.
 
         """
-        append_foot_file  = '\n\n! The above SCKPTS (and/or some other SCKPTS related to them by symm. ops. of the SCBZ)'
-        append_foot_file += '\n! unfold onto the pckpts listed below (selected by you):'
-        append_foot_file += '\n! k-points for PC bandstructure '
+        append_foot_file  = f'\n\n{comment_symbol}Above SC Kpoints (and/or some other SCKPTS related to them by symm. ops. of the SCBZ)'
+        append_foot_file += f'\n{comment_symbol}unfold onto user specified PC kpoints or kpath.'
+        append_foot_file += f'\n{comment_symbol}k-points for PC bandstructure '
         # Add label texts
         if labels is not None:                   
             append_foot_file += ','.join('-'.join(label for label in group_ if label) 
@@ -335,12 +337,12 @@ class _KpointsModule:
         # Add number of kpoints in each segment
         if nk_list is not None: 
             if not isinstance(nk_list, Iterable): nk_list = [nk_list]
-            append_foot_file += '\n! '
+            append_foot_file += f'\n{comment_symbol}'
             append_foot_file += ' '.join(str(nk) for nk in nk_list)
-            append_foot_file += "\n! Reciprocal"
+            append_foot_file += f"\n{comment_symbol}Reciprocal"
         # Add kpoints    
         for i, kp in enumerate(pc_kpoints_list):
-            append_foot_file += '\n!'
+            append_foot_file += f'\n{comment_symbol}'
             if kp is None:
                 append_foot_file += ' '
             else:
@@ -348,6 +350,15 @@ class _KpointsModule:
                 if labels is not None: append_foot_file += f'   {labels[i]}'
         return append_foot_file
     
+    def _format_abinitio_code_conditional_header_line(self, nkpts):
+        if self.kpt_file_format == 'vasp':
+            txt_msg = f"\n{nkpts}\nreciprocal"
+        elif self.kpt_file_format == 'qe':
+            txt_msg = f"\nK_POINTS crystal\n{nkpts}"
+        else:
+            txt_msg = f"\n{nkpts}\nreciprocal"
+        return txt_msg
+            
     def _generate_header_text(self):
         """
         Create text that will be added in the front of file.
@@ -361,12 +372,15 @@ class _KpointsModule:
 
         """
         header_msg = {}
-        header_msg['SC']  = f"K-points for SC bandstructure generated using banduppy-{__version__} package"
-        header_msg['SC'] += f"\n{len(self.SBZ_kpts_list)}\nreciprocal"
+        header_msg['SC']  = f"{self.headfoot_comment_sym[0]}K-points for SC bandstructure generated using banduppy-{__version__} package"
+        header_msg['SC'] += self._format_abinitio_code_conditional_header_line(len(self.SBZ_kpts_list))
+        
         header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{__version__} package"
         header_msg['SpecialKpoints']  += "\nKpoints index: Kpoints label"
-        header_msg['PC']  = f"k-points for PC bandstructure generated using banduppy-{__version__} package"
-        header_msg['PC'] += f"\n{len(self.PBZ_kpts_list_org)}\nreciprocal"
+        
+        header_msg['PC']  = f"{self.headfoot_comment_sym[0]}k-points for PC bandstructure generated using banduppy-{__version__} package"
+        header_msg['PC'] += self._format_abinitio_code_conditional_header_line(len(self.PBZ_kpts_list_org))
+        
         header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{__version__} package"
         header_msg['SCPC_map'] += "\nK-k relation: (K index: K -> k index unique: k unique -> k index: k)"
             
@@ -390,7 +404,9 @@ class _KpointsModule:
 
         """
         footer_msg = {}
-        footer_msg['SC'] = self._generate_foot_text(self.PBZ_kpts_list_org) if footer_text is None else footer_text
+        if footer_text is None:
+            footer_text = self._generate_foot_text(self.PBZ_kpts_list_org, comment_symbol=self.headfoot_comment_sym[1])
+        footer_msg['SC'] = footer_text
         footer_msg['SpecialKpoints'] = ''  
         footer_msg['PC'] = footer_msg['SC']
         footer_msg['SCPC_map'] = ''
@@ -412,12 +428,15 @@ class _KpointsModule:
         print_msg['SCPC_map'] = 'Saving SC Kpoints - PC kpoints indices mapping to file...'           
         return print_msg
 
-    def _generate_save_contents(self, footer_text=None):
+    def _generate_save_contents(self, file_format, footer_text=None):
         """
         Create (kpoints) data that will be saved to file.
 
         Parameters
         ----------
+        file_format : ['vasp','qe'], optional
+            Format of the file. File format determines the way texts are printed.
+            The default is 'vasp'.
         footer_text: str, optional
             Footer message. 
 
@@ -429,6 +448,9 @@ class _KpointsModule:
             SC-PC kpoints mapping, and Special kpoints.
 
         """
+        self.kpt_file_format = file_format
+        self.headfoot_comment_sym = _SaveData2File._header_footer_msg_comment_symbol(file_format)
+        
         save_contents_data = {}
         header_msg_ = self._generate_header_text()
         footer_msg_ = self._generate_footer_text(footer_text=footer_text)
@@ -545,11 +567,11 @@ class _BandFolding(_KpointsModule, _FindProperties):
         file_name : str, optional
             Name of the file. The default is ''.
             If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is qe, file_name=K_POINTS_<file_name_suffix>.dat
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp'], optional
+        file_format : ['vasp','qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
 
         Returns
         -------
@@ -568,10 +590,12 @@ class _BandFolding(_KpointsModule, _FindProperties):
         # Create PC kpoints from k-path
         PBZ_kpts, special_kpoints_pos_labels, nkgen, labels  = self._generate_kpts_from_kpath(pathPBZ, nk, labels)
         
-        # Save SC kpoints
+        # Save kpoints
         footer_msg_path = None
         if save_kpts:
-            footer_msg_path = self._generate_foot_text(pathPBZ, labels=labels, nk_list=nk)
+            _, ft_comment_sym = _SaveData2File._header_footer_msg_comment_symbol(file_format)
+            footer_msg_path = self._generate_foot_text(pathPBZ, labels=labels, nk_list=nk, 
+                                                       comment_symbol=ft_comment_sym)
  
         # Return SC kpoints from PC k-path k-points        
         return self._generate_K_from_k(kpointsPBZ=PBZ_kpts, kpts_weights=kpts_weights, 
@@ -579,7 +603,7 @@ class _BandFolding(_KpointsModule, _FindProperties):
                                       file_name=file_name, file_name_suffix=file_name_suffix, 
                                       file_format=file_format, footer_msg=footer_msg_path,
                                       special_kpoints_pos_labels=special_kpoints_pos_labels) 
-            
+        
     def _generate_K_from_k(self, kpointsPBZ=None, kpts_weights=None,
                            save_kpts:bool=False, save_dir='.', file_name:str='', 
                            file_name_suffix:str='', file_format:str='vasp', footer_msg=None,
@@ -601,12 +625,12 @@ class _BandFolding(_KpointsModule, _FindProperties):
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is qe, file_name=K_POINTS_<file_name_suffix>.dat
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
         file_format : ['vasp','qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         footer_msg : str, optional
             String that will be written at the end of the file. The default is PC kpoints list.
         special_kpoints_pos_labels : dictionary, optional
@@ -652,8 +676,9 @@ class _BandFolding(_KpointsModule, _FindProperties):
             
         # Saving kpoints data
         if save_kpts:
+            print_log_info=bool(self.print_information)
             # save_contents_data: (header text, data, footer text, print message)
-            save_contents_data = self._generate_save_contents(footer_text=footer_msg)
+            save_contents_data = self._generate_save_contents(file_format, footer_text=footer_msg)
             for data_key, data_items in save_contents_data.items():
                 _SaveData2File._save_sc_kpts_2_file(data=data_items[1],
                                                     save_dir=save_dir, file_name=file_name,
@@ -662,17 +687,21 @@ class _BandFolding(_KpointsModule, _FindProperties):
                                                     data_fmt='%12.8f',
                                                     header_txt=data_items[0], 
                                                     footer_txt=data_items[2],
-                                                    print_log=bool(self.print_information),
+                                                    print_log=print_log_info,
                                                     print_msg=data_items[3])
                 
             # saving the PC to SC transformation matrix
+            print_msg='Saving SC dimension to file...'
             header_txt_transM='# PC to SC transformation matrix (==supercell dimesion)'
-            _SaveData2File._save_sc_kpts_2_file(data=self.transformation_matrix,
-                                                save_dir=save_dir, file_name='SC_dimension.dat',
-                                                file_name_suffix='', file_format='dat',
-                                                data_fmt='%d', header_txt=header_txt_transM, 
-                                                footer_txt='', print_log=bool(self.print_information),
-                                                print_msg='Saving SC dimension to file...')
+            
+            if print_log_info: print(f"{'='*_draw_line_length}\n- {print_msg}.")
+            fsfile = _SaveData2File._save_2_file(data=self.transformation_matrix,
+                                                 save_dir=save_dir, file_name='SC_dimension',
+                                                 file_name_suffix=file_name_suffix, 
+                                                 file_extension='.dat', comments_symbol='',
+                                                 np_data_fmt='%d', header_txt=header_txt_transM, 
+                                                 footer_txt='', print_log=print_log_info)
+            if print_log_info: print(f'-- Filepath: {fsfile}\n- Done')
         
         return self.PBZ_kpts_list_org, self.PBZ_kpts_list, self.SBZ_kpts_list, \
                 self.SBZ_PBZ_kpts_mapping, self.special_kpoints_pos_labels

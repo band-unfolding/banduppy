@@ -15,11 +15,11 @@ do_non_self_consistent = True
 do_unfold = True
 do_plot = True
 
-SimulationParentFolder = '/local/MyGitHub/TestInstall/Test/Vasp' 
+SimSystem = 'Si'
+SimulationParentFolder = '/local/GitHub/TestBandUPpy/Vasp/' + SimSystem
 
 #%% -------- Define first-principles code executatble path --------------------
-#vasp_bin_path = "/app/theorie/vasp/bin/vasp_ncl"
-vasp_bin_path = "vasp_std"
+vasp_bin_path = "vasp_std" #"/app/theorie/vasp/bin/vasp_std"
 nproc = 44
 vasp = f"mpirun -np {nproc} {vasp_bin_path}".split()
 
@@ -32,7 +32,7 @@ super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] # this is for our Si 8-
 # k-path: L-G-X-U,K-G. If the segmant is skipped, put a None between nodes.
 PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
 # Number of k-points in each path segments. or, one single number if they are same.
-npoints_per_path_seg = (23,27,9,29) 
+npoints_per_path_seg = (21,21,6,21) 
 # Labels of special k-points: list or string. e.g ['L','G','X','U','K','G'] or 'LGXUKG'
 special_k_points = "LGXUKG"
 # Weights of the k-points to be appended in the final generated k-points files
@@ -70,9 +70,10 @@ if do_generate_SC_kpts:
 os.chdir(os.path.dirname(sim_folder))
 if do_self_consistent:
     print (f"{'='*72}\n- Self-consistent VASP run...")
-    shutil.copy(f"{save_to_dir}/POSCAR_Si_SC",f"{sim_folder}/POSCAR")
+    shutil.copy(f"{save_to_dir}/POSCAR_{SimSystem}_SC",f"{sim_folder}/POSCAR")
     shutil.copy(f"{save_to_dir}/POTCAR",f"{sim_folder}/POTCAR")
-    shutil.copy(f"{save_to_dir}/KPOINTS_scf",f"{sim_folder}/KPOINTS")
+    # Replaced by KSPACING in INCAR
+    #shutil.copy(f"{save_to_dir}/KPOINTS_scf",f"{sim_folder}/KPOINTS")
     with open(f"{sim_folder}/INCAR","w") as f:
         f.write(open(f"{save_to_dir}/INCAR_scf","r").read().format(LSORBIT = "T" if spinorbit else "F"))
     scf_run = run(vasp,stdout=open(f"{sim_folder}/vasp_scf.out","w"))
@@ -101,9 +102,11 @@ if do_unfold:
                                           'wavecar_file_path':f'{sim_folder}/WAVECAR', 
                                           'vasprunxml_file_path': f'{sim_folder}/vasprun.xml',
                                           'is_spin_nondegenrate': False, 
-                                          'unfold_spin_channel': 'up'},
+                                          'unfold_spin_channel': None # ['up', 'dw']
+                                          },
                          kline_discontinuity_threshold = 0.1, 
                          #SBZ_PBZ_kpts_map={k:SBZ_PBZ_kpts_mapping[k] for k in range(5,20)}, # Allow unfolding selected K-points
+                         #is_wf_file_contain_only_bandstructure_section=True,
                          save_unfolded_kpts = {'save2file': True, 
                                                'fdir': results_dir,
                                                'fname': 'kpoints_unfolded',
@@ -118,7 +121,7 @@ if do_unfold:
 if do_plot:
     print (f"{'='*72}\n- Plotting band structure...")
     # Fermi energy
-    Efermi = 'auto' # Energy scale is already scalled during Unfolding 
+    Efermi = None # Energy scale is already scalled during Unfolding 
     # Minima in Energy axis to plot
     Emin = -5
     # Maxima in Energy axis to plot
@@ -147,7 +150,7 @@ if do_plot:
                            #unfolded_bandstructure=unfolded_bandstructure_,
                            save_file_name=save_file_name, CountFig=None,
                            Emin=-5, Emax=+5, pad_energy_scale=0.5,
-                           mode="fatband", special_kpoints=special_kpts,
+                           mode="density", special_kpoints=special_kpts,
                            plotSC=True, fatfactor=20, nE=100,smear=0.2,
                            color='red', color_map='viridis', show_colorbar=False)
     

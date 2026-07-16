@@ -24,8 +24,7 @@ class KpointsFoldingBase:
     def generate_sc_kpoints_testing(self): 
         print("- Generating SC Kpoints...")
 
-        band_unfold = banduppy.Unfolding(supercell=self.super_cell_size, 
-                                         print_log=None)
+        band_unfold = banduppy.Unfolding(supercell=self.super_cell_size, print_log=None)
 
         return band_unfold.generate_SC_Kpts_from_pc_k_path(pathPBZ = self.PC_BZ_path,
                                                            nk = self.npoints_per_path_seg,
@@ -47,9 +46,16 @@ class TestKpoints_Si8atomUnitcell(KpointsFoldingBase):
 
         self.super_cell_size = [[-1,  1, 1], [1, -1, 1], [1,  1, -1]] 
         self.PC_BZ_path = [[1/2,1/2,1/2], [0,0,0],[1/2,0,1/2], [5/8,1/4,5/8], None, [3/8,3/8,3/4], [0,0,0]] 
-        self.npoints_per_path_seg = (23,27,9,29) 
+        self.npoints_per_path_seg = (21,21,6,21) 
         self.special_k_points = "LGXUKG"
         self.kpts_weights = 1         
+        
+    def test_kpoints_folding_ratio(self):
+        band_unfold = banduppy.Unfolding(supercell=self.super_cell_size, print_log=None)
+        XX,_,_,_ = band_unfold.propose_maximum_minimum_folding(self.PC_BZ_path, min_num_pts=5, max_num_pts=30,
+                                                               serach_mode='brute_force', draw_plots=True, 
+                                                               show_plot=False, save_file_name=None)
+        assert np.all(XX[0][1][:,-1] == 0.000), f'All folding degree should be zero for {self.super_cell_size} along L-G. Find non-zero folding.'
 
     def test_diff_kpoints_unfolding_vasp(self):
         self.kpts_file_format = 'vasp' # This will generate vasp KPOINTS file format

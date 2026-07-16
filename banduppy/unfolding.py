@@ -27,10 +27,12 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         _BandFolding.__init__(self, supercell=supercell, print_info=print_log)
         
     def propose_maximum_minimum_folding(self, pathPBZ, min_num_pts:int=5, max_num_pts:int=20,
-                                        serach_mode:str='brute_force', draw_plots:bool=True, 
-                                        save_plot:bool=False, save_dir='.', save_file_name=None,  
-                                        CountFig=None, yaxis_label:str='Folding degree (%)',
-                                        xaxis_label:str='number of kpoints', line_color='k'):
+                                        serach_mode:str='brute_force', draw_plots:bool=True,  
+                                        left_yaxis_label:str='Number of SC Kpoints',
+                                        right_yaxis_label:str='Folding degree (%)',
+                                        xaxis_label:str='Number of PC kpoints', 
+                                        CountFig=None, line_color=('k', 'r'),
+                                        show_plot:bool=True, save_dir='.', save_file_name=None):
         """
         Calculates SC Kpoints from PC kpoints and returns percent of folding.
         Maximum and Minimum degree of folding are reported.
@@ -50,22 +52,24 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         draw_plots : bool, optional
             Plot folding vs number of k-points. The default is True.
             If True, also returns fig, ax, and CountFig.
-        save_plot : bool, optional
-            Save plots or not. The default is False.
-        save_dir : str/path, optional
-            Directory where to save the plots. The default is '.'.
-        save_file_name : str, optional
-            Name of the file to ba saved. The default is None. If None, figure
-            is not saved.
+        left_yaxis_label : str, optional
+            Left yaxis label. The default is 'Number of SC Kpoints'. 
+        right_yaxis_label : str, optional
+            Right twin yaxis label. The default is 'Folding degree (%)'. 
+        xaxis_label : str, optional
+            xaxis label. The default is 'Number of PC kpoints'.
         CountFig : int, optional
             Figure count. The default is None. If None, nothing is is done. Else,
             returns CountFig increased by 1.
-        yaxis_label : str, optional
-            yaxis label. The default is 'Folding degree (%)'.
-        xaxis_label : str, optional
-            xaxis label. The default is 'number of kpoints'.
-        line_color : matplotlib color, optional
-            Line color. The default is 'k'.
+        line_color : tuple, matplotlib color, optional
+            Line color for plot on (left yaxis, right yaxis). The default is ('k', 'r').
+        show_plot : bool, optional
+            Whether to show the plot when save_file_name=None
+        save_dir : str/path, optional
+            Directory where to save the plots. The default is '.'.
+        save_file_name : str, optional
+            Name of the file to be saved. If None, figure is not saved. 
+            The default is None. 
 
         Returns
         -------
@@ -86,9 +90,11 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                                         save_figure_dir=save_dir)
             fig, ax, CountFig = self._plot_folding(save_file_name=save_file_name, 
                                                    CountFig=CountFig, 
-                                                   yaxis_label=yaxis_label,
+                                                   left_yaxis_label=left_yaxis_label,
+                                                   right_yaxis_label=right_yaxis_label,
                                                    xaxis_label=xaxis_label, 
-                                                   line_color=line_color)
+                                                   line_color=line_color,
+                                                   show_plot=show_plot)
             return proposed_folding_results, fig, ax, CountFig
         return proposed_folding_results
         
@@ -129,12 +135,12 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is qe, file_name=K_POINTS_<file_name_suffix>.dat
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
         file_format : ['vasp', 'qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
 
         Returns
         -------
@@ -176,12 +182,12 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Directory to save the file. The default is current directory.
         file_name : str, optional
             Name of the file. The default is ''.
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
+            If file_format is vasp, file_name=KPOINTS_<file_name_suffix>
+            If file_format is qe, file_name=K_POINTS_<file_name_suffix>.dat
         file_name_suffix : str, optional
             Suffix to add after the file_name. The default is ''.
-        file_format : ['vasp', 'qe'], optional
+        file_format : ['vasp','qe'], optional
             Format of the file. The default is 'vasp'. 
-            If file_format is vasp/qe, file_name=KPOINTS_<file_name_suffix>
         footer_msg : str, optional
             String that will be written at the end of the file. The default is PC kpoints list.
         special_kpoints_pos_labels : dictionary, optional
@@ -227,8 +233,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                zero_weight_kp:bool = False, 
                fermi_energy:float|None = None,
                vasp_keywards:dict|None = None,
-               abinit_keywards:dict|None = None, 
                qe_keywards:dict|None = None,
+               abinit_keywards:dict|None = None, 
                gpaw_keywards:dict|None = None, 
                wannier90_keywards:dict|None = None,
                **other_ab_initio_code_related_kwargs):
@@ -262,13 +268,13 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
-            save2file : bool, optional
+            'save2file' : bool, optional
                 Save unfolded kpoints data to file or not? The default is False.
-            fir : str or path, optional
+            'fdir ': str or path, optional
                 Directory path where to save the file. The default is current directory.
-            fname : str, optional
-                Where to save. File name. The default is 'kpoints_unfolded'.
-            fname_suffix : str, optional
+            'fname' : str, optional
+                Where to save. File name (without extension). The default is 'kpoints_unfolded'.
+            'fname_suffix' : str, optional
                 Suffix to add to the file name. The default is no suffix.
             }
             The default is None. If None, dictionary values will be set to default.
@@ -276,17 +282,17 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
-            save2file : bool, optional
+            'save2file' : bool, optional
                 Save unfolded kpoints data to file or not? The default is False.
-            fir : str or path, optional
+            'fdir' : str or path, optional
                 Directory path where to save the file. The default is current directory.
-            fname : str, optional
-                Where to save. File name. The default is 'bandstructure_unfolded'.
-            fname_suffix : str, optional
+            'fname' : str, optional
+                Where to save. File name (without extension). The default is 'bandstructure_unfolded'.
+            'fname_suffix' : str, optional
                 Suffix to add to the file name. The default is no suffix.
             }
             The default is None. If None, dictionary values will be set to default.            
-        ab_initio_code : str, optional
+        ab_initio_code : str, optional ['vasp', 'qe', 'abinit', 'gpaw', 'wannier90']
             Ab-initio code used to generate the wavefunction file. The default is 'vasp'.
         only_unfold_for_kpts_idxs : np.ndarray|list[int]|None, optional
             List of indices of k-points to be considered (starts from 0).
@@ -339,25 +345,62 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                  File path containing wave-functions in VASP (WAVECAR format).
                  The default is './WAVECAR', 
              'vasprunxml_file_path': str or file Path object, optional
-                 File path of VASP vasprun.xml file. The default is './vasprun.xml',
+                 File path of VASP vasprun.xml file. The default is './vasprun.xml'.
+             'is_spin_nondegenrate': bool, optional
+                 Whether wave functions are spinors. False if they are scalars. 
+                 The default is False.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw', when is_spin_nondegenrate=True.
              'wf_cutoff_energy': float|None, optional (unit: eV)
-                 Plane wave cutoff energy. If None, automatically read from WAVECAR file.
-                 This tag is usefull when getting plane wave related runtime error (see FAQ).
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
                  The default is None.
-             'is_spin_nondegenrate': Whether wave functions are spinors. False if they are scalars. 
-                                     The default is False, 
-             'unfold_spin_channel': In case of spin non degenracy which spin-channel to unfold. 
-                                    'up' for spin-up, 'dw' for spin-down. The default is 'up'
             }
             The default is None. If None, dictionary values will be set to default.  
-        abinit_kwards : dict | None, optional
-            DESCRIPTION. The default is None.
         qe_kwards : dict | None, optional
-            DESCRIPTION. The default is None.
+            The keywards specific to Quantum ESPRESSO ab-initio code. Will be ignored when ab_init_code != qe.
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+             'output_file_dir' : str or Path object
+                 Directory path where Quantum ESPRESSO output folder 'prefix.save' resides.
+                 The default is current directory, './'. 
+             'save_file_prefix' : str
+                 Prefix of the Quantum ESPRESSO output files (e.g. 'prefix' for 'prefix.save').
+                 The default is 'prefix'.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw' for spin polarized calculations.
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
+                 The default is None.
+            }
+            The default is None. If None, dictionary values will be set to default.
+        abinit_kwards : dict | None, optional
+            The keywards specific to abinit ab-initio code. Will be ignored when ab_init_code != abinit.
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+            }
+            The default is None. If None, dictionary values will be set to default.  
         gpaw_kwards : dict | None, optional
-            DESCRIPTION. The default is None.
+            The keywards specific to GPAW ab-initio code. Will be ignored when ab_init_code != abinit.
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+            }
+            The default is None. If None, dictionary values will be set to default. 
         wannier90_kwards : dict | None, optional
-            DESCRIPTION. The default is None.
+            The keywards specific to WANNIER90 ab-initio code. Will be ignored when ab_init_code != abinit.
+            Followings (key, value) dictionary pairs are allowed. If any dictionary key
+            is not found, will be reset to default.
+            {
+            }
+            The default is None. If None, dictionary values will be set to default. 
         ** other_ab_initio_code_related_kwargs :dict
             Any other keywards that external code such as irrep.bandstruture.from_*()
             accepts. This allows expert users finer control on the reading ab-inito
@@ -390,14 +433,17 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         
         #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         if bandstructure is None: 
-            from .parsers import _ProcessPWs
+            from .Parsers import _ProcessPWs
             bds = _ProcessPWs(ab_initio_code=ab_initio_code,
                               only_unfold_band_idx=only_unfold_band_idx,
                               only_unfold_for_kpts_idxs=only_unfold_for_kpts_idxs,
                               kpts_batch_unfold=unfold_kpts_in_batch,
-                              zero_weight_kp=zero_weight_kp, fermi_energy=fermi_energy,
-                              vasp_kwards=vasp_keywards, abinit_kwards=abinit_keywards,
-                              qe_kwards=qe_keywards, gpaw_kwards=gpaw_keywards,
+                              zero_weight_kp=zero_weight_kp, 
+                              fermi_energy=fermi_energy,
+                              vasp_kwards=vasp_keywards, 
+                              qe_kwards=qe_keywards, 
+                              abinit_kwards=abinit_keywards,
+                              gpaw_kwards=gpaw_keywards,
                               wannier90_kwards=wannier90_keywards,
                               print_log=self.print_information)
             paw = True if ab_initio_code == 'gpaw' else False 
@@ -433,7 +479,8 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         save_figure_dir : str, optional
             Directory where to save the figure. The default is current directory.
         save_file_name : str, optional
-            Name of the figure file. If None, figure will be not saved. 
+            Name of the figure file (with extension). File extension determines 
+            figure file type. If None, figure will be not saved. 
             The default is None.
         CountFig: int, optional
             Figure count. The default is None.
@@ -582,13 +629,16 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
             The bands with band weights lower than the threshhold weights 
             are discarded. The default is 0.
         save_data : dictionary, optional
-            save2file :: Save data to file or not? 
-            fir :: str or path
-                Directory path where to save the file.
-            fname :: str
-                Name of the file.
-            fname_suffix :: str
-                Suffix to add to the file name.
+            {
+            'save2file' : bool, optional
+                Save unfolded kpoints data to file or not? The default is False.
+            'fdir' : str or path, optional
+                Directory path where to save the file. The default is current directory.
+            'fname' : str, optional
+                Where to save. File name (without extension). The default is 'bandstructure_unfolded'.
+            'fname_suffix' : str, optional
+                Suffix to add to the file name. The default is no suffix.
+            }
             The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandstructure_window', 'fname_suffix': ''}.
             
          Returns
@@ -701,13 +751,16 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
             Whether to save the dtails of band centers in each SCF cycles.
             The default is False.
         save_data : dictionary, optional
-            save2file :: Save data to file or not? 
-            fir :: str or path
-                Directory path where to save the file.
-            fname :: str
-                Name of the file.
-            fname_suffix :: str
-                Suffix to add to the file name.
+            {
+            'save2file' : bool, optional
+                Save unfolded kpoints data to file or not? The default is False.
+            'fdir' : str or path, optional
+                Directory path where to save the file. The default is current directory.
+            'fname' : str, optional
+                Where to save. File name (without extension). The default is 'bandstructure_unfolded'.
+            'fname_suffix' : str, optional
+                Suffix to add to the file name. The default is no suffix.
+            }
             The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandcenters', 'fname_suffix': ''}.
 
         Returns
@@ -1083,7 +1136,7 @@ class SaveBandStructuredata:
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         file_name : str, optional
-            Name of the file. The defult is 'kpoints_unfolded'.
+            Name of the file (without extension). The defult is 'kpoints_unfolded'.
         file_name_suffix : str, optional
             Suffix to add to the file name. The default is ''.
         print_information : [None,'low','medium','high'], optional
@@ -1114,7 +1167,7 @@ class SaveBandStructuredata:
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         file_name : str, optional
-            Name of the file. The defult is 'bandstructure_unfolded'.
+            Name of the file (without extension). The defult is 'bandstructure_unfolded'.
         file_name_suffix : str, optional
             Suffix to add to the file name. The default is ''.
         is_spinor : bool, optional
@@ -1153,12 +1206,14 @@ class SaveBandStructuredata:
         Parameters
         ----------
         unfolded_kpoints_list : list of str or Path or ndarray
-            If string: Full file path containing unfolded kpoints. E.g.,
+            If string: Full file path containing unfolded kpoints. File names should 
+            be with extensions. E.g.,
             ['./kpoints_unfolded_LG.dat', './kpoints_unfolded_GX.dat'].
             If numpy array: Unfolded kpoints in k-path.
             Format: [k-index, k on path (A^-1), k1, k2, k3]
         unfolded_bandstructure : list of str or Path or ndarray
             If string: Full file path containing unfolded bandstructure/bandcenters. 
+            File names should be with extensions. 
             E.g., ['./bandstructure_unfolded_LG.dat', './bandstructure_unfolded_GX.dat'].
             If numpy array: Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
@@ -1168,9 +1223,9 @@ class SaveBandStructuredata:
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         save_file_name : str, optional
-            Name of the file to be saved. The defult is 
-            'kpoints_unfolded_merged.dat' for merged kpoints file and 
-            'bandstructure_unfolded_merged.dat' for merged bandstructure file. 
+            Name of the file to be saved ((without extension)). The defult is 
+            'kpoints_unfolded_merged' for merged kpoints file and 
+            'bandstructure_unfolded_merged' for merged bandstructure file. 
         print_information : [None,'low','medium','high'], optional
                 Level of printing information. 
                 The default is 'low'. If None, nothing is printed.
@@ -1233,7 +1288,7 @@ class SaveBandStructuredata:
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         file_name : str, optional
-            Name of the file. The defult is 'bandstructure_unfolded'.
+            Name of the file (without extension). The defult is 'unfolded_bandcenters'.
         file_name_suffix : str, optional
             Suffix to add to the file name. The default is ''.
         print_information : [None,'low','medium','high'], optional
@@ -1245,7 +1300,7 @@ class SaveBandStructuredata:
         None.
 
         """
-        save_data = {'save2file': False, 'fdir': save_dir, 'fname': file_name, 'fname_suffix': file_name_suffix}
+        save_data = {'save2file': True, 'fdir': save_dir, 'fname': file_name, 'fname_suffix': file_name_suffix}
         _GeneralFunctionsDefs._save_band_centers(data2save=unfolded_bandcenter, 
                                                  print_log=print_information,
                                                  save_data_f_prop=save_data)
@@ -1274,12 +1329,13 @@ class Plotting(_EBSplot):
         Parameters
         ----------
         unfolded_kpoints : str or Path or ndarray
-            If string: Full file path containing unfolded kpoints, e.g. './kpoints_unfolded.dat'.
+            If string: Full file path containing unfolded kpoints. File names should 
+            be with extensions. E.g., './kpoints_unfolded.dat'.
             If numpy array: Unfolded kpoints in k-path.
             Format: [k-index, k on path (A^-1), k1, k2, k3]
         unfolded_bandstructure : str or Path or ndarray
             If string: Full file path containing unfolded bandstructure/bandcenters. 
-            E.g., './bandstructure_unfolded.dat'.
+            File names should be with extensions. E.g., './bandstructure_unfolded.dat'.
             If numpy array: Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
@@ -1321,12 +1377,13 @@ class Plotting(_EBSplot):
         Parameters
         ----------
         unfolded_kpoints : str or Path or ndarray
-            If string: Full file path containing unfolded kpoints, e.g. './kpoints_unfolded.dat'.
+            If string: Full file path containing unfolded kpoints. File names should 
+            be with extensions. E.g., './kpoints_unfolded.dat'.
             If numpy array: Unfolded kpoints in k-path.
             Format: [k-index, k on path (A^-1), k1, k2, k3]
         unfolded_bandstructure : str or Path or ndarray
             If string: Full file path containing unfolded bandstructure/bandcenters. 
-            E.g., './bandstructure_unfolded.dat'.
+            File names should be with extensions. E.g., './bandstructure_unfolded.dat'.
             If numpy array: Unfolded effective band structure/band center data. 
             Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or
             Format: [k index, kpoint coordinate, Band center, Band width, Sum of dN] for band centers
@@ -1336,7 +1393,8 @@ class Plotting(_EBSplot):
             Figure axis to plot on. If None, new figure will be created.
             The default is None.
         save_file_name : str, optional
-            Name of the figure file. If None, figure will be not saved. 
+            Name of the figure file (with extension). File name extension determines the 
+            figure file type to be saved. If None, figure will be not saved. 
             The default is None.
         CountFig: int, optional
             Figure count. The default is None.
@@ -1460,20 +1518,22 @@ class Plotting(_EBSplot):
             if collect_data_scf is false.
             Format: {kpoint_index: {SCF_cycle_index: [Band center, Band width, Sum of dN]}}
         unfolded_kpoints : str or Path or ndarray
-            If string: Full file path containing unfolded kpoints, e.g. './kpoints_unfolded.dat'.
+            If string: Full file path containing unfolded kpoints. File names should 
+            be with extensions. E.g., './kpoints_unfolded.dat'.
             If numpy array: Unfolded kpoints in k-path.
             Format: [k-index, k on path (A^-1), k1, k2, k3]
         unfolded_bandstructure : str or Path or ndarray
-            If string: Full file path containing unfolded bandstructure/bandcenters.
-            E.g., './bandstructure_unfolded.dat'.
-            If numpy array: Unfolded effective band structure. 
-            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor]  
+            If string: Full file path containing unfolded bandstructure/bandcenters. 
+            File names should be with extensions. E.g., './bandstructure_unfolded.dat'.
+            If numpy array: Unfolded effective band structure/band center data. 
+            Format: [k index, k on path (A^-1), energy (eV), weight, "Sx, Sy, Sz" if spinor] or 
         plot_max_scf_steps : int, optional
             How many maximum scf cycle to plot?
             The default is maximum SCF steps found in the dictionary of all k-points.
             If scf cycle not found for a particular kpoint previous SCF cycle will be plotted.
         save_file_name : str, optional
-            Name of the figure file. If None, figure will be not saved. 
+            Name of the figure file (with extension). File name extension determines the 
+            figure file type to be saved. If None, figure will be not saved. 
             The default is None.
         Ef : float, optional
             Fermi energy. If None, set to 0.0. The default is None.
@@ -1560,7 +1620,8 @@ class Plotting(_EBSplot):
         Parameters
         ----------
         fig_name : str, optional
-            Name of the figure file. If None, figure will be not saved.
+            Name of the figure file (with extension). File name extension determines the 
+            figure file type to be saved. If None, figure will be not saved.
             The default is None.
         fig : matplotlib.pyplot figure instance, optional
             Figure instance to plot on. The default is None.

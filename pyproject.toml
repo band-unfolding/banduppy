@@ -45,7 +45,7 @@ Releasenotes = "https://github.com/band-unfolding/banduppy/releases"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["banduppy*", "banduppy.*"]
-exclude = ["imgs", "docs", "tutorials"]
+exclude = ["imgs", "docs", "tutorials", "tests", "banduppy.tests", "banduppy.tests.*"]
 namespaces = false
 
 #[tool.setuptools]

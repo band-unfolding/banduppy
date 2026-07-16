@@ -40,7 +40,7 @@ for ffolder in ['SiGe', 'Si', 'Ge']:
                            unfolded_kpoints=f'{SimulationParentFolder}/{ffolder}/kpoints_unfolded.dat', 
                            unfolded_bandstructure=f'{SimulationParentFolder}/{ffolder}/bandstructure_unfolded.dat',  
                            save_file_name=None, CountFig=None, threshold_weight=0.1,
-                           Ef='auto', Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
+                           Emin=Emin, Emax=Emax, pad_energy_scale=0.5, 
                            mode="fatband", special_kpoints=special_kpoints_pos_labels1, 
                            plotSC=False, fatfactor=20, nE=100,smear=0.2, append_plts=True,
                            color=color_marker[ffolder][0], marker=color_marker[ffolder][1],

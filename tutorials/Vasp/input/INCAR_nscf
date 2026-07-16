@@ -1,4 +1,4 @@
- SYSTEM = Graphene
+ SYSTEM = Si
 
  Flags which affect the runtime for parallel jobs (and don't change the results)
    ALGO = Fast
@@ -18,6 +18,11 @@
    IBRION = -1
    ISIF = 2
    NSW=0
+
+ Paralleization
+   NSIM = 8
+   NCORE = 11
+   KPAR = 1
 
  Band Structure related values
    ISMEAR = 0 ! Gaussian smearing
