@@ -1,13 +1,13 @@
 
 ```
 @software{SSBM2026banduppy,
-  author       = {...},
-  title        = {band-unfolding/banduppy: version-0.3.5},
+  author       = {Mondal, Badal and Tsirkin, Stepan S.},
+  title        = {band-unfolding/banduppy: version-1.0.0},
   month        = {},
   year         = 2026,
   publisher    = {Zenodo},
-  version      = {v0.3.5},
-  doi          = {XXXXXX},
+  version      = {v1.0.0},
+  doi          = {https://doi.org/10.5281/zenodo.21417715},
   url          = {https://github.com/band-unfolding/banduppy}
 }
 

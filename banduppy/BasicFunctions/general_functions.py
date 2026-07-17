@@ -66,15 +66,62 @@ class _BasicFunctionsModule(object):
             return _BasicFunctionsModule._round_2_tolerance(input_array%1)
         else:
             return input_array%1
-        
-    @staticmethod
-    def _check_file_size(file_, return_unit:str='MB'):
-        
+     
+    @classmethod
+    def _get_file_size(cls, _file, _file_size_unit:str='BYTE'):
         # 1024.0*1024.0 = 1048576.0
         # 1024.0*1024.0*1024.0 = 1073741824.0
         # 1024.0*1024.0*1024.0*1024.0 = 1099511627776.0
         div_fact = {'BYTE':1.0, 'KB':1024.0, 'MB': 1048576.0, 'GB': 1073741824.0, 'TB': 1099511627776.0}
-        return Path(file_).stat().st_size / div_fact[return_unit.upper()] #
+        return Path(_file).stat().st_size / div_fact[_file_size_unit.upper()]
+     
+    @classmethod
+    def _check_file_size(cls, _file, _file_size_cutoff:float=5.0,
+                         _file_size_unit:str='GB', 
+                         _file_pattern:str='*',
+                         _n_files:int|float|None=None):
+        """
+        This function checks if a file size is larger than a cut off size.
+
+        Parameters
+        ----------
+        _file : file path or str
+            File path.
+        f_file_size_cutoff : float, optional (unit = fsize_unit )
+            The cut-off size of the file above which warning msg is
+            printed to user. The default is 5.
+        _file_size_unit : str, optional ['BYTE','KB','MB','GB','TB']
+            Unit of wf_file_size_cutoff. The default is GB.
+        _file_pattern : str or None, optional
+            Glob pattern to find specific type of files. E.g. 'wfc*.' for qe etc.
+            Only important when wf_file is directory.
+            The default is * == all files in the directory.
+         _n_files : int or float or None, optional
+             This will multiplied by a single file size in conditional checking.
+             This number could be number of K-points to read for qe code for e.g.
+            
+        Returns
+        -------
+        bool
+            Whether file size is greater than cutoff.
+        """
+        
+        ffpath = Path(_file)
+        if ffpath.is_file():
+            fsize = cls._get_file_size(ffpath, _file_size_unit=_file_size_unit)
+            return fsize, fsize > _file_size_cutoff
+        elif ffpath.is_dir():
+            if _n_files is not None:
+                for p in ffpath.glob(_file_pattern):
+                    tmp_size_one_file = cls._get_file_size(p)
+                    break
+                fsize = tmp_size_one_file*_n_files
+            else:
+                fsize = np.sum([cls._get_file_size(p) for p in ffpath.glob(_file_pattern)]) 
+            return fsize, fsize > _file_size_cutoff 
+        else:
+            print(f"WARNING: Can't find {ffpath}. Ignoring file size checking.")
+        return None
         
 ## ============================================================================
 class _SaveData2File:

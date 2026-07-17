@@ -46,7 +46,7 @@ jobs:
 
               #    environment:
               #        name: testpypi
-              #        url: https://test.pypi.org/p/mobilitypy
+              #        url: https://test.pypi.org/p/banduppy
 
               #    permissions:
               #        id-token: write  # IMPORTANT: mandatory for trusted publishing

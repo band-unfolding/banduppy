@@ -95,7 +95,10 @@ class _ProcessPWs(BandStructure_irrep):
         self.irreps_ = False 
         self.spacegroup_ = None
 
-    def _unfold_in_batch_decission(self, wf_file, wf_file_size_cutoff:float=5.0):
+    def _unfold_in_batch_decission(self, wf_file, wf_file_size_cutoff:float=5.0,
+                                   wf_file_size_unit:str='GB',
+                                   wf_file_pattern:str='*',
+                                   wf_n_files:int|float|None=None):
         """
         This function allows to automatically fall back to the batch unfolding
         routine if wave function file is large.
@@ -104,21 +107,40 @@ class _ProcessPWs(BandStructure_irrep):
         ----------
         wf_file : file path or str
             Wave function file path.
-        wf_file_size_cutoff : float (unit: GB)
+        wf_file_size_cutoff : float, optional (unit = fsize_unit )
             The cut-off size of the the wave function above which warning msg is
             printed to user requesting to use batch unfolding.
-            The default is 5 GB.
+            The default is 5.
+        wf_file_size_unit : str, optional ['BYTE','KB','MB','GB','TB']
+            Unit of wf_file_size_cutoff. The default is GB.
+        wf_file_pattern : str or None, optional
+            Glob pattern to find specific type of files. E.g. 'wfc*.' for qe etc.
+            Only important when wf_file is directory.
+            The default is * == all files in the directory. 
+         wf_n_files : int or float or None, optional
+             This will multiplied by a single file size in conditional checking.
+             This number could be number of K-points to read for qe code for e.g.
 
         Returns
         -------
         None
-        """
-        file_too_large = _BasicFunctionsModule._check_file_size(wf_file, 'GB') > wf_file_size_cutoff
-        if file_too_large and (not self.kpts_batch_unfold_): 
-            print(f"WARNING: Wavefunction file is >{wf_file_size_cutoff} GB. If memory error occure, set unfold_kpts_in_batch=True in Unfold().")
-            #print(f"WARNING: Wavefunction is large. Falling back to batch unfolding with default kpt_batch_size")
-            #self.kpts_batch_unfold_ = True
-            
+        """      
+        try:
+            file_size_found, file_too_large = \
+                _BasicFunctionsModule._check_file_size(wf_file, _file_size_cutoff=wf_file_size_cutoff,
+                                                       _file_size_unit=wf_file_size_unit,
+                                                       _file_pattern=wf_file_pattern,
+                                                       _n_files=wf_n_files)
+            if file_too_large and (not self.kpts_batch_unfold_): 
+                print(f"USER RECOMMENDATION: Total wavefunction file size is estimated ~ {file_size_found:0.2f} {wf_file_size_unit}.")
+                print(f"Since, this is >{wf_file_size_cutoff} {wf_file_size_unit}, if memory error occures we recommend the user")
+                print("to set unfold_kpts_in_batch=True in Unfold().")
+                #print(f"WARNING: Wavefunction is large. Falling back to batch unfolding with default kpt_batch_size")
+                #self.kpts_batch_unfold_ = True
+        except:
+            print("WARNING: Can't check wave function file size. Can't provide special user recommendation. \
+                  Do not worry though! Wouldn't affect unfolding results.")
+    
     def _check_ab_inito_code_related_conditions(self):
         _ab_code_implemented = ['vasp', 'qe', 'espresso', 'quantum_espresso', 
                                 'abinit', 'gpaw', 'wannier90'] 
@@ -139,7 +161,9 @@ class _ProcessPWs(BandStructure_irrep):
     def _generate_bandstructure_instance(self, **kwargs):
         if self.ab_initio_code_ == 'vasp':
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            self._unfold_in_batch_decission(self.vasp_kwards_['wavecar_file_path'])
+            self._unfold_in_batch_decission(self.vasp_kwards_['wavecar_file_path'],
+                                            wf_file_size_cutoff=5.0, 
+                                            wf_file_size_unit='GB')
             #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             from .parse_vasprunxml import VasprunXml
             
@@ -170,6 +194,12 @@ class _ProcessPWs(BandStructure_irrep):
         #//////////////////////////////////////////////////////////////////////
         elif self.ab_initio_code_ in ['qe', 'espresso', 'quantum_espresso']:
             _prefix = f"{self.qe_kwards_['output_file_dir']}/{self.qe_kwards_['save_file_prefix']}"
+            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            noofkpts = len(self.only_unfold_for_kpts_idxs_) if self.only_unfold_for_kpts_idxs_ else None
+            self._unfold_in_batch_decission(f"{_prefix}.save", wf_file_size_cutoff=5.0, 
+                                            wf_file_size_unit='GB', wf_file_pattern='wfc*.*',
+                                            wf_n_files=noofkpts)
+            #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             return BandStructure_irrep.from_espresso(prefix=_prefix, alat=None,
                                                      spin_channel=self.qe_kwards_['unfold_spin_channel'],
                                                      Ecut=self.qe_kwards_['wf_cutoff_energy'], 

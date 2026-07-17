@@ -1,4 +1,22 @@
-__Latest release: v0.3.6__
+__Latest release: v1.0.0__
+
+__v1.0.0__
+
+* Set irrep highest version compatibility in pyproject
+* `irrep` compatibility: Wave function unfolding implemented for Abinit
+* `irrep` compatibility: Wave function unfolding implemented for GPAW
+* `irrep` compatibility: Wave function unfolding implemented for wannier90
+* Zenodo released and README zenodo citation doi added
+* Existing user issues untill today are resolved
+
+__v0.5.0__
+
+* Added github action workflows for automated pytest and also for pip release. 
+* Bug fixed in irrep
+* Reduced wave functions file size in testsuits 
+* Updated the QE and VASP KPOINTS_SC file format
+* `banduppy.Unfold()` is made much more user friendly
+* Test release workflow
 
 __v0.3.6__
 

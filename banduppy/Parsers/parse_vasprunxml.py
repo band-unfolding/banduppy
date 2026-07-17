@@ -14,10 +14,12 @@ class VasprunXml:
     def __init__(self, xml_file):
         self.fname = xml_file
         self.vasprun_data = {}
-        if _BasicFunctionsModule._check_file_size(self.fname , 'MB') < 5: # 5MB is safe enough
-            self._parse()
-        else:
+        _, vasprunfile_too_large = _BasicFunctionsModule._check_file_size(xml_file, _file_size_cutoff=5.0, 
+                                                                          _file_size_unit='MB') # 5MB is safe enough
+        if vasprunfile_too_large: 
             self._iterparse()
+        else:
+            self._parse()
         
     def _parse(self) -> None:
         root = ET.parse(self.fname).getroot()
