@@ -1,4 +1,4 @@
-! K-points for SC bandstructure generated using banduppy-1.0.0 package
+! K-points for SC bandstructure [banduppy-1.0.0-dev]
 K_POINTS crystal
 65
   0.00000000   0.00000000   0.00000000   1.00000000

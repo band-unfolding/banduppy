@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from scipy.spatial import distance
 from ..BasicFunctions.general_functions import _SaveData2File, _draw_line_length
+from .. import __version__
 
 ### ===========================================================================
 class _GeneralFunctionsDefs:
@@ -172,7 +173,7 @@ class _GeneralFunctionsDefs:
         if save_data['save2file']:     
             if print_log is not None: 
                 print(f"{'='*_draw_line_length}\n- Saving unfolded band centers to file...")
-            header_msg  = " Unfolded band centers data\n"
+            header_msg  = f" Unfolded band centers data [banduppy-{__version__}]\n"
             header_msg += "k-index, k on path (A^-1), Band center energy (eV), Band width (eV), Sum of dN\n"
             n_cols_data = data2save.shape[1]
             np_data_fmt = ['%d'] + ['%12.8f']*(n_cols_data-1)

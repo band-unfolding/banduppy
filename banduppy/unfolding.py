@@ -337,17 +337,17 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
         fermi_energy : float|None, optional
             User supplied Fermi-energy. If None, by default it is extracted from
             output files corresponds to specific ab-inito codes. The default is None.
-        vasp_kwards : dict | None, optional
+        vasp_keywards : dict | None, optional
             The keywards specific to VASP ab-initio code. Will be ignored when ab_init_code != vasp.
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
              'poscar_file_path': str or file Path object, optional
                  File path containing the crystal structure in VASP (POSCAR format).
-                 The default is './POSCAR', 
+                 The default is './POSCAR'. 
              'wavecar_file_path': str or file Path object, optional
                  File path containing wave-functions in VASP (WAVECAR format).
-                 The default is './WAVECAR', 
+                 The default is './WAVECAR'. 
              'vasprunxml_file_path': str or file Path object, optional
                  File path of VASP vasprun.xml file. The default is './vasprun.xml'.
              'is_spin_nondegenrate': bool, optional
@@ -363,15 +363,15 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                  The default is None.
             }
             The default is None. If None, dictionary values will be set to default.  
-        qe_kwards : dict | None, optional
+        qe_keywards : dict | None, optional
             The keywards specific to Quantum ESPRESSO ab-initio code. Will be ignored when ab_init_code != qe.
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
-             'output_file_dir' : str or Path object
+             'output_file_dir' : str or Path object, optional
                  Directory path where Quantum ESPRESSO output folder 'prefix.save' resides.
                  The default is current directory, './'. 
-             'save_file_prefix' : str
+             'save_file_prefix' : str, optional
                  Prefix of the Quantum ESPRESSO output files (e.g. 'prefix' for 'prefix.save').
                  The default is 'prefix'.
              'unfold_spin_channel': str|None, optional ['up', 'dw']
@@ -384,25 +384,71 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                  The default is None.
             }
             The default is None. If None, dictionary values will be set to default.
-        abinit_kwards : dict | None, optional
-            The keywards specific to abinit ab-initio code. Will be ignored when ab_init_code != abinit.
+        abinit_keywards : dict | None, optional
+            The keywards specific to ABINIT ab-initio code. Will be ignored when ab_init_code != abinit.
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
+             'wfk_file_path': str or file Path object, optional
+                 File path containing wave-functions in ABINIT (WFK format).
+                 The default is './test_WFK'.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw' for spin polarized calculations.
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
+                 The default is None.
             }
             The default is None. If None, dictionary values will be set to default.  
-        gpaw_kwards : dict | None, optional
-            The keywards specific to GPAW ab-initio code. Will be ignored when ab_init_code != abinit.
+        gpaw_keywards : dict | None, optional
+            The keywards specific to GPAW ab-initio code. Will be ignored when ab_init_code != gpaw.
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
+             'gpaw_calculator_instance' : str or GPAW calculator object, Mandatory
+                 GPAW calculator instance. The default is 'None'.
+             'read_paw' : bool, optional
+                 Whether to read PAW. The default is False.
+             'is_spin_nondegenrate': bool, optional
+                 Whether wave functions are spinors. False if they are scalars. 
+                 The default is False.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw', when is_spin_nondegenrate=True.
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
+                 The default is None.
             }
             The default is None. If None, dictionary values will be set to default. 
-        wannier90_kwards : dict | None, optional
-            The keywards specific to WANNIER90 ab-initio code. Will be ignored when ab_init_code != abinit.
+        wannier90_keywards : dict | None, optional
+            The keywards specific to WANNIER90 ab-initio code. Will be ignored when ab_init_code != wannier90.
             Followings (key, value) dictionary pairs are allowed. If any dictionary key
             is not found, will be reset to default.
             {
+             'output_file_dir' : str or Path object, optional
+                 Directory path of WANNIER90 output folder where'seedname.win' file 
+                 reside. The default is current directory, './'.  
+             'seedname' : str, optional
+                 Seedname (base filename) of WANNIER90 files (e.g. 'seedname' for 
+                 'seedname.win'). The default is 'prefix'.
+             'input_files_are_text_format' : bool, optional
+                 The input files are text files or binary files.
+                 The default is False == binary files.
+             'is_spin_nondegenrate': bool, optional
+                 Whether wave functions are spinors. False if they are scalars. 
+                 The default is False.
+             'unfold_spin_channel': str|None, optional ['up', 'dw']
+                 In case of spin non degenracy which spin-channel to unfold. 
+                 'up' for spin-up, 'dw' for spin-down. The default is None.
+                 Must be one of the 'up' or 'dw', when is_spin_nondegenrate=True.
+             'wf_cutoff_energy': float|None, optional (unit: eV)
+                 Plane wave cutoff energy in eV. Not mandatory. This tag is usefull when 
+                 getting plane wave related runtime error during unfolding (see FAQ).
+                 The default is None.
             }
             The default is None. If None, dictionary values will be set to default. 
         ** other_ab_initio_code_related_kwargs :dict
@@ -450,10 +496,12 @@ class Unfolding(_BandFolding, _BandUnfolding, _EBSplot, _FoldingDegreePlot):
                               gpaw_kwards=gpaw_keywards,
                               wannier90_kwards=wannier90_keywards,
                               print_log=self.print_information)
-            paw = True if ab_initio_code == 'gpaw' else False 
             bandstructure = bds._generate_bandstructure_instance(**other_ab_initio_code_related_kwargs)   
             self.unfold_in_batch = bds.kpts_batch_unfold_
             self.kpt_batch_size = kpt_batch_size
+            self.reading_gpaw_paw = False # Specific to GPAW code
+            if bds.ab_initio_code_ == 'gpaw' and bds.gpaw_kwards_['read_paw']:
+                self.reading_gpaw_paw = True
             # Do not warning msg when not all K-points in Kk map file is not unfolded.
             # User wants to unfold only a few K-points.
             if only_unfold_for_kpts_idxs:

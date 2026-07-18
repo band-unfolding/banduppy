@@ -10,12 +10,14 @@ import numpy as np
 import pickle
 from pathlib import Path
 import banduppy
+print(f'- BandUPpy version: {banduppy.__version__}')
 
-
+#==============================================================================
 # Path to test data
 SimulationParentFolder = Path(__file__).parents[0] / "data"
+print(f'- Parent test data folder: {SimulationParentFolder}')
 
-
+#==============================================================================
 class KpointsFoldingBase:
     """
     Base helper class (NOT collected as test class).
@@ -33,7 +35,7 @@ class KpointsFoldingBase:
                                                            save_kpts = False,
                                                            file_format=self.kpts_file_format)
 
-
+#==============================================================================
 class TestKpoints_Si8atomUnitcell(KpointsFoldingBase):
     """
     Test class for Si 8-atom unit cell k-point unfolding.

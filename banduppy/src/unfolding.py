@@ -1,6 +1,7 @@
 import numpy as np
 #import warnings
 from ..BasicFunctions.general_functions import _SaveData2File, _BasicFunctionsModule, _draw_line_length
+from .. import __version__
 
 ### ===========================================================================
 class _GeneralFnsDefs:
@@ -35,7 +36,7 @@ class _GeneralFnsDefs:
         """
         if print_information is not None: 
             print(f"{'='*_draw_line_length}\n- Saving unfolded kpoints to file...")
-        header_msg  = " Unfolded PC k-points from postprocessed wavefunction file\n"
+        header_msg  = f" Unfolded PC k-points from postprocessed wavefunction file [banduppy-{__version__}]\n"
         header_msg += " k-index, k on path (A^-1), k1, k2, k3\n"
         n_cols_data = unfolded_kpts_dat.shape[1]
         kp_ind_max_len = len(str(max(unfolded_kpts_dat[:,0])))
@@ -82,7 +83,7 @@ class _GeneralFnsDefs:
         """
         if print_information is not None: 
             print(f"{'='*_draw_line_length}\n- Saving unfolded bandstructure to file...")
-        header_msg  = " Unfolded band structure from postprocessed wavefunction file\n"
+        header_msg  = f" Unfolded band structure from postprocessed wavefunction file [banduppy-{__version__}]\n"
         header_msg += " k-index, k on path (A^-1), energy (eV), weight " + \
                         ("Sx,Sy,Sz" if is_spinor else "")  +"\n"
         n_cols_data = unfolded_bandstructure.shape[1]
@@ -294,13 +295,26 @@ class _BandUnfolding(_GeneralFnsDefs):
         if self.unfold_in_batch:
             # Split into slices avoids large Memory requirement
             iklist_split = self._split_kp_slices(bandstructure.kplist)
-            for iklist in iklist_split:
-                for ik in iklist: 
-                    bandstructure.set_kpoint(ik) 
-                kpoints_slice = [bandstructure.kpoints[ik] for ik in iklist]
-                self._perform_unfolding(kpoints_slice)
-                for ik in iklist: 
-                    bandstructure.forget_kpoint(ik)
+            if self.reading_gpaw_paw: 
+                for iklist in iklist_split:
+                    for ik in iklist: 
+                        bandstructure.set_kpoint(ik) 
+                        bandstructure.set_kpoint_paw(ik)
+                    kpoints_slice = [bandstructure.kpoints[ik] for ik in iklist]
+                    self._perform_unfolding(kpoints_slice)
+                    for ik in iklist: 
+                        bandstructure.forget_kpoint(ik)
+            else:        
+                for iklist in iklist_split:
+                    for ik in iklist: 
+                        bandstructure.set_kpoint(ik) 
+                    # if self.reading_gpaw_paw: # Don't like it, unnecessary loop conditional check for other codes
+                    #     for ik in iklist: 
+                    #         bandstructure.set_kpoint_paw(ik)
+                    kpoints_slice = [bandstructure.kpoints[ik] for ik in iklist]
+                    self._perform_unfolding(kpoints_slice)
+                    for ik in iklist: 
+                        bandstructure.forget_kpoint(ik)
         else:
             self._perform_unfolding(bandstructure.kpoints)
             

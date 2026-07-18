@@ -10,11 +10,14 @@ import numpy as np
 import pickle
 import banduppy
 from pathlib import Path
+print(f'- BandUPpy version: {banduppy.__version__}')
 
+#==============================================================================
 # Path to test data
 SimulationParentFolder = Path(__file__).parents[0] / "data"
-print('SimulationParentFolder:', SimulationParentFolder)
+print(f'- Parent test data folder: {SimulationParentFolder}')
 
+#==============================================================================
 class UnfoldingBase:
     """
     Base helper class (NOT collected as test class).
@@ -37,7 +40,7 @@ class UnfoldingBase:
                                   save_unfolded_kpts = {'save2file': False},
                                   save_unfolded_bandstr = {'save2file': False})
 
-
+#==============================================================================
 class TestBandsUnfolding(UnfoldingBase): 
     """
     Test class to check unfolded bandstructure.

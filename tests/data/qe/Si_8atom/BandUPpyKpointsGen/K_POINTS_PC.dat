@@ -1,4 +1,4 @@
-! k-points for PC bandstructure generated using banduppy-1.0.0 package
+! k-points for PC bandstructure [banduppy-1.0.0-dev]
 K_POINTS crystal
 69
   0.50000000   0.50000000   0.50000000

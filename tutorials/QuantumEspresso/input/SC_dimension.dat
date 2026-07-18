@@ -1,4 +1,4 @@
-# PC to SC transformation matrix (==supercell dimesion)
+# PC to SC transformation matrix (==supercell dimesion) [banduppy-1.0.0-dev]
 -1 1 1
 1 -1 1
 1 1 -1

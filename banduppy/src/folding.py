@@ -372,16 +372,16 @@ class _KpointsModule:
 
         """
         header_msg = {}
-        header_msg['SC']  = f"{self.headfoot_comment_sym[0]}K-points for SC bandstructure generated using banduppy-{__version__} package"
+        header_msg['SC']  = f"{self.headfoot_comment_sym[0]}K-points for SC bandstructure [banduppy-{__version__}]"
         header_msg['SC'] += self._format_abinitio_code_conditional_header_line(len(self.SBZ_kpts_list))
         
-        header_msg['SpecialKpoints']   = f"Special SC kpoints indices generated using banduppy-{__version__} package"
+        header_msg['SpecialKpoints']   = f"Special SC kpoints indices [banduppy-{__version__}]"
         header_msg['SpecialKpoints']  += "\nKpoints index: Kpoints label"
         
-        header_msg['PC']  = f"{self.headfoot_comment_sym[0]}k-points for PC bandstructure generated using banduppy-{__version__} package"
+        header_msg['PC']  = f"{self.headfoot_comment_sym[0]}k-points for PC bandstructure [banduppy-{__version__}]"
         header_msg['PC'] += self._format_abinitio_code_conditional_header_line(len(self.PBZ_kpts_list_org))
         
-        header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices generated using banduppy-{__version__} package"
+        header_msg['SCPC_map']  = f"Mapping for SC Kpoints to PC kpoints indices [banduppy-{__version__}]"
         header_msg['SCPC_map'] += "\nK-k relation: (K index: K -> k index unique: k unique -> k index: k)"
             
         return header_msg
@@ -692,7 +692,7 @@ class _BandFolding(_KpointsModule, _FindProperties):
                 
             # saving the PC to SC transformation matrix
             print_msg='Saving SC dimension to file...'
-            header_txt_transM='# PC to SC transformation matrix (==supercell dimesion)'
+            header_txt_transM=f'# PC to SC transformation matrix (==supercell dimesion) [banduppy-{__version__}]'
             
             if print_log_info: print(f"{'='*_draw_line_length}\n- {print_msg}.")
             fsfile = _SaveData2File._save_2_file(data=self.transformation_matrix,
