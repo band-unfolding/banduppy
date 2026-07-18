@@ -1,13 +1,15 @@
 # Frequently Asked Questions
 
-__Question:__ Getting Out of memory error during band Unfolding of large systems. What are the best practicies here?
+__Question:__ Getting out-of-memory (OOM) error during band unfolding of large systems. Any recommendations/best practices?
 
 **Answer**: As of `BandUPPy` version `>= 1.0.0`, there are several ways to avoid out-of-memory (OOM) issues when unfolding large wavefunction files:
-
-    1. _Split the band structure into smaller sections:_ Instead of generating a single wavefunction (WF) file for the entire bandstructure (e.g., `L-G-X-K-G` k-path), generate separate WF files for smaller path segments (e.g., one WF file for each L-G, G-X, X-K, and K-G k-path sections). Unfold each segment independently. Then use `SaveBandStructuredata.save_merge_unfolded_kp_bd_data()` to merge all the `bandstructure_unfolded*.dat` and `kpoints_unfolded*.dat` files into the final `bandstructure_unfolded_merged.dat` and `kpoints_unfolded_merged.dat` files, which can then be used to plot the complete unfolded bandstructure.
-    2. *Unfold the wavefunction in batches of k-points*: Set `unfold_kpts_in_batch=True` and choose an appropriate value for `kpt_batch_size` in `banduppy.Unfolding.Unfold()`. This option unfolds the wavefunction file in chunks. Once a chunk has been processed, it is removed from memory before the next chunk is loaded, significantly reducing the peak memory usage during the unfolding process. Smaller values of `kpt_batch_size` reduce the memory required during unfolding. *Notably, if `BandUPpy` detects that the user supplied input wavefunction file is larger than a default threshold (currently 5 GB), it automatically recommends user enabling these options.*
-    3. *Unfold only selected bands or k-points*: If only a subset of the results is needed, use the `only_unfold_band_idx` and `only_unfold_for_kpts_idxs` keywords in `banduppy.Unfolding.Unfold()` to unfold only the specified bands and/or k-points. This can significantly reduce both memory usage and computation time.
-    4. *Optimize the ab initio calculation settings*: The size of the generated wavefunction file can often be reduced by adjusting the input parameters of the electronic structure calculation. For example: (i) Use fewer number of interpolated k-points along a k-path (e.g., use 30 instead of 100 k-points between G-L path) (ii) Reduce the wavefunction cutoff energy (e.g., `ENCUT` in `VASP` or `ecutwfc` in `QE`). (iii) Reduce the number of bands ( e.g., `NBANDS` in `VASP` or `nbnd` in `QE`).
+  1. __Split the band structure into smaller sections:__ Instead of generating a single wavefunction (WF) file for the entire bandstructure (e.g., `L-G-X-K-G` k-path), generate separate WF files for smaller path segments (e.g., one WF file for each L-G, G-X, X-K, and K-G k-path sections). Unfold each segment independently. Then use `SaveBandStructuredata.save_merge_unfolded_kp_bd_data()` to merge all the `bandstructure_unfolded*.dat` and `kpoints_unfolded*.dat` files into the final `bandstructure_unfolded_merged.dat` and `kpoints_unfolded_merged.dat` files, which can then be used to plot the complete unfolded bandstructure.\
+ 2. __Unfold the wavefunction in batches of k-points:__ Set `unfold_kpts_in_batch=True` and choose an appropriate value for `kpt_batch_size` in `banduppy.Unfolding.Unfold()`. This option unfolds the wavefunction file in chunks. Once a chunk has been processed, it is removed from memory before the next chunk is loaded, significantly reducing the peak memory usage during the unfolding process. Smaller values of `kpt_batch_size` reduce the memory required during unfolding. *Notably, if `BandUPpy` detects that the user supplied input wavefunction file is larger than a default threshold (currently 5 GB), it automatically recommends user enabling these options.*
+ 3. __Unfold only selected bands or k-points:__ If only a subset of the results is needed, use the `only_unfold_band_idx` and `only_unfold_for_kpts_idxs` keywords in `banduppy.Unfolding.Unfold()` to unfold only the specified bands and/or k-points. This can significantly reduce both memory usage and computation time.
+ 4. __Optimize the ab initio calculation settings:__ The size of the generated wavefunction file can often be reduced by adjusting the input parameters of the electronic structure calculation. For example:\
+  (i) Use fewer number of interpolated k-points along a k-path (e.g., use 30 instead of 100 k-points between G-L path)\
+  (ii) Reduce the wavefunction cutoff energy (e.g., `ENCUT` in `VASP` or `ecutwfc` in `QE`).\
+  (iii) Reduce the number of bands ( e.g., `NBANDS` in `VASP` or `nbnd` in `QE`).
 
 ---
 
@@ -28,7 +30,7 @@ For  banduppy < v1.0: [\* banduppy.BandStructure() is deprecated in the latest b
 
 `bands = banduppy.BandStructure(code="vasp", spinor=spinorbit, fPOS = "POSCAR", fWAV = "WAVECAR", Ecut=599.999999)`
 
-For banduppy > v1.0:
+For banduppy >= v1.0:
 
 `Unfold(..., vasp_keywards={'wf_cutoff_energy':599.999999, ...},...)`
 
@@ -36,15 +38,15 @@ For banduppy > v1.0:
 
 __Question:__ BandUP code needed both the primitive unit cell and supercell POSCAR files. But in Banduppy it seems  only POSCAR_SC is needed. What do I need to modify if I want to do calculations with a different primitiveunit cell and where does it come? 
 
-__Answer:__ In a broader sense, for unfolding, we need to know the relationship between the supercell and the reference primitive unit cells on which we want to project your supercell eigenstates. Mathematically, they are related by a matrix transformation: `A = M.a`. Here, the primitive cell lattice vectors (`a_i`) (`i = 1, 2, 3`) form the building unit for the supercell vectors (`A_i`), and the two sets of basis vectors are related by the transformation matrix `M`.
+__Answer:__ In a broader sense, for unfolding, we need to know the relationship between the supercell and the reference primitive unit cells on which we want to project the supercell eigenstates. Mathematically, they are related by a matrix transformation: `A = M.a`. Here, the primitive cell lattice vectors (`a_i`) (`i = 1, 2, 3`) form the building unit for the supercell vectors (`A_i`), and the two sets of basis vectors are related by the transformation matrix `M`.
 
-Now, we can provide the primitive unit cell `POSCAR` (for `a`) and supercell `POSCAR` (for `A`), and software internally calculates the relation between them (`M`). => `BandUP`
+Now, we can provide the primitive unit cell `POSCAR` (for `a`) and supercell `POSCAR` (for `A`), and the software internally calculates the relation between them (`M`). => `BandUP`
 
-Alternatively, we can provide the supercell `POSCAR` (`A`) and the transformation matrix (`M`) as inputs, and software internally calculates the reference primitive cell (`a`). => `BandUPpy`
+Alternatively, we can provide the supercell `POSCAR` (`A`) and the transformation matrix (`M`) as inputs, and the software internally calculates the reference primitive cell (`a`). => `BandUPpy`
 
-The information required is essentially the same for BandUP and BandUPpy, only alternative ways.
+The information required is essentially the same for BandUP and BandUPpy, only in alternative ways.
 
-Regarding the necessary modifications for different reference primitive unit cell calculations: you need to adjust the `super_cell_size` parameter in for example the `run_banduppy_vasp.py`, which is the primitive-to-supercell transformation matrix.
+Regarding the necessary modifications for different reference primitive unit cell calculations: you need to adjust the `super_cell_size` parameter in, for example, the `run_banduppy_vasp.py`, which is the primitive-to-supercell transformation matrix.
 
 ---
 
@@ -56,13 +58,13 @@ __Answer:__ You have to use the list.
 
 ---
 
-__Question:__ How one can remove the text with 'supercell and unfolded' that is displayed over the bands in the figure?
+__Question:__ How can one remove the text with 'supercell and unfolded' that is displayed over the bands in the figure?
 
 __Answer:__ To turn off the legends, you can use 'show_legend=False' in `banduppy.Plotting.plot_ebs()` function.
 
 ---
 
-__Question:__ How can change the color of the gray supercell points to a different color or lighter shade?
+__Question:__ How can we change the color of the gray supercell points to a different color or lighter shade?
 
  __Answer:__ Use 'sc_color' argument. Only available for `banduppy` version `> v0.3.4`.
 
@@ -70,7 +72,7 @@ __Question:__ How can change the color of the gray supercell points to a differe
 
  __Question:__ Can banduppy unfold band structure from non-collinear calculations?
 
-__Answer:__ Yes. Banduppy can be used for both the collinear and non-collinear calculations. For unfolding ab-initio wavefunction file that is generated using spinor calculations, one needs to set `unfold_spin_channel` (also `is_spin_nondegenrate` for VASP) keyword in `banduppy.Unfold()` function. E.g., for non-colinear `VASP` calculations set the followings:
+__Answer:__ Yes. Banduppy can be used for both the collinear and non-collinear calculations. For unfolding ab-initio wavefunction file that is generated using spinor calculations, one needs to set `unfold_spin_channel` (also `is_spin_nondegenrate` for VASP) keyword in `banduppy.Unfold()` function. E.g., for non-colinear `VASP` calculations, set the following:
 
 `banduppy.Unfold(..., vasp_kwards={..., 'is_spin_nondegenrate': True, 'unfold_spin_channel': 'up', ...}, ...` 
 
