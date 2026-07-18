@@ -652,7 +652,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
                                                    min_dN_screen:float=0.0,
                                                    save_data = {'save2file': False, 
                                                                 'fdir': '.',
-                                                                'fname': 'unfolded_bandstructure_window',
+                                                                'fname': 'bandstructure_unfolded_window',
                                                                 'fname_suffix': ''}):
         """
         Collect data within the condition and range specified. 
@@ -691,7 +691,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
             'fname_suffix' : str, optional
                 Suffix to add to the file name. The default is no suffix.
             }
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandstructure_window', 'fname_suffix': ''}.
+            The default is {'save2file': False, 'fdir': '.', 'fname': 'bandstructure_unfolded_window', 'fname_suffix': ''}.
             
          Returns
          -------
@@ -733,7 +733,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
                                         collect_scf_data:bool=False,
                                         save_data = {'save2file': False, 
                                                      'fdir': '.',
-                                                     'fname': 'unfolded_bandcenters',
+                                                     'fname': 'bandcenters_unfolded',
                                                      'fname_suffix': ''}):
         """
         Find band centers and broadening of the unfolded band structure.
@@ -813,7 +813,7 @@ class Properties(_BandCentersBroadening, _EffectiveMass, _alloy_scattering_param
             'fname_suffix' : str, optional
                 Suffix to add to the file name. The default is no suffix.
             }
-            The default is {'save2file': False, 'fdir': '.', 'fname': 'unfolded_bandcenters', 'fname_suffix': ''}.
+            The default is {'save2file': False, 'fdir': '.', 'fname': 'bandcenters_unfolded', 'fname_suffix': ''}.
 
         Returns
         -------
@@ -1275,7 +1275,7 @@ class SaveBandStructuredata:
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         save_file_name : str, optional
-            Name of the file to be saved ((without extension)). The defult is 
+            Name of the file to be saved (without extension). The defult is 
             'kpoints_unfolded_merged' for merged kpoints file and 
             'bandstructure_unfolded_merged' for merged bandstructure file. 
         print_information : [None,'low','medium','high'], optional
@@ -1327,7 +1327,7 @@ class SaveBandStructuredata:
         return unfolded_kpoints_, unfolded_bandstructure_
       
     @classmethod
-    def save_unfolded_bandcenter(cls, unfolded_bandcenter, save_dir='.', file_name='unfolded_bandcenters', 
+    def save_unfolded_bandcenter(cls, unfolded_bandcenter, save_dir='.', file_name='bandcenters_unfolded', 
                                  file_name_suffix='', print_information='low'):
         """
         Save band centers data.
@@ -1340,7 +1340,7 @@ class SaveBandStructuredata:
         save_dir : str or path, optional
             Directory path where to save the file. The default is current directory.
         file_name : str, optional
-            Name of the file (without extension). The defult is 'unfolded_bandcenters'.
+            Name of the file (without extension). The defult is 'bandcenters_unfolded'.
         file_name_suffix : str, optional
             Suffix to add to the file name. The default is ''.
         print_information : [None,'low','medium','high'], optional
