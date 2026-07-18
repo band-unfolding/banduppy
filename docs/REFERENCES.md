@@ -7,7 +7,7 @@
   year         = 2026,
   publisher    = {Zenodo},
   version      = {v1.0.0},
-  doi          = {https://doi.org/10.5281/zenodo.21417715},
+  doi          = {https://doi.org/10.5281/zenodo.21417714},
   url          = {https://github.com/band-unfolding/banduppy}
 }
 

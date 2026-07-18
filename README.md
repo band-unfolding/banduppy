@@ -134,7 +134,7 @@ If you use `BandUPpy` in your work, please:
 
   * **How to cite the package:** (use appropriate version number and doi corresponding to your installed banduppy)
 
->> 1. Badal Mondal, Stepan S. Tsirkin, "band-unfolding/banduppy: version-1.0.0 (v1.0.0)". Zenodo, 2026. [doi:10.5281/zenodo.21417715](https://doi.org/10.5281/zenodo.21417715)
+>> 1. Badal Mondal, Stepan S. Tsirkin, "band-unfolding/banduppy: version-1.0.0 (v1.0.0)". Zenodo, 2026. [doi:10.5281/zenodo.21417714](https://doi.org/10.5281/zenodo.21417714)
 >> 2. Mikel Iraola, Juan L. Mañes, Barry Bradlyn, Titus Neupert, Maia G. Vergniory, Stepan S. Tsirkin, "IrRep: Symmetry eigenvalues and irreducible representations of ab initio band structures", [Comput. Phys. Commun. **272**, 108226 (2022)](https://doi.org/10.1016/j.cpc.2021.108226)
 
   * **Read and cite the following papers** (and the appropriate references therein):
