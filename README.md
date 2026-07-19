@@ -182,8 +182,10 @@ GNU General Public License for more details: [GNU General Public License v3.0](h
 
 <!-- =========================================================== -->
 ## Upcoming (TBD)
-1. Inverse participation ratio implementation
-2. Orbital contribution projection implementation
-3. Set up wiki
+1. Function to predict all k's for a given K [Unfold() an existing wavefunction file without prior SC_PC_map file] -> tutorial+tests 
+2. Inverse participation ratio implementation
+3. Orbital contribution projection implementation
+4. Set up wiki
+5. Parallelization of Unfolding routine
 <!-- =========================================================== -->
 

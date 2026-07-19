@@ -1,4 +1,9 @@
-__Latest release: v1.0.0__
+__Latest release: v1.0.1-dev__
+
+__v1.0.1-dev__ [work in progress]
+
+* Updated DOIs for Zenodo reference
+* Updated TODO list in README
 
 __v1.0.0__
 

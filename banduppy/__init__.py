@@ -1,4 +1,4 @@
-__version__ = "1.0.0"
+__version__ = "1.0.1-dev"
 
 from .unfolding import Unfolding, Properties, SaveBandStructuredata, Plotting
 from .unfolding_high_level_class import HighLevelProperties

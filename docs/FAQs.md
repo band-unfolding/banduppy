@@ -84,6 +84,12 @@ __Answer:__ BandUPpy reads the wavefunction files located in `prefix.save/`, nam
 
 ---
 
+__Question:__ I already did a VASP supercell calculation. I forgot to generate the SC K-points from banduppy. Accordingly, I do not have the SC_PC_Kk_map file. Can I still do unfolding now?
+
+__Answer:__ TBD 
+
+---
+
 ##
 __If you are not satisfied with the answers, cannot find an answer to your question, or have new suggestions, please feel free to reach out to us. We are committed to providing the best experience for our users and greatly value your feedback.__
 
